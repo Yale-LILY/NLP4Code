@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 # C extensions
-*.so
+# *.so # ansong: commenting this out because we need the tree-sitter binary
 
 # Distribution / packaging
 .Python
