@@ -35,10 +35,8 @@ with open('codexoutputs.pickle', 'rb') as f:
 # print(bleu_score(apps_dataset[0]["solutions"][0]["raw_code"], completions[0]))
 
 total_bleu = 0
-i = 0
+
 for app, completion in tqdm(zip(apps_dataset, completions)):
-    if i != 196:
-        total_bleu = total_bleu + bleu_score(app["solutions"][0]["raw_code"], completion)
-    i = i + 1
-    
+    total_bleu = total_bleu + bleu_score(app["solutions"][0]["raw_code"], completion)
+
 print(total_bleu / len(apps_dataset))
