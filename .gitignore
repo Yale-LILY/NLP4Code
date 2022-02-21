@@ -130,3 +130,13 @@ dmypy.json
 
 # defined by Ansong
 .venv
+
+# defined by Yilun
+!CodeT5
+.pt
+.bin
+CodeT5/cache_dir/
+CodeT5/outputs/
+CodeT5/summary_dir/
+CodeT5/result_dir/
+codeT5/preprocessing_spider/spider
