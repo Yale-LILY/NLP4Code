@@ -130,6 +130,8 @@ dmypy.json
 
 # defined by Ansong
 .venv
+data/
+debug-tmp/
 
 # defined by Yilun
 !CodeT5
