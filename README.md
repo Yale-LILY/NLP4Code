@@ -8,6 +8,12 @@ Then, install the dependencies:
 pip install -r requirements.txt
 ```
 
+## Fine-tuning
+For fine-tuning, in the main directory, do:
+```
+export PYTHONPATH=`pwd`; python finetuning/trainer.py fit --config finetuning/training_configs/mathqa_gpt_finetuning.yaml
+```
+
 ## Preprocessing APPS
 create the following directory and uncompress the original data
 ```
