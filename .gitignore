@@ -142,3 +142,7 @@ CodeT5/outputs/
 CodeT5/summary_dir/
 CodeT5/result_dir/
 codeT5/preprocessing_spider/spider
+finetuning/lightning_modules/models/codeT5_seq2seq_model_spider.py
+finetuning/lightning_modules/models/codet5_util_spider.py
+finetuning/lightning_modules/models/_codet5_utils.py
+**/[T]emp*
