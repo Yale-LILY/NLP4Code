@@ -1,5 +1,4 @@
 import os
-import neptune
 
 from typing import Optional, Union, List
 from pytorch_lightning.loggers import NeptuneLogger, CSVLogger, TensorBoardLogger, WandbLogger
