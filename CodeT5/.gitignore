@@ -1,9 +1,0 @@
-# defined by Yilun
-.pt
-.bin
-cache_dir/
-outputs/
-summary_dir/
-result_dir/
-preprocessing_spider/spider
-.pyc
