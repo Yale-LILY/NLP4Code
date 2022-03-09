@@ -1,7 +1,8 @@
 import os
 import neptune
-from typing import Optional, Union
-from pytorch_lightning.loggers import NeptuneLogger, CSVLogger, TensorBoardLogger
+
+from typing import Optional, Union, List
+from pytorch_lightning.loggers import NeptuneLogger, CSVLogger, TensorBoardLogger, WandbLogger
 
 class PatchedNeptuneLogger(NeptuneLogger):
     def __init__(self, project_name: str, *args, **kwargs):
@@ -17,6 +18,16 @@ class PatchedNeptuneLogger(NeptuneLogger):
         kwargs['source_files'] = ['**/*.py', '**/*.yaml', '**/*.sh']
 
         super().__init__(*args, **kwargs)
+
+class PatchedWandbLogger(WandbLogger):
+    def __init__(self, entity: str, project: str, name: str, log_model: bool, save_code: bool, 
+                 tags: List[str], *args, **kwargs):
+
+        kwargs['entity'] = entity 
+        kwargs['save_code'] = save_code
+        kwargs['tags'] = tags
+
+        super().__init__(name=name, project=project, log_model=log_model, *args, **kwargs)
 
 class PatchedCSVLogger(CSVLogger):
     def __init__(self, 
