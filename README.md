@@ -11,7 +11,7 @@ pip install -r requirements.txt
 ## Fine-tuning
 For fine-tuning, in the main directory, do:
 ```
-export PYTHONPATH=`pwd`; python finetuning/trainer.py fit --config finetuning/training_configs/mathqa_gpt_finetuning.yaml
+export PYTHONPATH=`pwd`; python finetuning/trainer.py fit --config finetuning/training_configs/*.yaml
 ```
 
 ## Preprocessing APPS
@@ -39,3 +39,5 @@ Currently the following evaluation metrics are implemented:
     * Parsability
     * Statment count
     * Perplexity
+
+## something else

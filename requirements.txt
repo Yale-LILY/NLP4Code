@@ -11,3 +11,4 @@ overrides
 astunparse
 scipy
 numpy
+wandb

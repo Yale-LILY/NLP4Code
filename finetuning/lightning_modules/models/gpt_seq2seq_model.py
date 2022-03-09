@@ -88,7 +88,7 @@ class GptSeq2SeqModel(LightningModule):
                  warmup_steps: int = 0,
                  eval_greedy_search: bool = False,
                  optimizer: Dict[str, Any] = None,
-                 lr_scheduler: str = "linear",
+                 lr_scheduler: Dict[str, Any] = None,
                  load_ckpt_file: str = None) -> None:
         super().__init__()
 
@@ -109,7 +109,9 @@ class GptSeq2SeqModel(LightningModule):
         # save the prediction results for every valiation epoch
         self.predictions: List[Dict[str, Any]] = []
 
-        assert lr_scheduler in ["linear", "cosine", "constant"], "lr_scheduler must be one of 'linear', 'cosine', 'constant'"
+        self.opt_params = optimizer["init_args"]
+        self.lrs_params = lr_scheduler
+        assert lr_scheduler["name"] in ["linear", "cosine", "constant"], "lr_scheduler must be one of 'linear', 'cosine', 'constant'"
         self.lr_scheduler = lr_scheduler
 
         # load the state dict from the checkpoint file
@@ -312,17 +314,14 @@ class GptSeq2SeqModel(LightningModule):
     def test_step(self, batch: torch.Tensor, batch_idx: int) -> Dict[str, torch.Tensor]:
         raise NotImplementedError
 
-    # deprecated
-    def _configure_optimizers(self):
+    def configure_optimizers(self):
         optimizer = AdamW(self.parameters(), **self.opt_params)
-        if self.lr_scheduler == "cosine":
-            lr_scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=self.warmup_steps, 
-                                                                num_training_steps=self.max_steps)
-        elif self.lr_scheduler == "linear":
-            lr_scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.warmup_steps, 
-                                                        num_training_steps=self.max_steps)
-        elif self.lr_scheduler == "constant":
-            lr_scheduler = get_constant_schedule_with_warmup(optimizer, num_warmup_steps=self.warmup_steps)
+        if self.lr_scheduler["name"] == "cosine":
+            lr_scheduler = get_cosine_schedule_with_warmup(optimizer, **self.lr_scheduler["init_args"])
+        elif self.lr_scheduler["name"] == "linear":
+            lr_scheduler = get_linear_schedule_with_warmup(optimizer, **self.lr_scheduler["init_args"])
+        elif self.lr_scheduler["name"] == "constant":
+            lr_scheduler = get_constant_schedule_with_warmup(optimizer, **self.lr_scheduler["init_args"])
         else:
             raise ValueError(f"lr_scheduler {self.lr_scheduler} is not supported")
 
