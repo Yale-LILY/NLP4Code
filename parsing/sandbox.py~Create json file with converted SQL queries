@@ -1,0 +1,51 @@
+# from sql2pandas import sql2pandas
+
+# query = 'SELECT count(*) FROM airport WHERE id NOT IN (\'Thompson\' );'
+# print(sql2pandas(query))
+
+from sql2pandas import sql2pandas
+import ast
+import json
+
+with open('train_spider_converted.json', 'r', encoding='utf-8') as f_read:
+    check_json_data = json.load(f_read)
+    print(len(check_json_data))
+
+f = open('/Users/TFunk/Downloads/spider/train_spider.json')
+
+# RESULTS:
+# - JOIN does not generate formatting error but gives incorrect query
+# - nested SELECTs are invalid (can be preprocessed)
+# - INTERSECT/UNION/EXCEPT (can be preprocessed)
+# - need LIKE '*%' to be single quotes: just convert all to single quotes at beginning
+
+
+def preprocess_sql_query(query):
+    query = query.replace('"', '\'')
+    return query if query[len(query) - 1] == ';' else query + ';'
+
+
+json_data = json.load(f)
+queries = []
+for entry in json_data:
+    query = entry['query']
+    queries.append(preprocess_sql_query(query))
+
+
+bad_tokens = ['JOIN', 'INTERSECT', 'EXCEPT', 'UNION']
+count_total_queries = len(queries)
+bad_queries = []
+
+bad_token_counts = {
+    'JOIN': 0,
+    'INTERSECT': 0,
+    'EXCEPT': 0,
+    'UNION': 0,
+}
+count_bad_queries = 0
+
+
+for idx, query in enumerate(queries):
+    if idx % 100 == 0:
+        print(idx)
+    print(sql2pandas(query))
