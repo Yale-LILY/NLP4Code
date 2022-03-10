@@ -89,7 +89,9 @@ class GptSeq2SeqModel(LightningModule):
                  eval_greedy_search: bool = False,
                  optimizer: Dict[str, Any] = None,
                  lr_scheduler: Dict[str, Any] = None,
-                 load_ckpt_file: str = None) -> None:
+                 load_ckpt_file: str = None,
+                 get_model_fn = get_gpt,
+                 ) -> None:
         super().__init__()
 
         self.max_gen_len = max_gen_len
@@ -104,7 +106,7 @@ class GptSeq2SeqModel(LightningModule):
         self.eval_greedy_search = eval_greedy_search
 
         # We only instantiate this when we need it.
-        self.gpt, self.tokenizer = get_gpt(transformer_model_name, gradient_ckpt=gradient_ckpt)
+        self.model, self.tokenizer = get_model_fn(transformer_model_name, gradient_ckpt=gradient_ckpt)
 
         # save the prediction results for every valiation epoch
         self.predictions: List[Dict[str, Any]] = []
@@ -151,7 +153,7 @@ class GptSeq2SeqModel(LightningModule):
             Dict[str, Any]: results saved in a `Dict` object.
         """        
 
-        generated_token_ids = self.gpt.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=True, 
+        generated_token_ids = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=True, 
                                                 max_length=input_ids.shape[1]+self.max_gen_len, 
                                                 temperature=self.sampling_temp)
 
@@ -166,7 +168,7 @@ class GptSeq2SeqModel(LightningModule):
                         for i in range(len(generated_programs))]
 
         if self.eval_greedy_search:
-            generated_token_ids = self.gpt.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=False, 
+            generated_token_ids = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=False, 
                                                     max_length=input_ids.shape[1]+self.max_gen_len)
             generated_token_ids = generated_token_ids[:, input_ids.shape[1]:]
             generated_strs = self.tokenizer.batch_decode(generated_token_ids)
@@ -183,7 +185,7 @@ class GptSeq2SeqModel(LightningModule):
             while remaining_k > 0:
                 generate_batch_size = min(remaining_k, self.max_generation_batches)
                 remaining_k -= generate_batch_size
-                batch_generated_token_ids = self.gpt.generate(input_ids=input_ids, attention_mask=attention_mask, 
+                batch_generated_token_ids = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, 
                                                         do_sample=True, 
                                                         max_length=input_ids.shape[1]+self.max_gen_len, 
                                                         temperature=self.sampling_temp_at_k, 
@@ -207,7 +209,7 @@ class GptSeq2SeqModel(LightningModule):
         attention_mask = batch["attention_mask"]
         labels = batch["labels"] if "labels" in batch else input_ids
 
-        gpt_result = self.gpt(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+        gpt_result = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
 
         self.log("loss", gpt_result.loss, on_step=True, on_epoch=True)
         return {"loss": gpt_result.loss}

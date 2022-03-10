@@ -75,6 +75,7 @@ model:
 data:
   class_path: lightning_modules.datasets.mathqa_reader.MathQADataModule
   init_args:
+    framework_name: gpt
     transformer_model_name: *transformer
     batch_size: 4
     val_batch_size: 8
