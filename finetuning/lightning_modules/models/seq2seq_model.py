@@ -16,7 +16,7 @@ from transformers.optimization import get_cosine_schedule_with_warmup
 from torchmetrics import Metric, MeanMetric, MetricCollection
 from pytorch_lightning import LightningModule
 
-from .gpt_util import get_gpt
+from .seq2seq_model_util import get_model
 from execution.execution_evaluation import execution_acc, mathqa_execution
 from execution.execution_evaluation import execution_eval_at_k, batch_execution_acc
 
@@ -74,7 +74,7 @@ def post_process_code(code, remove_comments=True, remove_extra_lines=False, ast_
 
     return code
 
-class GptSeq2SeqModel(LightningModule):
+class Seq2SeqModel(LightningModule):
     def __init__(self, 
                  transformer_model_name: str,
                  max_gen_len: int = 100,
@@ -89,9 +89,7 @@ class GptSeq2SeqModel(LightningModule):
                  eval_greedy_search: bool = False,
                  optimizer: Dict[str, Any] = None,
                  lr_scheduler: Dict[str, Any] = None,
-                 load_ckpt_file: str = None,
-                 get_model_fn = get_gpt,
-                 ) -> None:
+                 load_ckpt_file: str = None) -> None:
         super().__init__()
 
         self.max_gen_len = max_gen_len
@@ -106,7 +104,7 @@ class GptSeq2SeqModel(LightningModule):
         self.eval_greedy_search = eval_greedy_search
 
         # We only instantiate this when we need it.
-        self.model, self.tokenizer = get_model_fn(transformer_model_name, gradient_ckpt=gradient_ckpt)
+        self.model, self.tokenizer = get_model(transformer_model_name, gradient_ckpt=gradient_ckpt)
 
         # save the prediction results for every valiation epoch
         self.predictions: List[Dict[str, Any]] = []
@@ -209,10 +207,10 @@ class GptSeq2SeqModel(LightningModule):
         attention_mask = batch["attention_mask"]
         labels = batch["labels"] if "labels" in batch else input_ids
 
-        gpt_result = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+        model_result = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
 
-        self.log("loss", gpt_result.loss, on_step=True, on_epoch=True)
-        return {"loss": gpt_result.loss}
+        self.log("loss", model_result.loss, on_step=True, on_epoch=True)
+        return {"loss": model_result.loss}
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> Dict[str, torch.Tensor]:
         # input_tokens, target_mask, context_tokens, target_tokens, metadata = batch

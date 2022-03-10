@@ -9,8 +9,7 @@ from typing import Dict, Iterable, List, Any, Optional, Union
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import Dataset
 
-from lightning_modules.models.gpt_util import get_gpt, left_pad_sequences
-from lightning_modules.models.codet5_util import get_codet5
+from lightning_modules.models.seq2seq_model_util import get_model, left_pad_sequences
 from execution.program_tracing import get_state_repr, is_trivial_state
 
 from torch.utils.data import DataLoader
@@ -29,7 +28,6 @@ class MathQADataset(Dataset):
     def __init__(
         self, 
         file_path: str,
-        framework_name: str,
         transformer_model_name: str, 
         max_instances: int,
         few_shot_n: int = 0,
@@ -41,12 +39,7 @@ class MathQADataset(Dataset):
         # mode is one of ["train", "test", "test_few_shot"]
         assert mode in ["train", "test", "test_few_shot"]
 
-        if framework_name == "gpt":
-            _, self.tokenizer = get_gpt(transformer_model_name)
-        elif framework_name == "codet5":
-            _, self.tokenizer = get_codet5(transformer_model_name)
-        else:
-            raise ValueError(f"Unknown framework: {framework_name}")
+        _, self.tokenizer = get_model(transformer_model_name)
 
         self.max_instances = max_instances
         self.mode = mode
@@ -182,7 +175,6 @@ def customized_collate_fn(examples: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 class MathQADataModule(LightningDataModule):
     def __init__(self, 
-                framework_name: str,
                 transformer_model_name: str,
                 batch_size: int = 1, 
                 val_batch_size: int = 1,
@@ -193,7 +185,6 @@ class MathQADataModule(LightningDataModule):
                 train_max_instances: int = sys.maxsize,
                 val_max_instances: int = sys.maxsize):
         super().__init__()
-        self.framework_name = framework_name
         self.transformer_model_name = transformer_model_name
         self.batch_size = batch_size
         self.val_batch_size = val_batch_size
@@ -214,14 +205,12 @@ class MathQADataModule(LightningDataModule):
         assert stage in ["fit", "validate", "test"]
 
         train_data = MathQADataset(file_path=self.train_file_path,
-                                   framework_name=self.framework_name,
                                    transformer_model_name=self.transformer_model_name,
                                    max_instances=self.train_max_instances, 
                                    mode="train", few_shot_n=self.few_shot_n)
         self.train_data = train_data
 
         val_data = MathQADataset(file_path=self.val_file_path,
-                                 framework_name=self.framework_name,
                                  transformer_model_name=self.transformer_model_name,
                                  max_instances=self.val_max_instances, 
                                  mode="test", few_shot_n=self.few_shot_n)
