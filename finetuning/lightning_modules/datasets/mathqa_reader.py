@@ -39,7 +39,7 @@ class MathQADataset(Dataset):
         # mode is one of ["train", "test", "test_few_shot"]
         assert mode in ["train", "test", "test_few_shot"]
 
-        _, self.tokenizer = get_model(transformer_model_name)
+        _, self.tokenizer = get_model(transformer_model_name, tokenizer_only=True)
 
         self.max_instances = max_instances
         self.mode = mode
