@@ -9,7 +9,7 @@ from typing import Dict, Iterable, List, Any, Optional, Union
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import Dataset
 
-from lightning_modules.models.gpt_util import get_gpt, left_pad_sequences
+from lightning_modules.models.seq2seq_model_util import get_model, left_pad_sequences
 from execution.program_tracing import get_state_repr, is_trivial_state
 
 from torch.utils.data import DataLoader
@@ -39,7 +39,7 @@ class MathQADataset(Dataset):
         # mode is one of ["train", "test", "test_few_shot"]
         assert mode in ["train", "test", "test_few_shot"]
 
-        _, self.tokenizer = get_gpt(transformer_model_name)
+        _, self.tokenizer = get_model(transformer_model_name)
 
         self.max_instances = max_instances
         self.mode = mode

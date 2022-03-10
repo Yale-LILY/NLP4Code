@@ -46,7 +46,7 @@ trainer:
   # accumulate_grad_batches: 4
 
 model:
-  class_path: lightning_modules.models.gpt_seq2seq_model.GptSeq2SeqModel
+  class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
     transformer_model_name: &transformer EleutherAI/gpt-neo-125M
     max_gen_len: 256

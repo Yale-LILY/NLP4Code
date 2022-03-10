@@ -1,12 +1,24 @@
 seed_everything: 333
 trainer:
-  gpus: [2, 3]
+  gpus: 2
   gradient_clip_val: 1.0
   default_root_dir: debug-tmp
   val_check_interval: 1.0
   max_steps: &max_steps 100000
   # progress_bar_refresh_rate: 1
   log_every_n_steps: 1
+  logger:
+    - class_path: finetuning.lightning_modules.patches.patched_loggers.PatchedWandbLogger
+      init_args:
+        entity: yale-lily
+        project: unified-codegen
+        name: mathqa-gpt-finetuning
+        log_model: False
+        save_code: True
+        tags:
+          - mathqa
+          - gpt-neo-125M
+          - finetuning
   callbacks:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
       init_args:
@@ -28,14 +40,13 @@ trainer:
   accelerator: gpu
   # replace_sampler_ddp: False
   # https://github.com/PyTorchLightning/pytorch-lightning/issues/8262
-  # plugins: "ddp_find_unused_parameters_false"
   # strategy: deepspeed_stage_2_offload
   strategy: ddp_find_unused_parameters_false
   precision: 16
   # accumulate_grad_batches: 4
 
 model:
-  class_path: lightning_modules.models.codet5_seq2seq_model.CodeT5Seq2SeqModel
+  class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
     transformer_model_name: &transformer Salesforce/codet5-base
     max_gen_len: 256
@@ -44,25 +55,30 @@ model:
     # pass_at_k: 80
     # eval_pass_at_k_every_n_epochs: 1
     # max_generation_batches: 10
-    gradient_ckpt: true
+    gradient_ckpt: false
     # eval_greedy_search: true
+    optimizer:
+      init_args: 
+        lr: 1.0e-4
+        # lr: 0.0
+        betas: 
+          - 0.9
+          - 0.999
+        eps: 1.0e-8
+        weight_decay: 0.1
+    lr_scheduler:
+      name: linear
+      init_args:
+        num_warmup_steps: 100
+        num_training_steps: *max_steps
 
 data:
-  class_path: lightning_modules.datasets.mathqa_reader_codet5.MathQADataModule
+  class_path: lightning_modules.datasets.mathqa_reader.MathQADataModule
   init_args:
     transformer_model_name: *transformer
-    batch_size: 6
-    val_batch_size: 6
+    batch_size: 4
+    val_batch_size: 4
     train_file_path: data/mathqa/train-python.jsonl
     val_file_path: data/mathqa/val-python.jsonl
     # train_max_instances: 20
     # val_max_instances: 40
-optimizer:
-  class_path: torch.optim.adamw.AdamW
-  init_args: 
-    lr: 1.0e-4
-    betas: 
-      - 0.9
-      - 0.95
-    eps: 1.0e-8
-    weight_decay: 0.1
