@@ -38,7 +38,7 @@ class CodeT5Seq2SeqModel(GptSeq2SeqModel):
                  warmup_steps: int = 0,
                  eval_greedy_search: bool = False,
                  optimizer: Dict[str, Any] = None,
-                 lr_scheduler: str = "linear",
+                 lr_scheduler: Dict[str, Any] = None,
                  load_ckpt_file: str = None,
                  get_model_fn = get_codet5,
                  ) -> None:
@@ -85,6 +85,9 @@ class CodeT5Seq2SeqModel(GptSeq2SeqModel):
     def validation_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
         super(CodeT5Seq2SeqModel, self).validation_epoch_end(outputs)
 
+    # def test_step(self, batch: torch.Tensor, batch_idx: int) -> Dict[str, torch.Tensor]:
+    #     raise NotImplementedError
+    
     # deprecated
     def _configure_optimizers(self):
         return super(CodeT5Seq2SeqModel, self)._configure_optimizers()

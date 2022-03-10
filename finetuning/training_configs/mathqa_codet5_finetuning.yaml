@@ -17,7 +17,7 @@ trainer:
         save_code: True
         tags:
           - mathqa
-          - gpt-neo-125M
+          - codet5-base
           - finetuning
   callbacks:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
@@ -46,9 +46,9 @@ trainer:
   # accumulate_grad_batches: 4
 
 model:
-  class_path: lightning_modules.models.gpt_seq2seq_model.GptSeq2SeqModel
+  class_path: lightning_modules.models.codet5_seq2seq_model.CodeT5Seq2SeqModel
   init_args:
-    transformer_model_name: &transformer EleutherAI/gpt-neo-125M
+    transformer_model_name: &transformer Salesforce/codet5-small
     max_gen_len: 256
     sampling_temp: 0.2
     # sampling_temp_at_k: 0.8

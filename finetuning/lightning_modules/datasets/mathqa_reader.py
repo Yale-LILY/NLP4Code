@@ -41,7 +41,7 @@ class MathQADataset(Dataset):
         # mode is one of ["train", "test", "test_few_shot"]
         assert mode in ["train", "test", "test_few_shot"]
 
-        if framework_name == "gpt3":
+        if framework_name == "gpt":
             _, self.tokenizer = get_gpt(transformer_model_name)
         elif framework_name == "codet5":
             _, self.tokenizer = get_codet5(transformer_model_name)
