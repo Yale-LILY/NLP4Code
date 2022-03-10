@@ -212,6 +212,16 @@ class Seq2SeqModel(LightningModule):
         self.log("loss", model_result.loss, on_step=True, on_epoch=True)
         return {"loss": model_result.loss}
 
+    def on_fit_start(self) -> None:
+        # save the code using wandb
+        if self.logger: 
+            # if logger is initialized, save the code
+            self.logger[0].log_code()
+        else:
+            print("logger is not initialized, code will not be saved")  
+
+        return super().on_fit_start()
+
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> Dict[str, torch.Tensor]:
         # input_tokens, target_mask, context_tokens, target_tokens, metadata = batch
         return self.forward(batch["input_ids"], batch["attention_mask"], batch["metadata"])

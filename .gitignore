@@ -133,3 +133,4 @@ dmypy.json
 data/
 debug-tmp/
 wandb/
+results/

@@ -2,6 +2,7 @@ import os
 
 from typing import Optional, Union, List
 from pytorch_lightning.loggers import NeptuneLogger, CSVLogger, TensorBoardLogger, WandbLogger
+from pytorch_lightning.utilities import rank_zero_only
 
 class PatchedNeptuneLogger(NeptuneLogger):
     def __init__(self, project_name: str, *args, **kwargs):
@@ -20,13 +21,36 @@ class PatchedNeptuneLogger(NeptuneLogger):
 
 class PatchedWandbLogger(WandbLogger):
     def __init__(self, entity: str, project: str, name: str, log_model: bool, save_code: bool, 
-                 tags: List[str], *args, **kwargs):
+                 tags: List[str] = None, *args, **kwargs):
 
         kwargs['entity'] = entity 
         kwargs['save_code'] = save_code
-        kwargs['tags'] = tags
 
-        super().__init__(name=name, project=project, log_model=log_model, *args, **kwargs)
+        # remove the preceeding folder name
+        processed_name = name.split('/')[-1]
+        if tags is None:
+            kwargs['tags'] = processed_name.split('-')
+        else:
+            kwargs['tags'] = tags
+
+        super().__init__(name=processed_name, project=project, log_model=log_model, *args, **kwargs)
+
+    @rank_zero_only
+    def log_code(self):
+        # log the yaml and py files
+        root = "."
+        print(f"saving all files in {os.path.abspath(root)}")
+        result = self.experiment.log_code(root=root, 
+                    include_fn=(lambda path: path.endswith(".py") or \
+                                       path.endswith(".yaml")),
+                    exclude_fn=(lambda path: ".venv" in path or \
+                                             "debug-tmp" in path))
+        if result is not None:
+            print("########################################")
+            print("######## Logged code to wandb. #########")
+            print("########################################")
+        else:
+            print("######## logger inited but not successfully saved #########")
 
 class PatchedCSVLogger(CSVLogger):
     def __init__(self, 

@@ -14,6 +14,9 @@ def get_model(model_name: str,
     if additional_special_tokens is None:
         additional_special_tokens = []
 
+    if not tokenizer_only:
+        print(f"using pretrained model: {model_name}, gradient_ckpt: {gradient_ckpt}")
+
     if model_name == "microsoft/CodeGPT-small-py":
         tokenizer = GPT2Tokenizer.from_pretrained(model_name, additional_special_tokens=additional_special_tokens)
         if not tokenizer_only:
