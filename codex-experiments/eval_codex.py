@@ -1,4 +1,3 @@
-from torch import true_divide
 from tqdm import tqdm
 import time
 
@@ -11,7 +10,7 @@ from execution.execution_evaluation import batch_execution_acc, execution_eval_a
 
 
 print("Loading dataset...")
-mathqa_dataset = MathQADataset("/data/lily/nos6/NLP4Code/NLP4Code/data/mathqa/train-python.jsonl", "EleutherAI/gpt-neo-125M", 5, mode="test_few_shot", few_shot_n=10)
+mathqa_dataset = MathQADataset("/data/lily/nos6/NLP4Code/NLP4Code/data/mathqa/train-python.jsonl", "EleutherAI/gpt-neo-125M", 10, mode="test_few_shot", few_shot_n=5)
 
 prompt = "# Answer the following math question:\n"
 
@@ -40,10 +39,10 @@ def codex_evaluate_pass_at_k(input_dataset: Dataset, prompt: str, eval_at_k: int
         
         # print(result[0])
         program = "\n".join((item["metadata"]["text"], result[0]))
-        # print(program)
+        print(program)
         # check execution accuracy and pass at k for the instance
         acc, pass_k = execution_eval_at_k(program, mathqa_execution, item["metadata"]["answer"], eval_at_k)
-        print(acc, int(pass_k))
+        # print(acc, int(pass_k))
         running_acc += acc
         running_pass_at_k += pass_k
 
