@@ -11,9 +11,9 @@ from execution.execution_evaluation import batch_execution_acc, execution_eval_a
 
 
 print("Loading dataset...")
-mathqa_dataset = MathQADataset("/data/lily/nos6/NLP4Code/NLP4Code/data/mathqa/train-python.jsonl", "EleutherAI/gpt-neo-125M", 2, mode="test_few_shot", few_shot_n=10)
+mathqa_dataset = MathQADataset("/data/lily/nos6/NLP4Code/NLP4Code/data/mathqa/train-python.jsonl", "EleutherAI/gpt-neo-125M", 5, mode="test_few_shot", few_shot_n=10)
 
-prompt = "# Answer the following math question:"
+prompt = "# Answer the following math question:\n"
 
 def codex_evaluate_pass_at_k(input_dataset: Dataset, prompt: str, eval_at_k: int=1, few_shot_enabled: bool=False):
     programs = []
@@ -32,15 +32,15 @@ def codex_evaluate_pass_at_k(input_dataset: Dataset, prompt: str, eval_at_k: int
         # perform generation with codex
         while True:
             try:
-                result = codex([processed_input], engine="code-davinci-001", temperature=0.8, top_p=1, max_tokens=128)
+                result = codex([processed_input], engine="code-davinci-001", temperature=0.5, top_p=0.75, max_tokens=128)
                 break
             except openai.error.RateLimitError as e:
                 print("RateLimitError occurred, waiting for 60 seconds and retrying...")
                 time.sleep(60)
         
-        print(result[0])
+        # print(result[0])
         program = "\n".join((item["metadata"]["text"], result[0]))
-
+        # print(program)
         # check execution accuracy and pass at k for the instance
         acc, pass_k = execution_eval_at_k(program, mathqa_execution, item["metadata"]["answer"], eval_at_k)
         print(acc, int(pass_k))
@@ -48,6 +48,10 @@ def codex_evaluate_pass_at_k(input_dataset: Dataset, prompt: str, eval_at_k: int
         running_pass_at_k += pass_k
 
         programs.append(program)
+
+        if pass_k == 1:
+            print("success!")
+            print(program)
 
         
     avg_acc = running_acc / len(input_dataset.instances)
