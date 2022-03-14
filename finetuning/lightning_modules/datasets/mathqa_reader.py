@@ -9,7 +9,7 @@ from typing import Dict, Iterable, List, Any, Optional, Union
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import Dataset
 
-from lightning_modules.models.seq2seq_model_util import get_model, left_pad_sequences
+from finetuning.lightning_modules.models.seq2seq_model_util import get_model, left_pad_sequences
 from execution.program_tracing import get_state_repr, is_trivial_state
 
 from torch.utils.data import DataLoader
@@ -74,8 +74,22 @@ class MathQADataset(Dataset):
 
         return example_dict
 
+    def get_few_shot_instance(self, example: Dict[str, Any], text_list: List[str], code_list: List[str]) -> Dict[str, Any]:
+        """Get a few-shot instance from a single example."""
+        example_dict = {"metadata": example}
+        example_dict["metadata"]["few_shot_text"] = text_list
+        example_dict["metadata"]["few_shot_code"] = code_list
+        
+        tokenizer_outputs = self.tokenizer(example["text"] + "\n")
+        example_dict["input_ids"] = tokenizer_outputs["input_ids"]
+        example_dict["attention_mask"] = tokenizer_outputs["attention_mask"]
+        example_dict["metadata"]["pad_token_id"] = self.tokenizer.pad_token_id
+
+        return example_dict
+
+
     def read(self, file_path: str) -> Iterable[Dict[str, Any]]:
-        print("Reading dataset files at %s", file_path)
+        print(f"Reading dataset files at {file_path}")
 
         all_yield_instances = []
 
@@ -91,10 +105,11 @@ class MathQADataset(Dataset):
 
         if self.mode == "test_few_shot":
             # holdout for few-shot prompting
+            
             few_shot_examples = mathqa_json_examples[:self.few_shot_n]
             few_shot_text_list = [example['text'] for example in few_shot_examples]
             few_shot_code_list = [example['code'] for example in few_shot_examples]
-
+            
             mathqa_json_examples = mathqa_json_examples[FEW_SHOT_RESERVED:]
 
         for exp in mathqa_json_examples:
@@ -102,6 +117,8 @@ class MathQADataset(Dataset):
                 example_dict = self.get_train_instance(exp)
             elif self.mode == "test":
                 example_dict = self.get_test_instance(exp)
+            elif self.mode == "test_few_shot":
+                example_dict = self.get_few_shot_instance(exp, few_shot_text_list, few_shot_code_list)
             else:
                 raise ValueError(f"Unknown mode: {self.mode}")
 

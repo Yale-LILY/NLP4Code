@@ -3,12 +3,14 @@ import os
 from typing import List
 
 
-def generate(input: str, engine: str, max_tokens: int) -> str:
-    completion = openai.Completion.create(engine=engine, prompt=input, max_tokens=max_tokens)
+def generate(input: str, engine: str, max_tokens: int, **kwargs) -> List[str]:
+
+    completion = openai.Completion.create(engine=engine, prompt=input, **kwargs)
+    
     return completion.choices[0].text
 
 
-def openai_call(input: List[str], engine: str="code-davinci-001", max_tokens: int=256) -> List[str]:
+def openai_call(input: List[str], engine: str="code-davinci-001", max_tokens: int=1024, **kwargs) -> List[List[str]]:
     
     api_key = os.environ.get('OPENAI_API_KEY')
 
@@ -20,13 +22,13 @@ def openai_call(input: List[str], engine: str="code-davinci-001", max_tokens: in
     completions = []
 
     for prompt in input:
-        output = generate(input, engine, max_tokens)
+        output = generate(prompt, engine, max_tokens=max_tokens, **kwargs)
         completions.append(output)
-
+    
     return completions
 
-def codex(input: List[str], engine: str="code-davinci-001", max_tokens: int=256) -> List[str]:
-    return openai_call(input, engine, max_tokens)
+def codex(input: List[str], engine: str="code-davinci-001", max_tokens: int=1024, **kwargs) -> List[List[str]]:
+    return openai_call(input, engine, max_tokens, **kwargs)
 
-def gpt3(input: List[str], engine: str="text-davinci-001", max_tokens: int=256) -> List[str]:
-    return openai_call(input, engine, max_tokens)
+def gpt3(input: List[str], engine: str="text-davinci-001", max_tokens: int=1024, **kwargs) -> List[List[str]]:
+    return openai_call(input, engine, max_tokens, **kwargs)
