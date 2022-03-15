@@ -130,7 +130,13 @@ dmypy.json
 
 # defined by Ansong
 .venv
+<<<<<<< HEAD
 data/
 debug-tmp/
 wandb/
 results/
+=======
+
+# Sandboxes
+**sandbox.py
+>>>>>>> Initial preprocessing: cleanup + nested SELECT framework
