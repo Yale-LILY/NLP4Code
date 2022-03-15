@@ -220,12 +220,7 @@ class Seq2SeqModel(LightningModule):
         # compute the metrics
         eval_metrics_dict = {}
         for k in self.metrics_dict.keys():
-            if k.startswith("dedup_"):
-                dedup_exec_acc = float(self.metrics_dict[k].compute())
-                # for the dedup metrics, it's possible that a batch is all duplicates thus manually set nan to 0.0
-                eval_metrics_dict[k] = dedup_exec_acc if not math.isnan(dedup_exec_acc) else 0.0
-            else:
-                eval_metrics_dict[k] = float(self.metrics_dict[k].compute())
+            eval_metrics_dict[k] = float(self.metrics_dict[k].compute())
         
         # log and save the evalution metrics
         print(f"validation result: {eval_metrics_dict}")

@@ -5,7 +5,7 @@ from typing import List, Dict, Tuple, Any
 from concurrent.futures import ProcessPoolExecutor as Pool
 from execution.safe_execution_util import execute
 
-def mathqa_answer_eq(prediction: Any, gold_answer: Any):
+def mathqa_answer_eq(prediction: Any, gold_answer: Any) -> bool:
     try:
         # if the execution result is a numpy array, valueError will be raised
         if prediction == gold_answer:
