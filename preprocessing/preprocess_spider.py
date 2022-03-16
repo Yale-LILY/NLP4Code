@@ -5,8 +5,10 @@ from tqdm import tqdm
 from typing import Dict, List, Any
 
 from execution.spider_execution import connect_databse, spider_execution_sql
+from execution.spider_execution import db_to_df_dict, spider_execution_py, spider_answer_eq
 
-TRAIN_DATA_PATH = "data/spider/train_spider.json"
+
+TRAIN_DATA_PATH = "data/spider/train_spider_converted.json"
 DEV_DATA_PATH = "data/spider/dev.json"
 
 """
@@ -50,7 +52,22 @@ def add_answer_info(example: Dict[str, Any], conn: sqlite3.Connection) -> None:
     else:
         return False
 
-def preprocess_dataset(file_path: str, output_path: str) -> None:
+def verify_py_code(example: Dict[str, Any], conn: sqlite3.Connection) -> bool:
+    assert "pandas_converted" in example, "pandas_converted not in example"
+
+    py_code = example["pandas_converted"]
+
+    df_dict = db_to_df_dict(conn)
+
+    exec_result = spider_execution_py(py_code, df_dict)
+
+    if exec_result is not None:
+        result = spider_answer_eq(exec_result, example["answer"])
+        return result
+    else:
+        return False
+
+def preprocess_dataset(file_path: str, output_path: str, verify_py: bool = False) -> None:
     data = load_json(file_path)
 
     result = []
@@ -63,20 +80,24 @@ def preprocess_dataset(file_path: str, output_path: str) -> None:
         if add_answer_info(example, conn):
             result.append(example)            
 
+        if verify_py:
+            if verify_py_code(example, conn):
+                result.append(example)
+
         conn.close()
 
     print(f"{len(result)} examples out of {len(data)} are processed.")
 
-    with open(output_path, "w+") as f:
-        for example in result:
-            json.dump(example, f)
-            f.write("\n")
+    # with open(output_path, "w+") as f:
+    #     for example in result:
+    #         json.dump(example, f)
+    #         f.write("\n")
 
 def main():
     print(f"Preprocessing train data from {TRAIN_DATA_PATH}...")
-    preprocess_dataset(TRAIN_DATA_PATH, "data/spider/train_spider_processed.jsonl")
-    print(f"Preprocessing dev data from {DEV_DATA_PATH}...")
-    preprocess_dataset(DEV_DATA_PATH, "data/spider/dev_processed.jsonl")
+    preprocess_dataset(TRAIN_DATA_PATH, "data/spider/train_spider_converted_processed.jsonl", True)
+    # print(f"Preprocessing dev data from {DEV_DATA_PATH}...")
+    # preprocess_dataset(DEV_DATA_PATH, "data/spider/dev_processed.jsonl")
 
 if __name__ == "__main__":
     main()
