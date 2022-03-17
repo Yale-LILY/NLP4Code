@@ -5,7 +5,7 @@ from typing import List
 
 def generate(input: str, engine: str, max_tokens: int, **kwargs) -> List[str]:
 
-    completion = openai.Completion.create(engine=engine, prompt=input, **kwargs)
+    completion = openai.Completion.create(engine=engine, prompt=input, max_tokens=max_tokens, **kwargs)
     
     return completion.choices[0].text
 
