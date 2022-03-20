@@ -33,15 +33,3 @@ class ProcessedSQLQueryNode:
 
         if not self.right_node == None:
             self.right_node.dump_processed_sql_tree()
-
-
-# # Tree-like structure
-# # Leaves are S2P-convertible queries
-# class ProcessedSQLQuery:
-#     def __init__(self, raw_query: str):
-#         self.raw_query = raw_query
-#         self.processed_query = preprocess_sql_query(raw_query)
-
-#     def dump_processed_sql_query(self):
-#         print(self.raw_query)
-#         print(self.processed_query)

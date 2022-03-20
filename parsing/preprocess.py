@@ -12,6 +12,14 @@ import re
 
 # To handle multiple table aliases, remove AS and token before
 
+# Remove SQL syntax not supported by sql2pandas
+# - `AS` aliases on multiple tables (see JOIN)
+# - TODO: consider removing all `AS` aliases and using symbol table?
+# - `JOIN` (fully joined table, i.e. `t1 JOIN t2 ON t1.id = t2.id JOIN t3 [...]` included in symbol table)
+# - `INTERSECT`, `UNION`, `EXCEPT`
+# - nested `SELECT`
+# Returns: object
+
 
 # Extract nested SELECT query, with open/close parentheses
 def extract_nested_select(sql_query: str):
@@ -58,15 +66,6 @@ def handle_nested_select(sql_query: str) -> ProcessedSQLQueryNode:
 
     # root_node.dump_processed_sql_tree()
     return root_node
-
-
-# Remove SQL syntax not supported by sql2pandas
-# - `AS` aliases on multiple tables (see JOIN)
-# - TODO: consider removing all `AS` aliases and using symbol table?
-# - `JOIN` (fully joined table, i.e. `t1 JOIN t2 ON t1.id = t2.id JOIN t3 [...]` included in symbol table)
-# - `INTERSECT`, `UNION`, `EXCEPT`
-# - nested `SELECT`
-# Returns: object
 
 
 # sql2pandas requires single quotes in SQL queries
