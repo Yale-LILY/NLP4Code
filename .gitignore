@@ -128,28 +128,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# sandboxes
+**sandbox.py
+
 # defined by Ansong
 .venv
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> Merge main (rebase)
 data/
 debug-tmp/
 wandb/
 results/
-<<<<<<< HEAD
-=======
-
-# Sandboxes
-<<<<<<< HEAD
-**sandbox.py
->>>>>>> Initial preprocessing: cleanup + nested SELECT framework
-=======
-**sandbox*
->>>>>>> gitignore
-=======
-
-# Sandboxes
-**sandbox*
->>>>>>> Merge main (rebase)
