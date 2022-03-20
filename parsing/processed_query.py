@@ -10,6 +10,9 @@ class ProcessedSQLQueryNodeType(Enum):
     EXCEPT = 'EXCEPT'
 
 
+# Node class for ProcessedSQLQueryTree
+# Leaf nodes are sql2pandas-convertible
+# Non-leaf nodes specify operations not supported by sql2pandas
 class ProcessedSQLQueryNode:
     def __init__(
             self,
@@ -26,6 +29,9 @@ class ProcessedSQLQueryNode:
         self.right_node = right_node
         self.l_to_r_key = l_to_r_key
 
+    def set_l_to_r_key(self, l_to_r_key: str):
+        self.l_to_r_key = l_to_r_key
+
     def dump_processed_sql_tree(self):
         if not self.left_node == None:
             self.left_node.dump_processed_sql_tree()
@@ -38,17 +44,19 @@ class ProcessedSQLQueryNode:
             self.right_node.dump_processed_sql_tree()
 
 
+# Header node for ProcessedSQLQuery tree
+# Symbol
 class ProcessedSQLQueryTree:
     def __init__(self, root_node: Union[ProcessedSQLQueryNode, None] = None):
         self.root_node = root_node
-        self.symbol_tree = dict()
+        self.symbol_table = dict()
         self.symbol_count = 0
 
     def get_key(self):
         return "SYMBOL_" + str(self.symbol_count)
 
-    def add_key_value_to_symbol_tree(self, key: str, query_str: str, tree_node: ProcessedSQLQueryNode):
-        self.symbol_tree[key] = (query_str, tree_node)
+    def add_key_value_to_symbol_table(self, key: str, query_str: str, tree_node: ProcessedSQLQueryNode):
+        self.symbol_table[key] = (query_str, tree_node)
         self.symbol_count += 1
 
     def reset_root_node(self, new_root_node: ProcessedSQLQueryNode):
@@ -57,8 +65,8 @@ class ProcessedSQLQueryTree:
     def dump_tree(self):
         print("-------- ProcessedSQLQueryTree --------\n")
         print("symbol_table:")
-        for key in self.symbol_tree.keys():
-            (query_str, _x) = self.symbol_tree[key]
+        for key in self.symbol_table.keys():
+            (query_str, _x) = self.symbol_table[key]
             print(key + ": " + query_str)
 
         print("\n")

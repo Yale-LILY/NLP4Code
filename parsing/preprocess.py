@@ -59,10 +59,11 @@ def handle_nested_select(sql_query: str, tree_header: ProcessedSQLQueryTree) -> 
         symbol_key + sql_query[idx+len(nested_query):]
 
     left_node = preprocess_sql_query_into_root_node(left_query, tree_header)
+    left_node.l_to_r_key = symbol_key
 
     right_node = preprocess_sql_query_into_root_node(nested_query, tree_header)
 
-    tree_header.add_key_value_to_symbol_tree(
+    tree_header.add_key_value_to_symbol_table(
         symbol_key, nested_query, right_node)
 
     root_node = ProcessedSQLQueryNode(
