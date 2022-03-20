@@ -1,7 +1,7 @@
-from logging import root
-from turtle import left, right
-from helpers import trim_back, trim_front, trim_front_and_back, find_closing_parenthesis, is_next_token_select
+from turtle import right
+from helpers import trim_front_and_back, find_closing_parenthesis, is_next_token_select
 from processed_query import ProcessedSQLQueryNode, ProcessedSQLQueryNodeType, ProcessedSQLQueryTree
+from sql2pandas import sql2pandas
 import re
 
 # For sql2pandas(query), the function first needs to call `preprocess` on query. (query is just a SQL command)
@@ -46,7 +46,7 @@ def handle_nested_select(sql_query: str, tree_header: ProcessedSQLQueryTree) -> 
     nested_query = extract_nested_select(sql_query)
     if nested_query == None:
         return ProcessedSQLQueryNode(
-            node_type=ProcessedSQLQueryNodeType.LEAF, processed_query=sql_query, left_node=None, right_node=None
+            node_type=ProcessedSQLQueryNodeType.LEAF, processed_query=sql_query, pandas_query=sql2pandas(sql_query), left_node=None, right_node=None
         )
 
     idx = sql_query.find(nested_query)
@@ -59,15 +59,16 @@ def handle_nested_select(sql_query: str, tree_header: ProcessedSQLQueryTree) -> 
         symbol_key + sql_query[idx+len(nested_query):]
 
     left_node = preprocess_sql_query_into_root_node(left_query, tree_header)
-    left_node.l_to_r_key = symbol_key
+    left_node.set_external_key(symbol_key)
 
     right_node = preprocess_sql_query_into_root_node(nested_query, tree_header)
+    right_node.set_internal_key(symbol_key)
 
     tree_header.add_key_value_to_symbol_table(
         symbol_key, nested_query, right_node)
 
     root_node = ProcessedSQLQueryNode(
-        node_type=ProcessedSQLQueryNodeType.NESTED_SELECT, processed_query=None, left_node=left_node, right_node=right_node)
+        node_type=ProcessedSQLQueryNodeType.NESTED_SELECT, processed_query=None, pandas_query=None, left_node=left_node, right_node=right_node)
 
     # root_node.dump_processed_sql_tree()
     return root_node
