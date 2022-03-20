@@ -54,15 +54,15 @@ def handle_nested_select(sql_query: str, tree_header: ProcessedSQLQueryTree) -> 
         print("[preprocess.py] ERROR: could not find nested_query in sql_query")
         return sql_query
 
-    symbol_key = tree_header.get_key()
+    symbol_key = tree_header.get_symbol_key()
     left_query = sql_query[0:idx] + \
         symbol_key + sql_query[idx+len(nested_query):]
 
     left_node = preprocess_sql_query_into_root_node(left_query, tree_header)
-    left_node.set_external_key(symbol_key)
+    left_node.set_external_symbol(symbol_key)
 
     right_node = preprocess_sql_query_into_root_node(nested_query, tree_header)
-    right_node.set_internal_key(symbol_key)
+    right_node.set_internal_symbol(symbol_key)
 
     tree_header.add_key_value_to_symbol_table(
         symbol_key, nested_query, right_node)
