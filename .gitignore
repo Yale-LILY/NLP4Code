@@ -131,10 +131,14 @@ dmypy.json
 # defined by Ansong
 .venv
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> Merge main (rebase)
 data/
 debug-tmp/
 wandb/
 results/
+<<<<<<< HEAD
 =======
 
 # Sandboxes
@@ -144,3 +148,8 @@ results/
 =======
 **sandbox*
 >>>>>>> gitignore
+=======
+
+# Sandboxes
+**sandbox*
+>>>>>>> Merge main (rebase)
