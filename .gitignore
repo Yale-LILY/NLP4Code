@@ -138,5 +138,9 @@ results/
 =======
 
 # Sandboxes
+<<<<<<< HEAD
 **sandbox.py
 >>>>>>> Initial preprocessing: cleanup + nested SELECT framework
+=======
+**sandbox*
+>>>>>>> gitignore
