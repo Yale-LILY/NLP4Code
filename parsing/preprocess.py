@@ -1,6 +1,7 @@
+from logging import root
 from turtle import left, right
 from helpers import trim_back, trim_front, trim_front_and_back, find_closing_parenthesis, is_next_token_select
-from processed_query import ProcessedSQLQueryNode, ProcessedSQLQueryNodeType
+from processed_query import ProcessedSQLQueryNode, ProcessedSQLQueryNodeType, ProcessedSQLQueryTree
 import re
 
 # For sql2pandas(query), the function first needs to call `preprocess` on query. (query is just a SQL command)
@@ -18,7 +19,6 @@ import re
 # - `JOIN` (fully joined table, i.e. `t1 JOIN t2 ON t1.id = t2.id JOIN t3 [...]` included in symbol table)
 # - `INTERSECT`, `UNION`, `EXCEPT`
 # - nested `SELECT`
-# Returns: object
 
 
 # Extract nested SELECT query, with open/close parentheses
@@ -27,22 +27,22 @@ def extract_nested_select(sql_query: str):
     if start_idx < 0:
         return None
 
-    if not is_next_token_select(sql_query[start_idx+1:]):
+    start_idx += 1
+    if not is_next_token_select(sql_query[start_idx:]):
         return None
 
-    finish_idx = find_closing_parenthesis(sql_query, start_idx+1)
+    finish_idx = find_closing_parenthesis(sql_query, start_idx)
 
     if finish_idx == -1:
         print("[handle_nested_select] parenthesis imbalance detected: " + sql_query)
         return None
 
-    nested_query = sql_query[start_idx:finish_idx+1]
-    print(nested_query)
+    nested_query = sql_query[start_idx:finish_idx]
     return nested_query
 
 
 # Extract nested SELECT (only one layer) if it exists in `sql_query`
-def handle_nested_select(sql_query: str) -> ProcessedSQLQueryNode:
+def handle_nested_select(sql_query: str, tree_header: ProcessedSQLQueryTree) -> ProcessedSQLQueryNode:
     nested_query = extract_nested_select(sql_query)
     if nested_query == None:
         return ProcessedSQLQueryNode(
@@ -54,12 +54,16 @@ def handle_nested_select(sql_query: str) -> ProcessedSQLQueryNode:
         print("[preprocess.py] ERROR: could not find nested_query in sql_query")
         return sql_query
 
-    parent_query = sql_query[0:idx] + \
-        "QUERY_1" + sql_query[idx+len(nested_query):]
+    symbol_key = tree_header.get_key()
+    left_query = sql_query[0:idx] + \
+        symbol_key + sql_query[idx+len(nested_query):]
 
-    left_node = preprocess_sql_query(parent_query)
+    left_node = preprocess_sql_query_into_root_node(left_query, tree_header)
 
-    right_node = preprocess_sql_query(nested_query)
+    right_node = preprocess_sql_query_into_root_node(nested_query, tree_header)
+
+    tree_header.add_key_value_to_symbol_tree(
+        symbol_key, nested_query, right_node)
 
     root_node = ProcessedSQLQueryNode(
         node_type=ProcessedSQLQueryNodeType.NESTED_SELECT, processed_query=None, left_node=left_node, right_node=right_node)
@@ -89,12 +93,22 @@ def add_semicolon(sql_query):
 def basic_string_preprocess(sql_query):
     sql_query = replace_quotes(sql_query)
     sql_query = remove_consecutive_spaces(sql_query)
+    # TODO: ensure balance for front/back parentheses
     sql_query = trim_front_and_back(sql_query, "(", ")")
 
     sql_query = add_semicolon(sql_query)
     return sql_query
 
 
-def preprocess_sql_query(sql_query: str) -> ProcessedSQLQueryNode:
+def preprocess_sql_query_into_root_node(sql_query: str, tree_header: ProcessedSQLQueryTree) -> ProcessedSQLQueryNode:
     sql_query = basic_string_preprocess(sql_query)
-    return handle_nested_select(sql_query)
+    return handle_nested_select(sql_query, tree_header)
+
+
+def preprocess_sql_query(sql_query: str) -> ProcessedSQLQueryTree:
+    tree = ProcessedSQLQueryTree()
+
+    root_node = preprocess_sql_query_into_root_node(sql_query, tree)
+
+    tree.reset_root_node(root_node)
+    return tree
