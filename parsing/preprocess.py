@@ -4,21 +4,15 @@ from processed_query import ProcessedSQLQueryNode, ProcessedSQLQueryNodeType, Pr
 from sql2pandas import sql2pandas
 import re
 
-# For sql2pandas(query), the function first needs to call `preprocess` on query. (query is just a SQL command)
-# If there is a JOIN in the query, replace all JOINs with just one symbol to represent the JOINed table,
-# then substitute the JOIN back in after turning the JOIN to pandas
-# If there is an INTERSECT/UNION/EXCEPT in the query, split into two SELECTS and pass up separately.
-# If there is a nested SELECT, replace that with a symbol, pass both SELECTs up (but with a symbol for the first one),
-# then plug in the pandas for the nested SELECT into the first one where the symbol is the pandas for the second SELECT
 
-# To handle multiple table aliases, remove AS and token before
-
-# Remove SQL syntax not supported by sql2pandas
-# - `AS` aliases on multiple tables (see JOIN)
-# - TODO: consider removing all `AS` aliases and using symbol table?
-# - `JOIN` (fully joined table, i.e. `t1 JOIN t2 ON t1.id = t2.id JOIN t3 [...]` included in symbol table)
-# - `INTERSECT`, `UNION`, `EXCEPT`
-# - nested `SELECT`
+# TODO:
+# - rewrite sql2pandas API to accept ProcessedSQLQueryTree
+# - INTERSECT, UNION, EXCEPT
+# - add complex tables to their own symbol table? (handle JOIN and table AS aliases)
+#   - JOIN (fully joined table, i.e. t1 JOIN t2 ON t1.id = t2.id JOIN t3 [...])
+#       included in symbol table as SYMBOL_N = "t1 JOIN t2 ON t1.id = t2.id JOIN t3 [...]"
+#   - remove all AS table aliases for all leaves
+# - add way to link external/internal symbols? (combine separate pandas_query's from leaves to get one giant pandas query)
 
 
 # Extract nested SELECT query, with open/close parentheses
