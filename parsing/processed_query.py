@@ -38,18 +38,18 @@ class ProcessedSQLQueryNode:
     def __init__(
             self,
             node_type: ProcessedSQLQueryNodeType,
-            processed_query: Union[str, None],
-            table_symbol: Union[Dict[str, str], None],
-            table_aliases: Union[Dict[str, str], None],
+            sql_query: Union[str, None],
+            sql_query_table_symbol: Union[Dict[str, str], None],
+            sql_query_table_aliases: Union[Dict[str, str], None],
             pandas_query: Union[str, None],
             left_node: Union[Dict[str, any], None],
             right_node: Union[Dict[str, any], None],
             external_symbol: Union[str, None] = None,
             internal_symbol: Union[str, None] = None):
         self.node_type = node_type
-        self.processed_query = processed_query
-        self.table_symbol = table_symbol
-        self.table_aliases = table_aliases
+        self.sql_query = sql_query
+        self.sql_query_table_symbol = sql_query_table_symbol
+        self.sql_query_table_aliases = sql_query_table_aliases
         self.pandas_query = pandas_query
         self.left_node = left_node
         self.right_node = right_node
@@ -70,11 +70,11 @@ class ProcessedSQLQueryNode:
         print("node_type: " + str(self.node_type))
 
         if self.node_type == ProcessedSQLQueryNodeType.LEAF:
-            print("processed_query: " + str(self.processed_query))
+            print("processed_query: " + str(self.sql_query))
             print("table_symbol:")
-            dump_dict(self.table_symbol)
+            dump_dict(self.sql_query_table_symbol)
             print("table_aliases:")
-            dump_dict(self.table_aliases)
+            dump_dict(self.sql_query_table_aliases)
             print("pandas_query: " + str(self.pandas_query))
             print("external_symbol: " + str(self.external_symbol))
             print("internal_symbol: " + str(self.internal_symbol))
