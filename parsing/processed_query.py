@@ -10,6 +10,14 @@ class ProcessedSQLQueryNodeType(Enum):
     EXCEPT = "EXCEPT "
 
 
+def dump_dict(dict_obj):
+    if dict_obj == None:
+        print("None")
+    else:
+        for key in dict_obj.keys():
+            print("\t" + key + ": " + dict_obj[key])
+
+
 class ProcessedSQLQueryNode:
     """Tree node class for processed SQL queries.
 
@@ -31,6 +39,8 @@ class ProcessedSQLQueryNode:
             self,
             node_type: ProcessedSQLQueryNodeType,
             processed_query: Union[str, None],
+            table_symbol: Union[Dict[str, str], None],
+            table_aliases: Union[Dict[str, str], None],
             pandas_query: Union[str, None],
             left_node: Union[Dict[str, any], None],
             right_node: Union[Dict[str, any], None],
@@ -38,6 +48,8 @@ class ProcessedSQLQueryNode:
             internal_symbol: Union[str, None] = None):
         self.node_type = node_type
         self.processed_query = processed_query
+        self.table_symbol = table_symbol
+        self.table_aliases = table_aliases
         self.pandas_query = pandas_query
         self.left_node = left_node
         self.right_node = right_node
@@ -56,10 +68,17 @@ class ProcessedSQLQueryNode:
             self.left_node.dump_processed_sql_tree()
 
         print("node_type: " + str(self.node_type))
-        print("processed_query: " + str(self.processed_query))
-        print("pandas_query: " + str(self.pandas_query))
-        print("external_symbol: " + str(self.external_symbol))
-        print("internal_symbol: " + str(self.internal_symbol))
+
+        if self.node_type == ProcessedSQLQueryNodeType.LEAF:
+            print("processed_query: " + str(self.processed_query))
+            print("table_symbol:")
+            dump_dict(self.table_symbol)
+            print("table_aliases:")
+            dump_dict(self.table_aliases)
+            print("pandas_query: " + str(self.pandas_query))
+            print("external_symbol: " + str(self.external_symbol))
+            print("internal_symbol: " + str(self.internal_symbol))
+
         print()
 
         if not self.right_node == None:
@@ -83,6 +102,9 @@ class ProcessedSQLQueryTree:
     def get_symbol_key(self):
         """Generate symbol key based on number of symbols currently in tree."""
         return "SYMBOL_" + str(self.symbol_count)
+
+    def increment_symbol_count(self):
+        self.symbol_count += 1
 
     def add_key_value_to_symbol_table(self, symbol_key: str, query_str: str, tree_node: ProcessedSQLQueryNode):
         """Add new (key, value) to tree symbol_table.
