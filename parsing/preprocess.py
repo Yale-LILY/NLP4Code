@@ -16,7 +16,7 @@ import re
 
 
 # Given a SQL query with exactly one SELECT, extract table FROM which query is answered
-def extract_table(simple_sql_query: str, table_alias_dict: Dict[str, str]):
+def extract_table_from_query(simple_sql_query: str):
     simple_sql_query = remove_consecutive_spaces(simple_sql_query)
     start_idx = simple_sql_query.find("FROM ")
     if start_idx < 0:
@@ -31,9 +31,6 @@ def extract_table(simple_sql_query: str, table_alias_dict: Dict[str, str]):
             idx = get_next_token_idx(simple_sql_query, idx)
             idx = get_next_token_idx(simple_sql_query, idx)
         elif cur_word == "AS":
-            table_name = get_prev_token(simple_sql_query, idx)
-            alias_name = get_next_token(simple_sql_query, idx)
-            table_alias_dict[table_name] = alias_name
             idx = get_next_token_idx(simple_sql_query, idx)
             idx = get_next_token_idx(simple_sql_query, idx)
         elif cur_word == "ON":
@@ -49,6 +46,24 @@ def extract_table(simple_sql_query: str, table_alias_dict: Dict[str, str]):
             return simple_sql_query[start_idx:idx]
 
     return simple_sql_query[start_idx:idx].strip()
+
+
+def extract_table_aliases(sql_table_expr: str):
+    table_alias_dict = dict()
+
+    idx = 0
+    while idx < len(sql_table_expr):
+        cur_word = get_cur_token(sql_table_expr, idx)
+        if cur_word == "AS":
+            table_name = get_prev_token(sql_table_expr, idx)
+            alias_name = get_next_token(sql_table_expr, idx)
+            table_alias_dict.setdefault(alias_name, table_name)
+            idx = get_next_token_idx(sql_table_expr, idx)
+            idx = get_next_token_idx(sql_table_expr, idx)
+        else:
+            idx = get_next_token_idx(sql_table_expr, idx)
+
+    return table_alias_dict
 
 
 #

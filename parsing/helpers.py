@@ -61,10 +61,10 @@ def is_idx_at_token_start(sql_query: str, idx: int):
 
 
 def get_next_token_idx(sql_query: str, idx: int):
-    while not sql_query[idx] == " ":
+    while idx < len(sql_query) and sql_query[idx] != " ":
         idx += 1
 
-    while sql_query[idx] == " ":
+    while idx < len(sql_query) and sql_query[idx] == " ":
         idx += 1
 
     return idx
