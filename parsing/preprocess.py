@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 from helpers import trim_front_and_back, find_closing_parenthesis, is_next_token_select, get_cur_token, get_next_token, get_next_token_idx, get_prev_token
 from processed_query import ProcessedSQLQueryNode, ProcessedSQLQueryNodeType, ProcessedSQLQueryTree
 from sql2pandas import sql2pandas
@@ -235,3 +235,27 @@ def preprocess_sql_query(sql_query: str) -> ProcessedSQLQueryTree:
 
     tree.reset_root_node(root_node)
     return tree
+
+
+def get_pandas_code_snippet_from_tree_dfs(sql_query_node: ProcessedSQLQueryNode, code_snippets: List[str]):
+    if sql_query_node == None:
+        return
+
+    if sql_query_node.node_type == ProcessedSQLQueryNodeType.LEAF:
+        for alias_symbol in sql_query_node.table_aliases.keys():
+            code_snippets.append(alias_symbol + " = " +
+                                 sql_query_node.table_aliases[alias_symbol])
+        for table_sub in sql_query_node.table_symbol.keys():
+            code_snippets.append(table_sub + " = " +
+                                 sql_query_node.table_symbol[table_sub])
+        code_snippets.append(sql_query_node.pandas_query)
+        return
+
+    return
+
+
+def get_pandas_code_snippet_from_tree(sql_query_tree: ProcessedSQLQueryTree):
+    code_snippets = list()
+    get_pandas_code_snippet_from_tree_dfs(
+        sql_query_tree.root_node, code_snippets)
+    return code_snippets
