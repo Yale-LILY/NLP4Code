@@ -19,11 +19,11 @@ def trim_front_and_back(s, char_front, char_back):
     return s
 
 
-# Find corresponding balanced closing parenthesis for opening parenthesis at index `open_idx`
+# Find corresponding balanced closing parenthesis for opening parenthesis at index `open_idx-1`
 def find_closing_parenthesis(s, open_idx):
     if s[open_idx-1] != '(':
         print('[find_closing_parenthesis] input open_idx error')
-        return open_idx
+        return -1
 
     idx = open_idx
     ct_open = 0

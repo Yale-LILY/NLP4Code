@@ -3,11 +3,11 @@ from typing import Dict, Union
 
 
 class ProcessedSQLQueryNodeType(Enum):
-    LEAF = 'LEAF'
-    NESTED_SELECT = 'NESTED_SELECT'
-    INTERSECT = 'INTERSECT'
-    UNION = 'UNION'
-    EXCEPT = 'EXCEPT'
+    LEAF = "LEAF"
+    NESTED_SELECT = "(SELECT"
+    INTERSECT = "INTERSECT "
+    UNION = "UNION "
+    EXCEPT = "EXCEPT "
 
 
 class ProcessedSQLQueryNode:
