@@ -130,6 +130,7 @@ dmypy.json
 
 # sandboxes
 **sandbox.py
+parsing/sandbox_bad_queries.txt
 
 # defined by Ansong
 .venv
