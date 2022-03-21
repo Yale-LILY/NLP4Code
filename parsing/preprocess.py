@@ -1,5 +1,5 @@
-from turtle import right
-from helpers import trim_front_and_back, find_closing_parenthesis, is_next_token_select
+from typing import Dict
+from helpers import trim_front_and_back, find_closing_parenthesis, is_next_token_select, get_cur_token, get_next_token, get_next_token_idx, get_prev_token
 from processed_query import ProcessedSQLQueryNode, ProcessedSQLQueryNodeType, ProcessedSQLQueryTree
 from sql2pandas import sql2pandas
 import re
@@ -13,6 +13,42 @@ import re
 #       included in symbol table as SYMBOL_N = "t1 JOIN t2 ON t1.id = t2.id JOIN t3 [...]"
 #   - remove all AS table aliases for all leaves
 # - add way to link external/internal symbols? (combine separate pandas_query's from leaves to get one giant pandas query)
+
+
+# Given a SQL query with exactly one SELECT, extract table FROM which query is answered
+def extract_table(simple_sql_query: str, table_alias_dict: Dict[str, str]):
+    simple_sql_query = remove_consecutive_spaces(simple_sql_query)
+    start_idx = simple_sql_query.find("FROM ")
+    if start_idx < 0:
+        print("[extract_table] no FROM in simple_sql_query")
+        return None
+
+    start_idx += len("FROM ")
+    idx = get_next_token_idx(simple_sql_query, start_idx)
+    while idx < len(simple_sql_query):
+        cur_word = get_cur_token(simple_sql_query, idx)
+        if cur_word == "JOIN":
+            idx = get_next_token_idx(simple_sql_query, idx)
+            idx = get_next_token_idx(simple_sql_query, idx)
+        elif cur_word == "AS":
+            table_name = get_prev_token(simple_sql_query, idx)
+            alias_name = get_next_token(simple_sql_query, idx)
+            table_alias_dict[table_name] = alias_name
+            idx = get_next_token_idx(simple_sql_query, idx)
+            idx = get_next_token_idx(simple_sql_query, idx)
+        elif cur_word == "ON":
+            idx = get_next_token_idx(simple_sql_query, idx)
+            idx = simple_sql_query.find("=", idx)
+            if idx < 0:
+                return None
+            idx += 1
+            while simple_sql_query[idx] == " ":
+                idx += 1
+            idx = get_next_token_idx(simple_sql_query, idx)
+        else:
+            return simple_sql_query[start_idx:idx]
+
+    return simple_sql_query[start_idx:idx].strip()
 
 
 #
@@ -47,7 +83,6 @@ def handle_select_subquery(sql_query: str, tree_header: ProcessedSQLQueryTree, q
             node_type=ProcessedSQLQueryNodeType.LEAF, processed_query=sql_query, pandas_query=sql2pandas(sql_query), left_node=None, right_node=None
         )
 
-    print(subquery)
     idx = sql_query.find(subquery)
     if idx < 0:
         print("[preprocess.py] ERROR: could not find subquery in sql_query")

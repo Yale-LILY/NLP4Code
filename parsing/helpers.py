@@ -1,4 +1,7 @@
 # Removes any characters in `chars_to_remove` from the front of `s`
+from tracemalloc import start
+
+
 def trim_front(s, chars_to_remove):
     while s[0] in chars_to_remove:
         s = s[1:]
@@ -43,3 +46,67 @@ def find_closing_parenthesis(s, open_idx):
 # Determines if first non-whitespace char in `partial_sql_query` is "SELECT"
 def is_next_token_select(partial_sql_query):
     return partial_sql_query.strip().find("SELECT") == 0
+
+
+def is_idx_at_token_start(sql_query: str, idx: int):
+    if sql_query[idx] == " ":
+        print("[is_idx_at_token_start] idx not in word")
+        return False
+
+    if not sql_query[idx-1] == " ":
+        print("[is_idx_at_token_start] idx not at start of token")
+        return False
+
+    return True
+
+
+def get_next_token_idx(sql_query: str, idx: int):
+    while not sql_query[idx] == " ":
+        idx += 1
+
+    while sql_query[idx] == " ":
+        idx += 1
+
+    return idx
+
+
+def get_prev_token(sql_query: str, idx: int):
+    if idx == 0:
+        print("[get_prev_token] no prev token")
+        return None
+
+    if not is_idx_at_token_start(sql_query, idx):
+        return None
+
+    finish_idx = idx - 1
+    while finish_idx - 1 >= 0 and sql_query[finish_idx-1] == " ":
+        finish_idx -= 1
+
+    start_idx = finish_idx - 1
+    while start_idx - 1 >= 0 and sql_query[start_idx - 1] != " ":
+        start_idx -= 1
+
+    return sql_query[start_idx:finish_idx]
+
+
+def get_cur_token(sql_query: str, idx: int):
+    if not is_idx_at_token_start(sql_query, idx):
+        return None
+
+    finish_idx = idx
+    while finish_idx < len(sql_query) and sql_query[finish_idx] != " ":
+        finish_idx += 1
+
+    return sql_query[idx:finish_idx]
+
+
+def get_next_token(sql_query: str, idx: int):
+    if idx >= len(sql_query) - 1:
+        print("[get_prev_token] no next token")
+        return None
+
+    if not is_idx_at_token_start(sql_query, idx):
+        return None
+
+    start_idx = get_next_token_idx(sql_query, idx)
+    return get_cur_token(sql_query, start_idx)
