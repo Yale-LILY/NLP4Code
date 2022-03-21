@@ -53,7 +53,7 @@ def is_idx_at_token_start(sql_query: str, idx: int):
         print("[is_idx_at_token_start] idx not in word")
         return False
 
-    if not sql_query[idx-1] == " ":
+    if idx > 0 and not sql_query[idx-1] == " ":
         print("[is_idx_at_token_start] idx not at start of token")
         return False
 

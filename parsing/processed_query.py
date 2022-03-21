@@ -101,7 +101,7 @@ class ProcessedSQLQueryTree:
 
     def get_symbol_key(self):
         """Generate symbol key based on number of symbols currently in tree."""
-        return "SYMBOL_" + str(self.symbol_count)
+        return "symbol_" + str(self.symbol_count)
 
     def increment_symbol_count(self):
         self.symbol_count += 1

@@ -24,6 +24,8 @@ def extract_table_expr_from_query(simple_sql_query: str):
         return None
 
     start_idx += len("FROM ")
+    while start_idx < len(simple_sql_query) and simple_sql_query[start_idx] == " ":
+        start_idx += 1
     idx = get_next_token_idx(simple_sql_query, start_idx)
     while idx < len(simple_sql_query):
         cur_word = get_cur_token(simple_sql_query, idx)
