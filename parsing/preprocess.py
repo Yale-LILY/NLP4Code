@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Union
 from helpers import trim_front_and_back, find_closing_parenthesis, is_next_token_select, get_cur_token, get_next_token, get_next_token_idx, get_prev_token
 from processed_query import ProcessedSQLQueryNode, ProcessedSQLQueryNodeType, ProcessedSQLQueryTree
 from sql2pandas import sql2pandas
@@ -6,13 +6,10 @@ import re
 
 
 # TODO:
-# - rewrite sql2pandas API to accept ProcessedSQLQueryTree
-# - INTERSECT, UNION, EXCEPT
-# - add complex tables to their own symbol table? (handle JOIN and table AS aliases)
-#   - JOIN (fully joined table, i.e. t1 JOIN t2 ON t1.id = t2.id JOIN t3 [...])
-#       included in symbol table as SYMBOL_N = "t1 JOIN t2 ON t1.id = t2.id JOIN t3 [...]"
-#   - remove all AS table aliases for all leaves
-# - add way to link external/internal symbols? (combine separate pandas_query's from leaves to get one giant pandas query)
+# - convert table_expr to pandas (https://pandas.pydata.org/docs/getting_started/comparison/comparison_with_sql.html)
+# - handle RIGHT/LEFT OUTER/INNER/FULL JOIN
+# - handle UNION ALL
+# - remove original table name from table_expr (or replace all instances of AS alias with orig table name)
 
 
 # Given a SQL query with exactly one SELECT, extract table FROM which query is answered
@@ -259,3 +256,39 @@ def get_pandas_code_snippet_from_tree(sql_query_tree: ProcessedSQLQueryTree):
     get_pandas_code_snippet_from_tree_dfs(
         sql_query_tree.root_node, code_snippets)
     return code_snippets
+
+
+def check_processed_sql_tree_dfs(node: ProcessedSQLQueryNode) -> Union[str, None]:
+    if node == None:
+        return None
+
+    if node.node_type == ProcessedSQLQueryNodeType.LEAF:
+        assert(node.left_node == None and node.right_node == None)
+        assert(node.sql_query != None)
+        assert(node.sql_query_table_symbol != None)
+        assert(node.sql_query_table_aliases != None)
+        assert(node.pandas_query != None)
+        # assert(node.pandas_query.find("Error:") < 0)
+        if node.pandas_query.find("Error:") >= 0:
+            return node.sql_query + " -> " + node.pandas_query
+        return None
+
+    assert(node.left_node != None and node.right_node != None)
+    assert(node.sql_query == None)
+    assert(node.sql_query_table_symbol == None)
+    assert(node.sql_query_table_aliases == None)
+    assert(node.pandas_query == None)
+
+    left_res = check_processed_sql_tree_dfs(node.left_node)
+    if left_res != None:
+        return left_res
+
+    right_res = check_processed_sql_tree_dfs(node.right_node)
+    if right_res != None:
+        return right_res
+
+    return None
+
+
+def check_processed_sql_tree(sql_query_tree: ProcessedSQLQueryTree) -> bool:
+    return check_processed_sql_tree_dfs(sql_query_tree.root_node)
