@@ -12,6 +12,7 @@ import re
 # - handle RIGHT/LEFT OUTER/INNER/FULL JOIN
 # - handle UNION ALL
 # - remove original table name from table_expr (or replace all instances of AS alias with orig table name)
+# - return None tree if SQL query generates error (error in sql2pandas, parenthesis imbalance, etc)
 
 
 def extract_select_subquery(sql_query: str, query_type: ProcessedSQLQueryNodeType) -> Union[str, None]:
@@ -92,22 +93,25 @@ def convert_query_to_tree_node(sql_query: str, tree_header: ProcessedSQLQueryTre
         print("[preprocess.py] ERROR: could not find subquery in sql_query")
         return sql_query
 
-    if query_type == ProcessedSQLQueryNodeType.NESTED_SELECT:
-        symbol_key = tree_header.get_symbol_key()
+    # TODO: move internal symbols to initialization
+    left_symbol_key = tree_header.get_symbol_key()
+    right_symbol_key = tree_header.get_symbol_key()
 
+    if query_type == ProcessedSQLQueryNodeType.NESTED_SELECT:
         left_query = sql_query[0:idx] + \
-            symbol_key + sql_query[idx+len(subquery):]
+            right_symbol_key + sql_query[idx+len(subquery):]
 
         left_node = convert_query_to_tree_node(
             left_query, tree_header)
-        left_node.set_external_symbol(symbol_key)
+        left_node.set_internal_symbol(left_symbol_key)
+        left_node.set_external_symbol(right_symbol_key)
 
         right_node = convert_query_to_tree_node(
             subquery, tree_header)
-        right_node.set_internal_symbol(symbol_key)
+        right_node.set_internal_symbol(right_symbol_key)
 
         tree_header.add_key_value_to_symbol_table(
-            symbol_key, subquery, right_node)
+            right_symbol_key, subquery, right_node)
 
         root_node = ProcessedSQLQueryNode(
             node_type=query_type,
@@ -123,8 +127,10 @@ def convert_query_to_tree_node(sql_query: str, tree_header: ProcessedSQLQueryTre
 
     left_query = sql_query[0:idx-len(query_type.value)]
     left_node = convert_query_to_tree_node(left_query, tree_header)
+    left_node.set_internal_symbol(left_symbol_key)
 
     right_node = convert_query_to_tree_node(subquery, tree_header)
+    right_node.set_internal_symbol(right_symbol_key)
 
     root_node = ProcessedSQLQueryNode(
         node_type=query_type,
@@ -150,43 +156,68 @@ def preprocess_sql_query(sql_query: str) -> ProcessedSQLQueryTree:
     """
     tree = ProcessedSQLQueryTree()
 
+    root_symbol = tree.get_symbol_key()
     root_node = convert_query_to_tree_node(sql_query, tree)
+    root_node.set_internal_symbol(root_symbol)
 
     tree.reset_root_node(root_node)
     return tree
 
 
-def get_pandas_code_snippet_from_tree_dfs(sql_query_node: ProcessedSQLQueryNode, code_snippets: List[str]):
+def extract_pandas_table_aliases_dfs(node: ProcessedSQLQueryNode, code_snippets: List[str]):
+    """Helper function to extract all table aliases into executable Python code snippets"""
+    if node == None:
+        return
+
+    if node.node_type == ProcessedSQLQueryNodeType.LEAF:
+        node.sql_query_table_expr.extract_table_aliases(code_snippets)
+        return
+
+    extract_pandas_table_aliases_dfs(node.right_node, code_snippets)
+    extract_pandas_table_aliases_dfs(node.left_node, code_snippets)
+
+
+def extract_pandas_table_expr_symbols_dfs(node: ProcessedSQLQueryNode, code_snippets: List[str]):
+    """Helper function to extract all table expression substitute symbols into executable Python code snippets"""
+    if node == None:
+        return
+
+    if node.node_type == ProcessedSQLQueryNodeType.LEAF:
+        table_expr = node.sql_query_table_expr
+        code_snippets.append(table_expr.table_expr_symbol_key + " = " +
+                             table_expr.orig_table_expr)  # TODO: turn this into pandas
+        return
+
+    extract_pandas_table_expr_symbols_dfs(node.right_node, code_snippets)
+    extract_pandas_table_expr_symbols_dfs(node.left_node, code_snippets)
+
+
+def symbols_to_pandas(s1: str, s2: str, type: ProcessedSQLQueryNodeType) -> str:
+    return s1 + " " + type.name + " " + s2
+
+
+def extract_pandas_code_snippet_from_node(sql_query_node: ProcessedSQLQueryNode) -> str:
+    symbol = sql_query_node.internal_symbol
+    if sql_query_node.node_type == ProcessedSQLQueryNodeType.LEAF:
+        # Pandas query
+        return symbol + " = " + sql_query_node.pandas_query
+
+    left_symbol, right_symbol = sql_query_node.left_node.internal_symbol, sql_query_node.right_node.internal_symbol
+    return symbol + " = " + symbols_to_pandas(left_symbol, right_symbol, sql_query_node.node_type)
+
+
+def get_pandas_code_snippets_dfs(sql_query_node: ProcessedSQLQueryNode, code_snippets: List[str]):
     """Helper function for get_pandas_code_snippet_from_tree"""
     if sql_query_node == None:
         return
 
-    if sql_query_node.node_type == ProcessedSQLQueryNodeType.LEAF:
-        table_expr = sql_query_node.sql_query_table_expr
-
-        # Table aliases
-        # TODO: move this to table_expr class?
-        table_aliases = table_expr.table_aliases
-        for alias_symbol in table_aliases.keys():
-            code_snippets.append(alias_symbol + " = " +
-                                 table_aliases[alias_symbol])
-
-        # Table expr symbol key
-        code_snippets.append(table_expr.table_expr_symbol_key + " = " +
-                             table_expr.orig_table_expr + " -> " + table_expr.pandas_table_expr)
-
-        # Pandas query
-        if sql_query_node.internal_symbol != None:
-            code_snippets.append(
-                sql_query_node.internal_symbol + " = " + sql_query_node.pandas_query)
-        else:
-            code_snippets.append(sql_query_node.pandas_query)
-
-    # Postorder: right (nested) to left
-    get_pandas_code_snippet_from_tree_dfs(
+    # Postorder: right (nested) to left, then root
+    get_pandas_code_snippets_dfs(
         sql_query_node.right_node, code_snippets)
-    get_pandas_code_snippet_from_tree_dfs(
+    get_pandas_code_snippets_dfs(
         sql_query_node.left_node, code_snippets)
+
+    code_snippets.append(extract_pandas_code_snippet_from_node(sql_query_node))
 
 
 def get_pandas_code_snippet_from_tree(sql_query_tree: ProcessedSQLQueryTree) -> List[str]:
@@ -199,8 +230,11 @@ def get_pandas_code_snippet_from_tree(sql_query_tree: ProcessedSQLQueryTree) -> 
         List[str]: List of executable pandas statements, in order.
     """
     code_snippets = list()
-    get_pandas_code_snippet_from_tree_dfs(
+    extract_pandas_table_aliases_dfs(
         sql_query_tree.root_node, code_snippets)
+    extract_pandas_table_expr_symbols_dfs(
+        sql_query_tree.root_node, code_snippets)
+    get_pandas_code_snippets_dfs(sql_query_tree.root_node, code_snippets)
     return code_snippets
 
 

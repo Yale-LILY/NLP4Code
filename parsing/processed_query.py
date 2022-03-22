@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 from process_table_expr import extract_table_aliases
 
@@ -30,6 +30,11 @@ class ProcessedSQLTableExpr:
         self.table_expr_symbol_key = table_expr_symbol_key
         self.table_aliases = extract_table_aliases(orig_table_expr)
         self.pandas_table_expr = ""  # TODO
+
+    def extract_table_aliases(self, code_snippets: List[str]):
+        for key in self.table_aliases:
+            # TODO: turn this into pandas
+            code_snippets.append(key + " = " + self.table_aliases[key])
 
     def dump_table_expr(self, indent=4):
         print(" " * indent + "orig_table_expr: " + str(self.orig_table_expr))
