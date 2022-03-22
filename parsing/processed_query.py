@@ -50,6 +50,8 @@ class ProcessedSQLQueryNode:
 
     Attributes:
         node_type (ProcessedSQLQueryNodeType): Specifies node type.
+        internal_symbol (str | None): Symbol in symbol_table.
+            Unique symbol corresponding to SQL query rooted at node.
         processed_query (str | None): Stores sql2pandas-convertible SQL query if LEAF node.
         pandas_query (str | None): Stores sql2pandas-converted SQL query (corresponding to processed_query) if LEAF node.
         left_node (ProcessedSQLQueryNode | None): Left child node.
@@ -58,34 +60,30 @@ class ProcessedSQLQueryNode:
             Connects smaller SELECT sub-query (fits into redacted portion of left_node query).
         external_symbol (str | None): Symbol in symbol_table.
             If processed_query is redacted with external_symbol substitute, can be used to lookup redacted sub_query.
-        internal_symbol (str | None): Symbol in symbol_table.
-            If processed_query is a substitute for some redacted query, can be used in symbol_table to lookup substitute symbol.
+            Only present if ancestor is NESTED_SELECT type.
     """
 
     def __init__(
             self,
             node_type: ProcessedSQLQueryNodeType,
+            internal_symbol: str,
             sql_query: Union[str, None],
             sql_query_table_expr: Union[ProcessedSQLTableExpr, None],
             pandas_query: Union[str, None],
             left_node: Union[Dict[str, Any], None],
             right_node: Union[Dict[str, Any], None],
-            external_symbol: Union[str, None] = None,
-            internal_symbol: Union[str, None] = None):
+            external_symbol: Union[str, None] = None):
         self.node_type = node_type
+        self.internal_symbol = internal_symbol
         self.sql_query = sql_query
         self.sql_query_table_expr = sql_query_table_expr
         self.pandas_query = pandas_query
         self.left_node = left_node
         self.right_node = right_node
         self.external_symbol = external_symbol
-        self.internal_symbol = internal_symbol
 
     def set_external_symbol(self, external_symbol: str):
         self.external_symbol = external_symbol
-
-    def set_internal_symbol(self, internal_symbol: str):
-        self.internal_symbol = internal_symbol
 
     def dump_processed_sql_tree(self):
         """Print contents of tree rooted at this node."""
@@ -93,6 +91,7 @@ class ProcessedSQLQueryNode:
             self.left_node.dump_processed_sql_tree()
 
         print("node_type: " + str(self.node_type))
+        print("internal_symbol: " + str(self.internal_symbol))
 
         if self.node_type == ProcessedSQLQueryNodeType.LEAF:
             print("processed_query: " + str(self.sql_query))
@@ -100,7 +99,6 @@ class ProcessedSQLQueryNode:
             self.sql_query_table_expr.dump_table_expr()
             print("pandas_query: " + str(self.pandas_query))
             print("external_symbol: " + str(self.external_symbol))
-            print("internal_symbol: " + str(self.internal_symbol))
 
         print()
 

@@ -1,6 +1,7 @@
 from typing import Dict, List, Union
 from helpers import find_closing_parenthesis, is_next_token_select
 from clean_query import basic_clean_query
+from node_to_pandas_snippet import extract_pandas_code_snippet_from_node
 from process_table_expr import extract_table_expr_from_query, substitute_symbol_for_table_expr
 from processed_query import ProcessedSQLQueryNode, ProcessedSQLQueryNodeType, ProcessedSQLQueryTree, ProcessedSQLTableExpr
 from sql2pandas import sql2pandas
@@ -48,7 +49,7 @@ def extract_select_subquery(sql_query: str, query_type: ProcessedSQLQueryNodeTyp
     return extracted_subquery
 
 
-def convert_query_to_tree_node(sql_query: str, tree_header: ProcessedSQLQueryTree) -> ProcessedSQLQueryNode:
+def convert_query_to_tree_node(sql_query: str, internal_symbol: str, tree_header: ProcessedSQLQueryTree) -> ProcessedSQLQueryNode:
     """If there are SELECT subqueries to extract, extracts one layer of SELECT subquery into a tree,
     with recursion to generate subtrees on remaining layers.
 
@@ -59,6 +60,7 @@ def convert_query_to_tree_node(sql_query: str, tree_header: ProcessedSQLQueryTre
     Returns:
         ProcessedSQLQueryNode: Tree node rooted at tree containing decomposed SQL query.
     """
+
     sql_query = basic_clean_query(sql_query)
 
     query_type, subquery = None, None
@@ -79,8 +81,9 @@ def convert_query_to_tree_node(sql_query: str, tree_header: ProcessedSQLQueryTre
         final_sql_query = substitute_symbol_for_table_expr(
             sql_query, table_expr_str, table_expr_symbol_key)
 
-        return ProcessedSQLQueryNode(
+        leaf_node = ProcessedSQLQueryNode(
             node_type=ProcessedSQLQueryNodeType.LEAF,
+            internal_symbol=internal_symbol,
             sql_query=final_sql_query,
             sql_query_table_expr=table_expr,
             pandas_query=sql2pandas(final_sql_query),
@@ -88,12 +91,15 @@ def convert_query_to_tree_node(sql_query: str, tree_header: ProcessedSQLQueryTre
             right_node=None
         )
 
+        tree_header.add_key_value_to_symbol_table(
+            internal_symbol, sql_query, leaf_node)
+        return leaf_node
+
     idx = sql_query.find(subquery)
     if idx < 0:
         print("[preprocess.py] ERROR: could not find subquery in sql_query")
         return sql_query
 
-    # TODO: move internal symbols to initialization
     left_symbol_key = tree_header.get_symbol_key()
     right_symbol_key = tree_header.get_symbol_key()
 
@@ -102,19 +108,15 @@ def convert_query_to_tree_node(sql_query: str, tree_header: ProcessedSQLQueryTre
             right_symbol_key + sql_query[idx+len(subquery):]
 
         left_node = convert_query_to_tree_node(
-            left_query, tree_header)
-        left_node.set_internal_symbol(left_symbol_key)
+            left_query, left_symbol_key, tree_header)
         left_node.set_external_symbol(right_symbol_key)
 
         right_node = convert_query_to_tree_node(
-            subquery, tree_header)
-        right_node.set_internal_symbol(right_symbol_key)
-
-        tree_header.add_key_value_to_symbol_table(
-            right_symbol_key, subquery, right_node)
+            subquery, right_symbol_key, tree_header)
 
         root_node = ProcessedSQLQueryNode(
             node_type=query_type,
+            internal_symbol=internal_symbol,
             sql_query=None,
             sql_query_table_expr=None,
             pandas_query=None,
@@ -122,18 +124,19 @@ def convert_query_to_tree_node(sql_query: str, tree_header: ProcessedSQLQueryTre
             right_node=right_node
         )
 
-        # root_node.dump_processed_sql_tree()
+        tree_header.add_key_value_to_symbol_table(
+            internal_symbol, sql_query, root_node)
         return root_node
 
     left_query = sql_query[0:idx-len(query_type.value)]
-    left_node = convert_query_to_tree_node(left_query, tree_header)
-    left_node.set_internal_symbol(left_symbol_key)
-
-    right_node = convert_query_to_tree_node(subquery, tree_header)
-    right_node.set_internal_symbol(right_symbol_key)
+    left_node = convert_query_to_tree_node(
+        left_query, left_symbol_key, tree_header)
+    right_node = convert_query_to_tree_node(
+        subquery, right_symbol_key, tree_header)
 
     root_node = ProcessedSQLQueryNode(
         node_type=query_type,
+        internal_symbol=internal_symbol,
         sql_query=None,
         sql_query_table_expr=None,
         pandas_query=None,
@@ -141,7 +144,8 @@ def convert_query_to_tree_node(sql_query: str, tree_header: ProcessedSQLQueryTre
         right_node=right_node
     )
 
-    # root_node.dump_processed_sql_tree()
+    tree_header.add_key_value_to_symbol_table(
+        internal_symbol, sql_query, root_node)
     return root_node
 
 
@@ -157,8 +161,7 @@ def preprocess_sql_query(sql_query: str) -> ProcessedSQLQueryTree:
     tree = ProcessedSQLQueryTree()
 
     root_symbol = tree.get_symbol_key()
-    root_node = convert_query_to_tree_node(sql_query, tree)
-    root_node.set_internal_symbol(root_symbol)
+    root_node = convert_query_to_tree_node(sql_query, root_symbol, tree)
 
     tree.reset_root_node(root_node)
     return tree
@@ -190,20 +193,6 @@ def extract_pandas_table_expr_symbols_dfs(node: ProcessedSQLQueryNode, code_snip
 
     extract_pandas_table_expr_symbols_dfs(node.right_node, code_snippets)
     extract_pandas_table_expr_symbols_dfs(node.left_node, code_snippets)
-
-
-def symbols_to_pandas(s1: str, s2: str, type: ProcessedSQLQueryNodeType) -> str:
-    return s1 + " " + type.name + " " + s2
-
-
-def extract_pandas_code_snippet_from_node(sql_query_node: ProcessedSQLQueryNode) -> str:
-    symbol = sql_query_node.internal_symbol
-    if sql_query_node.node_type == ProcessedSQLQueryNodeType.LEAF:
-        # Pandas query
-        return symbol + " = " + sql_query_node.pandas_query
-
-    left_symbol, right_symbol = sql_query_node.left_node.internal_symbol, sql_query_node.right_node.internal_symbol
-    return symbol + " = " + symbols_to_pandas(left_symbol, right_symbol, sql_query_node.node_type)
 
 
 def get_pandas_code_snippets_dfs(sql_query_node: ProcessedSQLQueryNode, code_snippets: List[str]):
