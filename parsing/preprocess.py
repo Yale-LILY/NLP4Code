@@ -1,6 +1,8 @@
 from typing import Dict, List, Union
-from helpers import trim_front_and_back, find_closing_parenthesis, is_next_token_select, get_cur_token, get_next_token, get_next_token_idx, get_prev_token
-from processed_query import ProcessedSQLQueryNode, ProcessedSQLQueryNodeType, ProcessedSQLQueryTree
+from helpers import find_closing_parenthesis, is_next_token_select
+from clean_query import basic_clean_query
+from process_table_expr import extract_table_expr_from_query, substitute_symbol_for_table_expr
+from processed_query import ProcessedSQLQueryNode, ProcessedSQLQueryNodeType, ProcessedSQLQueryTree, ProcessedSQLTableExpr
 from sql2pandas import sql2pandas
 import re
 
@@ -10,68 +12,6 @@ import re
 # - handle RIGHT/LEFT OUTER/INNER/FULL JOIN
 # - handle UNION ALL
 # - remove original table name from table_expr (or replace all instances of AS alias with orig table name)
-
-
-# Given a SQL query with exactly one SELECT, extract table FROM which query is answered
-def extract_table_expr_from_query(simple_sql_query: str):
-    simple_sql_query = remove_consecutive_spaces(simple_sql_query)
-    start_idx = simple_sql_query.find("FROM ")
-    if start_idx < 0:
-        print("[extract_table] no FROM in simple_sql_query")
-        return None
-
-    start_idx += len("FROM ")
-    while start_idx < len(simple_sql_query) and simple_sql_query[start_idx] == " ":
-        start_idx += 1
-    idx = get_next_token_idx(simple_sql_query, start_idx)
-    while idx < len(simple_sql_query):
-        cur_word = get_cur_token(simple_sql_query, idx)
-        if cur_word == "JOIN":
-            idx = get_next_token_idx(simple_sql_query, idx)
-            idx = get_next_token_idx(simple_sql_query, idx)
-        elif cur_word == "AS":
-            idx = get_next_token_idx(simple_sql_query, idx)
-            idx = get_next_token_idx(simple_sql_query, idx)
-        elif cur_word == "ON":
-            idx = get_next_token_idx(simple_sql_query, idx)
-            idx = simple_sql_query.find("=", idx)
-            if idx < 0:
-                return None
-            idx += 1
-            while simple_sql_query[idx] == " ":
-                idx += 1
-            idx = get_next_token_idx(simple_sql_query, idx)
-        else:
-            return simple_sql_query[start_idx:idx].strip()
-
-    return simple_sql_query[start_idx:idx].strip()
-
-
-def extract_table_aliases(sql_table_expr: str):
-    table_alias_dict = dict()
-
-    idx = 0
-    while idx < len(sql_table_expr):
-        cur_word = get_cur_token(sql_table_expr, idx)
-        if cur_word == "AS":
-            table_name = get_prev_token(sql_table_expr, idx)
-            alias_name = get_next_token(sql_table_expr, idx)
-            table_alias_dict.setdefault(alias_name, table_name)
-            idx = get_next_token_idx(sql_table_expr, idx)
-            idx = get_next_token_idx(sql_table_expr, idx)
-        else:
-            idx = get_next_token_idx(sql_table_expr, idx)
-
-    return table_alias_dict
-
-
-def substitute_symbol_for_table_expr(simple_sql_query: str, sql_table_expr: str, sub_symbol: str):
-    idx = simple_sql_query.find(sql_table_expr)
-    if idx < 0:
-        print("[substitute_symbol_for_table] sql_table_expr not in simple_sql_query")
-        return simple_sql_query
-
-    return re.sub(sql_table_expr, sub_symbol, simple_sql_query)
 
 
 def extract_select_subquery(sql_query: str, query_type: ProcessedSQLQueryNodeType):
@@ -100,35 +40,32 @@ def extract_select_subquery(sql_query: str, query_type: ProcessedSQLQueryNodeTyp
 
 def handle_select_subquery(sql_query: str, tree_header: ProcessedSQLQueryTree, query_type: ProcessedSQLQueryNodeType) -> ProcessedSQLQueryNode:
     subquery = extract_select_subquery(sql_query, query_type)
-    if subquery == None:
-        sql_table = extract_table_expr_from_query(sql_query)
-        table_aliases = extract_table_aliases(sql_table)
-        table_symbol = dict()
-        table_symbol_key = tree_header.get_symbol_key()
-        tree_header.increment_symbol_count()
-        table_symbol.setdefault(table_symbol_key, sql_table)
+    # if subquery == None:
+    #     table_expr_str = extract_table_expr_from_query(sql_query)
+    #     table_expr_symbol_key = tree_header.get_symbol_key()
+    #     table_expr = ProcessedSQLTableExpr(
+    #         orig_table_expr=table_expr_str, table_expr_symbol_key=table_expr_symbol_key)
 
-        final_sql_query = substitute_symbol_for_table_expr(
-            sql_query, sql_table, table_symbol_key)
+    #     final_sql_query = substitute_symbol_for_table_expr(
+    #         sql_query, table_expr_str, table_expr_symbol_key)
 
-        return ProcessedSQLQueryNode(
-            node_type=ProcessedSQLQueryNodeType.LEAF,
-            sql_query=final_sql_query,
-            sql_query_table_symbol=table_symbol,
-            sql_query_table_aliases=table_aliases,
-            pandas_query=sql2pandas(final_sql_query),
-            left_node=None,
-            right_node=None
-        )
+    #     return ProcessedSQLQueryNode(
+    #         node_type=ProcessedSQLQueryNodeType.LEAF,
+    #         sql_query=final_sql_query,
+    #         sql_query_table_expr=table_expr,
+    #         pandas_query=sql2pandas(final_sql_query),
+    #         left_node=None,
+    #         right_node=None
+    #     )
 
     idx = sql_query.find(subquery)
     if idx < 0:
         print("[preprocess.py] ERROR: could not find subquery in sql_query")
         return sql_query
 
-    symbol_key = tree_header.get_symbol_key()
-
     if query_type == ProcessedSQLQueryNodeType.NESTED_SELECT:
+        symbol_key = tree_header.get_symbol_key()
+
         left_query = sql_query[0:idx] + \
             symbol_key + sql_query[idx+len(subquery):]
 
@@ -146,8 +83,7 @@ def handle_select_subquery(sql_query: str, tree_header: ProcessedSQLQueryTree, q
         root_node = ProcessedSQLQueryNode(
             node_type=query_type,
             sql_query=None,
-            sql_query_table_symbol=None,
-            sql_query_table_aliases=None,
+            sql_query_table_expr=None,
             pandas_query=None,
             left_node=left_node,
             right_node=right_node
@@ -162,63 +98,31 @@ def handle_select_subquery(sql_query: str, tree_header: ProcessedSQLQueryTree, q
     right_node = preprocess_sql_query_into_root_node(subquery, tree_header)
 
     root_node = ProcessedSQLQueryNode(
-        node_type=query_type, sql_query=None, sql_query_table_symbol=None, sql_query_table_aliases=None, pandas_query=None, left_node=left_node, right_node=right_node)
+        node_type=query_type, sql_query=None, sql_query_table_expr=None, pandas_query=None, left_node=left_node, right_node=right_node)
 
     # root_node.dump_processed_sql_tree()
     return root_node
 
 
-# sql2pandas requires single quotes in SQL queries
-def replace_quotes(sql_query):
-    return sql_query.replace("\"", "\'")
-
-
-# Remove extra spaces
-def remove_consecutive_spaces(sql_query):
-    sql_query = sql_query.strip()
-    sql_query = re.sub(r"\s+", " ", sql_query)
-    sql_query = re.sub(r"\( ", "(", sql_query)
-    return sql_query
-
-
-# Add semi-colon at end of SQL query for consistency
-def add_semicolon(sql_query):
-    return sql_query if sql_query[-1:] == ";" else sql_query + ";"
-
-
-# Basic string preprocessing/cleanup for SQL queries
-def basic_string_preprocess(sql_query):
-    sql_query = replace_quotes(sql_query)
-    sql_query = remove_consecutive_spaces(sql_query)
-    # TODO: ensure balance for front/back parentheses
-    sql_query = trim_front_and_back(sql_query, "(", ")")
-
-    sql_query = add_semicolon(sql_query)
-    return sql_query
-
-
 def preprocess_sql_query_into_root_node(sql_query: str, tree_header: ProcessedSQLQueryTree) -> ProcessedSQLQueryNode:
-    sql_query = basic_string_preprocess(sql_query)
+    sql_query = basic_clean_query(sql_query)
 
     for query_type in ProcessedSQLQueryNodeType:
         if not extract_select_subquery(sql_query, query_type) == None:
             return handle_select_subquery(sql_query, tree_header, query_type)
 
-    sql_table = extract_table_expr_from_query(sql_query)
-    table_aliases = extract_table_aliases(sql_table)
-    table_symbol = dict()
-    table_symbol_key = tree_header.get_symbol_key()
-    tree_header.increment_symbol_count()
-    table_symbol.setdefault(table_symbol_key, sql_table)
+    table_expr_str = extract_table_expr_from_query(sql_query)
+    table_expr_symbol_key = tree_header.get_symbol_key()
+    table_expr = ProcessedSQLTableExpr(
+        orig_table_expr=table_expr_str, table_expr_symbol_key=table_expr_symbol_key)
 
     final_sql_query = substitute_symbol_for_table_expr(
-        sql_query, sql_table, table_symbol_key)
+        sql_query, table_expr_str, table_expr_symbol_key)
 
     return ProcessedSQLQueryNode(
         node_type=ProcessedSQLQueryNodeType.LEAF,
         sql_query=final_sql_query,
-        sql_query_table_symbol=table_symbol,
-        sql_query_table_aliases=table_aliases,
+        sql_query_table_expr=table_expr,
         pandas_query=sql2pandas(final_sql_query),
         left_node=None,
         right_node=None
@@ -239,16 +143,31 @@ def get_pandas_code_snippet_from_tree_dfs(sql_query_node: ProcessedSQLQueryNode,
         return
 
     if sql_query_node.node_type == ProcessedSQLQueryNodeType.LEAF:
-        for alias_symbol in sql_query_node.sql_query_table_aliases.keys():
-            code_snippets.append(alias_symbol + " = " +
-                                 sql_query_node.sql_query_table_aliases[alias_symbol])
-        for table_sub in sql_query_node.sql_query_table_symbol.keys():
-            code_snippets.append(table_sub + " = " +
-                                 sql_query_node.sql_query_table_symbol[table_sub])
-        code_snippets.append(sql_query_node.pandas_query)
-        return
+        table_expr = sql_query_node.sql_query_table_expr
 
-    return
+        # Table aliases
+        # TODO: move this to table_expr class?
+        table_aliases = table_expr.table_aliases
+        for alias_symbol in table_aliases.keys():
+            code_snippets.append(alias_symbol + " = " +
+                                 table_aliases[alias_symbol])
+
+        # Table expr symbol key
+        code_snippets.append(table_expr.table_expr_symbol_key + " = " +
+                             table_expr.orig_table_expr + " -> " + table_expr.pandas_table_expr)
+
+        # Pandas query
+        if sql_query_node.internal_symbol != None:
+            code_snippets.append(
+                sql_query_node.internal_symbol + " = " + sql_query_node.pandas_query)
+        else:
+            code_snippets.append(sql_query_node.pandas_query)
+
+    # Postorder: right (nested) to left
+    get_pandas_code_snippet_from_tree_dfs(
+        sql_query_node.right_node, code_snippets)
+    get_pandas_code_snippet_from_tree_dfs(
+        sql_query_node.left_node, code_snippets)
 
 
 def get_pandas_code_snippet_from_tree(sql_query_tree: ProcessedSQLQueryTree):
@@ -265,8 +184,7 @@ def check_processed_sql_tree_dfs(node: ProcessedSQLQueryNode) -> Union[str, None
     if node.node_type == ProcessedSQLQueryNodeType.LEAF:
         assert(node.left_node == None and node.right_node == None)
         assert(node.sql_query != None)
-        assert(node.sql_query_table_symbol != None)
-        assert(node.sql_query_table_aliases != None)
+        assert(node.sql_query_table_expr != None)
         assert(node.pandas_query != None)
         # assert(node.pandas_query.find("Error:") < 0)
         if node.pandas_query.find("Error:") >= 0:
@@ -275,8 +193,7 @@ def check_processed_sql_tree_dfs(node: ProcessedSQLQueryNode) -> Union[str, None
 
     assert(node.left_node != None and node.right_node != None)
     assert(node.sql_query == None)
-    assert(node.sql_query_table_symbol == None)
-    assert(node.sql_query_table_aliases == None)
+    assert(node.sql_query_table_expr == None)
     assert(node.pandas_query == None)
 
     left_res = check_processed_sql_tree_dfs(node.left_node)

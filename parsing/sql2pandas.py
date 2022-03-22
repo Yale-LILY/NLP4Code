@@ -22,6 +22,7 @@ HTML_QUERY_FORMAT_ERROR_TOKEN_2 = '<div class="alert alert-warning">'
 # Function error messages
 CSRF_ERROR = '[sql2pandas.py] Error: unable to bypass CSRF token'
 SQL_FORMAT_ERROR = '[sql2pandas.py] Error: SQL syntax incorrect or not supported'
+POST_REQUEST_ERROR_SNIPPET = '[sql2pandas.py] Error: POST request responded with status code '
 
 GENERAL_ERROR = '[sql2pandas.py] Error: unknown'
 
@@ -65,6 +66,10 @@ def make_post_request(query):
 
         post_response = session.post(
             SQL2PANDAS_URL, data=POST_BODY, headers=POST_HEADERS)
+
+        if post_response.status_code != 200:
+            return POST_REQUEST_ERROR_SNIPPET + str(post_response.status_code) + ": " + str(post_response.reason)
+
         raw_html = post_response.text
         # Decode HTML entities and special escaped chars
         processed_html = html.unescape(raw_html)

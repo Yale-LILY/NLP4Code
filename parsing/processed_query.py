@@ -1,5 +1,7 @@
 from enum import Enum
-from typing import Dict, Union
+from typing import Any, Dict, Union
+
+from process_table_expr import extract_table_aliases
 
 
 class ProcessedSQLQueryNodeType(Enum):
@@ -10,12 +12,32 @@ class ProcessedSQLQueryNodeType(Enum):
     EXCEPT = "EXCEPT "
 
 
-def dump_dict(dict_obj):
+def dump_dict(dict_obj, indent=4):
     if dict_obj == None:
         print("None")
     else:
         for key in dict_obj.keys():
-            print("\t" + key + ": " + dict_obj[key])
+            print(indent * " " + key + ": " + dict_obj[key])
+
+
+class ProcessedSQLTableExpr:
+    def __init__(
+        self,
+        orig_table_expr: str,
+        table_expr_symbol_key: str,
+    ):
+        self.orig_table_expr = orig_table_expr
+        self.table_expr_symbol_key = table_expr_symbol_key
+        self.table_aliases = extract_table_aliases(orig_table_expr)
+        self.pandas_table_expr = ""  # TODO
+
+    def dump_table_expr(self, indent=4):
+        print(" " * indent + "orig_table_expr: " + str(self.orig_table_expr))
+        print(" " * indent + "table_expr_symbol_key: " +
+              str(self.table_expr_symbol_key))
+        print(" " * indent + "table_aliases:")
+        dump_dict(self.table_aliases, indent=2*indent)
+        print(" " * indent + "pandas_table_expr: " + str(self.pandas_table_expr))
 
 
 class ProcessedSQLQueryNode:
@@ -39,17 +61,15 @@ class ProcessedSQLQueryNode:
             self,
             node_type: ProcessedSQLQueryNodeType,
             sql_query: Union[str, None],
-            sql_query_table_symbol: Union[Dict[str, str], None],
-            sql_query_table_aliases: Union[Dict[str, str], None],
+            sql_query_table_expr: Union[ProcessedSQLTableExpr, None],
             pandas_query: Union[str, None],
-            left_node: Union[Dict[str, any], None],
-            right_node: Union[Dict[str, any], None],
+            left_node: Union[Dict[str, Any], None],
+            right_node: Union[Dict[str, Any], None],
             external_symbol: Union[str, None] = None,
             internal_symbol: Union[str, None] = None):
         self.node_type = node_type
         self.sql_query = sql_query
-        self.sql_query_table_symbol = sql_query_table_symbol
-        self.sql_query_table_aliases = sql_query_table_aliases
+        self.sql_query_table_expr = sql_query_table_expr
         self.pandas_query = pandas_query
         self.left_node = left_node
         self.right_node = right_node
@@ -71,10 +91,8 @@ class ProcessedSQLQueryNode:
 
         if self.node_type == ProcessedSQLQueryNodeType.LEAF:
             print("processed_query: " + str(self.sql_query))
-            print("table_symbol:")
-            dump_dict(self.sql_query_table_symbol)
-            print("table_aliases:")
-            dump_dict(self.sql_query_table_aliases)
+            print("sql_query_table_expr:")
+            self.sql_query_table_expr.dump_table_expr()
             print("pandas_query: " + str(self.pandas_query))
             print("external_symbol: " + str(self.external_symbol))
             print("internal_symbol: " + str(self.internal_symbol))
@@ -101,10 +119,9 @@ class ProcessedSQLQueryTree:
 
     def get_symbol_key(self):
         """Generate symbol key based on number of symbols currently in tree."""
-        return "symbol_" + str(self.symbol_count)
-
-    def increment_symbol_count(self):
+        symbol_key = "symbol_" + str(self.symbol_count)
         self.symbol_count += 1
+        return symbol_key
 
     def add_key_value_to_symbol_table(self, symbol_key: str, query_str: str, tree_node: ProcessedSQLQueryNode):
         """Add new (key, value) to tree symbol_table.
@@ -115,7 +132,6 @@ class ProcessedSQLQueryTree:
             tree_node (ProcessedSQLQueryNode): Node in tree at which query_str is rooted.
         """
         self.symbol_table[symbol_key] = (query_str, tree_node)
-        self.symbol_count += 1
 
     def reset_root_node(self, new_root_node: ProcessedSQLQueryNode):
         self.root_node = new_root_node
