@@ -1,6 +1,11 @@
 from processed_query import ProcessedSQLQueryNodeType, ProcessedSQLQueryNode
 
 
+# TODO:
+# - INTERSECT/EXCEPT
+# - UNION ALL, other unsupported SQL keywords?
+
+
 def symbols_to_pandas(s1: str, s2: str, node_type: ProcessedSQLQueryNodeType) -> str:
     """Given two symbols and SQL operation type on them, return corresponding pandas snippet."""
     if node_type == ProcessedSQLQueryNodeType.UNION:
@@ -24,8 +29,8 @@ def extract_pandas_code_snippet_from_node(sql_query_node: ProcessedSQLQueryNode)
     """
     symbol = sql_query_node.internal_symbol
     if sql_query_node.node_type == ProcessedSQLQueryNodeType.LEAF:
-        # Pandas query
         return symbol + " = " + sql_query_node.pandas_query
 
-    left_symbol, right_symbol = sql_query_node.left_node.internal_symbol, sql_query_node.right_node.internal_symbol
+    left_symbol = sql_query_node.left_node.internal_symbol
+    right_symbol = sql_query_node.right_node.internal_symbol
     return symbol + " = " + symbols_to_pandas(left_symbol, right_symbol, sql_query_node.node_type)

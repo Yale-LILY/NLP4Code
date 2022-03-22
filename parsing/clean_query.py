@@ -2,6 +2,11 @@ import re
 from helpers import trim_front_and_back
 
 
+# TODO:
+# - more robust parenthesis handling
+# - more robust extra space removal?
+
+
 # sql2pandas requires single quotes in SQL queries
 def replace_quotes(sql_query):
     return sql_query.replace("\"", "\'")
