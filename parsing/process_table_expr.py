@@ -63,3 +63,7 @@ def substitute_symbol_for_table_expr(simple_sql_query: str, sql_table_expr: str,
         return simple_sql_query
 
     return re.sub(sql_table_expr, sub_symbol, simple_sql_query)
+
+
+def sql_table_expr_to_pandas(sql_table_expr: str) -> str:
+    return ""

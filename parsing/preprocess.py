@@ -14,7 +14,16 @@ import re
 # - remove original table name from table_expr (or replace all instances of AS alias with orig table name)
 
 
-def extract_select_subquery(sql_query: str, query_type: ProcessedSQLQueryNodeType):
+def extract_select_subquery(sql_query: str, query_type: ProcessedSQLQueryNodeType) -> Union[str, None]:
+    """Finds and extracts SELECT subquery from complex SQL query.
+
+    Args:
+        sql_query (str): SQL query from which to find and extract SELECT subquery.
+        query_type (ProcessedSQLQueryNodeType): Type of SELECT subquery.
+
+    Returns:
+        Union[str, None]: Extracted subquery (starting from SELECT) if found, None else.
+    """
     query_type_token = query_type.value
 
     start_idx = sql_query.find(query_type_token)
@@ -34,29 +43,49 @@ def extract_select_subquery(sql_query: str, query_type: ProcessedSQLQueryNodeTyp
             print("[handle_nested_select] parenthesis imbalance detected: " + sql_query)
             return None
 
-    nested_query = sql_query[start_idx:finish_idx]
-    return nested_query
+    extracted_subquery = sql_query[start_idx:finish_idx]
+    return extracted_subquery
 
 
-def handle_select_subquery(sql_query: str, tree_header: ProcessedSQLQueryTree, query_type: ProcessedSQLQueryNodeType) -> ProcessedSQLQueryNode:
-    subquery = extract_select_subquery(sql_query, query_type)
-    # if subquery == None:
-    #     table_expr_str = extract_table_expr_from_query(sql_query)
-    #     table_expr_symbol_key = tree_header.get_symbol_key()
-    #     table_expr = ProcessedSQLTableExpr(
-    #         orig_table_expr=table_expr_str, table_expr_symbol_key=table_expr_symbol_key)
+def convert_query_to_tree_node(sql_query: str, tree_header: ProcessedSQLQueryTree) -> ProcessedSQLQueryNode:
+    """If there are SELECT subqueries to extract, extracts one layer of SELECT subquery into a tree,
+    with recursion to generate subtrees on remaining layers.
 
-    #     final_sql_query = substitute_symbol_for_table_expr(
-    #         sql_query, table_expr_str, table_expr_symbol_key)
+    Args:
+        sql_query (str): Full SQL query string to decompose.
+        tree_header (ProcessedSQLQueryTree): Tree header.
 
-    #     return ProcessedSQLQueryNode(
-    #         node_type=ProcessedSQLQueryNodeType.LEAF,
-    #         sql_query=final_sql_query,
-    #         sql_query_table_expr=table_expr,
-    #         pandas_query=sql2pandas(final_sql_query),
-    #         left_node=None,
-    #         right_node=None
-    #     )
+    Returns:
+        ProcessedSQLQueryNode: Tree node rooted at tree containing decomposed SQL query.
+    """
+    sql_query = basic_clean_query(sql_query)
+
+    query_type, subquery = None, None
+    for find_query_type in ProcessedSQLQueryNodeType:
+        found_subquery = extract_select_subquery(sql_query, find_query_type)
+        if found_subquery != None:
+            query_type = find_query_type
+            subquery = found_subquery
+            break
+
+    # Base case: LEAF node
+    if query_type == None or subquery == None:
+        table_expr_str = extract_table_expr_from_query(sql_query)
+        table_expr_symbol_key = tree_header.get_symbol_key()
+        table_expr = ProcessedSQLTableExpr(
+            orig_table_expr=table_expr_str, table_expr_symbol_key=table_expr_symbol_key)
+
+        final_sql_query = substitute_symbol_for_table_expr(
+            sql_query, table_expr_str, table_expr_symbol_key)
+
+        return ProcessedSQLQueryNode(
+            node_type=ProcessedSQLQueryNodeType.LEAF,
+            sql_query=final_sql_query,
+            sql_query_table_expr=table_expr,
+            pandas_query=sql2pandas(final_sql_query),
+            left_node=None,
+            right_node=None
+        )
 
     idx = sql_query.find(subquery)
     if idx < 0:
@@ -69,11 +98,11 @@ def handle_select_subquery(sql_query: str, tree_header: ProcessedSQLQueryTree, q
         left_query = sql_query[0:idx] + \
             symbol_key + sql_query[idx+len(subquery):]
 
-        left_node = preprocess_sql_query_into_root_node(
+        left_node = convert_query_to_tree_node(
             left_query, tree_header)
         left_node.set_external_symbol(symbol_key)
 
-        right_node = preprocess_sql_query_into_root_node(
+        right_node = convert_query_to_tree_node(
             subquery, tree_header)
         right_node.set_internal_symbol(symbol_key)
 
@@ -93,52 +122,42 @@ def handle_select_subquery(sql_query: str, tree_header: ProcessedSQLQueryTree, q
         return root_node
 
     left_query = sql_query[0:idx-len(query_type.value)]
-    left_node = preprocess_sql_query_into_root_node(left_query, tree_header)
+    left_node = convert_query_to_tree_node(left_query, tree_header)
 
-    right_node = preprocess_sql_query_into_root_node(subquery, tree_header)
+    right_node = convert_query_to_tree_node(subquery, tree_header)
 
     root_node = ProcessedSQLQueryNode(
-        node_type=query_type, sql_query=None, sql_query_table_expr=None, pandas_query=None, left_node=left_node, right_node=right_node)
+        node_type=query_type,
+        sql_query=None,
+        sql_query_table_expr=None,
+        pandas_query=None,
+        left_node=left_node,
+        right_node=right_node
+    )
 
     # root_node.dump_processed_sql_tree()
     return root_node
 
 
-def preprocess_sql_query_into_root_node(sql_query: str, tree_header: ProcessedSQLQueryTree) -> ProcessedSQLQueryNode:
-    sql_query = basic_clean_query(sql_query)
-
-    for query_type in ProcessedSQLQueryNodeType:
-        if not extract_select_subquery(sql_query, query_type) == None:
-            return handle_select_subquery(sql_query, tree_header, query_type)
-
-    table_expr_str = extract_table_expr_from_query(sql_query)
-    table_expr_symbol_key = tree_header.get_symbol_key()
-    table_expr = ProcessedSQLTableExpr(
-        orig_table_expr=table_expr_str, table_expr_symbol_key=table_expr_symbol_key)
-
-    final_sql_query = substitute_symbol_for_table_expr(
-        sql_query, table_expr_str, table_expr_symbol_key)
-
-    return ProcessedSQLQueryNode(
-        node_type=ProcessedSQLQueryNodeType.LEAF,
-        sql_query=final_sql_query,
-        sql_query_table_expr=table_expr,
-        pandas_query=sql2pandas(final_sql_query),
-        left_node=None,
-        right_node=None
-    )
-
-
 def preprocess_sql_query(sql_query: str) -> ProcessedSQLQueryTree:
+    """Processes SQL query string into ProcessedSQLQueryTree.
+
+    Args:
+        sql_query (str): SQL query string to decompose.
+
+    Returns:
+        ProcessedSQLQueryTree: SQL query string tree decomposition.
+    """
     tree = ProcessedSQLQueryTree()
 
-    root_node = preprocess_sql_query_into_root_node(sql_query, tree)
+    root_node = convert_query_to_tree_node(sql_query, tree)
 
     tree.reset_root_node(root_node)
     return tree
 
 
 def get_pandas_code_snippet_from_tree_dfs(sql_query_node: ProcessedSQLQueryNode, code_snippets: List[str]):
+    """Helper function for get_pandas_code_snippet_from_tree"""
     if sql_query_node == None:
         return
 
@@ -170,7 +189,15 @@ def get_pandas_code_snippet_from_tree_dfs(sql_query_node: ProcessedSQLQueryNode,
         sql_query_node.left_node, code_snippets)
 
 
-def get_pandas_code_snippet_from_tree(sql_query_tree: ProcessedSQLQueryTree):
+def get_pandas_code_snippet_from_tree(sql_query_tree: ProcessedSQLQueryTree) -> List[str]:
+    """Generate list of executable pandas code from SQL query tree decomposition.
+
+    Args:
+        sql_query_tree (ProcessedSQLQueryTree): Tree from which to extract pandas code.
+
+    Returns:
+        List[str]: List of executable pandas statements, in order.
+    """
     code_snippets = list()
     get_pandas_code_snippet_from_tree_dfs(
         sql_query_tree.root_node, code_snippets)
@@ -178,6 +205,7 @@ def get_pandas_code_snippet_from_tree(sql_query_tree: ProcessedSQLQueryTree):
 
 
 def check_processed_sql_tree_dfs(node: ProcessedSQLQueryNode) -> Union[str, None]:
+    """Helper function for check_processed_sql_tree."""
     if node == None:
         return None
 
@@ -207,5 +235,16 @@ def check_processed_sql_tree_dfs(node: ProcessedSQLQueryNode) -> Union[str, None
     return None
 
 
-def check_processed_sql_tree(sql_query_tree: ProcessedSQLQueryTree) -> bool:
+def check_processed_sql_tree(sql_query_tree: ProcessedSQLQueryTree) -> Union[str, None]:
+    """Checks validity of ProcessedSQLQueryTree.
+
+    Ensure LEAF and non-LEAF nodes contain required fields (assertions fail if not),
+    and that pandas queries for LEAF nodes were generated without errors.
+
+    Args:
+        sql_query_tree (ProcessedSQLQueryTree): Tree to check validity.
+
+    Returns:
+        Union[str, None]: Error string if tree is invalid, or None if tree is valid.
+    """
     return check_processed_sql_tree_dfs(sql_query_tree.root_node)
