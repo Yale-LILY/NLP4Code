@@ -72,8 +72,8 @@ def codex_evaluate_pass_at_k(
                         result = codex(
                             [processed_input],
                             engine="code-davinci-001",
-                            temperature=0.5,
-                            top_p=0.75,
+                            temperature=1.0,
+                            top_p=1,
                             max_tokens=128,
                         )
 
