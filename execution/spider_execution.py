@@ -1,6 +1,6 @@
-from multiprocessing.sharedctypes import Value
 import sqlite3
 import pandas as pd
+import numpy as np
 
 from typing import List, Dict, Any, Union, Tuple
 
@@ -50,24 +50,47 @@ def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame]) -> Any:
         print(e)
         return None
 
-def spider_answer_eq(prediction: Union[pd.DataFrame, pd.Series], 
-                     gold_answer: Union[List[Tuple[Any]], int ,float]) -> bool:
+def flatten_list_of_list(l: List[List[Any]]) -> List[Any]:
+    result = []
+    for sublist in l:
+        if isinstance(sublist, list) or isinstance(sublist, tuple):
+            result.extend(sublist)
+        else:
+            result.append(sublist)
+
+    return result
+
+def spider_answer_eq(prediction: Union[pd.DataFrame, pd.Series, List[Tuple[Any]]], 
+                     gold_answer: Union[List[Tuple[Any]], int]) -> bool:
+
+    if isinstance(prediction, int) or isinstance(prediction, float):
+        prediction = [prediction]
     
-    if isinstance(prediction, pd.DataFrame):
+    if isinstance(prediction, list) or isinstance(prediction, np.ndarray):
+        if isinstance(gold_answer, list):
+            gold_flattened = flatten_list_of_list(gold_answer)
+            pred_flattened = flatten_list_of_list(prediction)
+            result = pred_flattened == gold_flattened
+        else:
+            result = False
+    elif isinstance(prediction, pd.DataFrame):
         if isinstance(gold_answer, list):
             # convert the dataframe to a list of tuples and check
-            pred_list = list(prediction.itertuples(index=False, name=None))
-            result = pred_list == gold_answer
+            pred_list = flatten_list_of_list(list(prediction.itertuples(index=False, name=None)))
+            gold_list = flatten_list_of_list(gold_answer)
+            result = pred_list == gold_list
         else:
             result = False
     elif isinstance(prediction, pd.Series):
         if isinstance(gold_answer, list):
             # convert the series to a list of tuples and check
-            pred_list = [(x,) for x in prediction.tolist()]
-            result = pred_list == gold_answer
+            pred_list = flatten_list_of_list(prediction.tolist())
+            gold_list = flatten_list_of_list(gold_answer)
+            result = pred_list == gold_list 
         else:
             result = False
     else:
-        raise ValueError("prediction must be a pandas dataframe or series, but is a {}".format(type(prediction)))
+        # raise ValueError("prediction must be a pandas dataframe or series, but is a {}".format(type(prediction)))
+        result = False
 
     return result
