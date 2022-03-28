@@ -19,7 +19,7 @@ def spider_execution_sql(sql: str, conn: sqlite3.Connection) -> Any:
 
         return cursor.fetchall()
     except sqlite3.OperationalError as e:
-        print(e)
+        print(f"Error {str(e)} in execution sql query {sql}")
         return None
 
 def db_to_df_dict(conn: sqlite3.Connection) -> Dict[str, pd.DataFrame]:
@@ -47,7 +47,7 @@ def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame]) -> Any:
         else:
             return None
     except Exception as e:
-        print(e)
+        print(f"error {str(e)} in execution code {code}")
         return None
 
 def flatten_list_of_list(l: List[List[Any]]) -> List[Any]:

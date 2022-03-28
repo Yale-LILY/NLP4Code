@@ -14,12 +14,12 @@ from execution.spider_execution import connect_databse, db_to_df_dict, spider_ex
 from execution.spider_execution import spider_execution_sql, spider_answer_eq
 
 manually_annotated_sql_to_py = {
-    # # train-7
-    # "SELECT DISTINCT T1.creation FROM department AS T1 JOIN management AS T2 ON T1.department_id  =  T2.department_id JOIN head AS T3 ON T2.head_id  =  T3.head_id WHERE T3.born_state  =  'Alabama'": \
-    #     "t1 = pd.merge(department, management, on='department_id'); t2 = pd.merge(t1, head, on='head_id'); t3 = t2[t2['born_state'] == 'Alabama']; answer = t3['creation'].unique()",
-    # # train-15
-    # "SELECT T1.department_id ,  T1.name ,  count(*) FROM management AS T2 JOIN department AS T1 ON T1.department_id  =  T2.department_id GROUP BY T1.department_id HAVING count(*)  >  1": \
-    #     "t1 = pd.merge(management, department, on='department_id'); t2 = pd.merge(t1, t1.groupby('department_id').size().rename('count'), on='department_id'); t3 = t2[t2['count'] > 1]; answer = t3[['department_id', 'name', 'count']].drop_duplicates()",
+    # train-7
+    "SELECT DISTINCT T1.creation FROM department AS T1 JOIN management AS T2 ON T1.department_id  =  T2.department_id JOIN head AS T3 ON T2.head_id  =  T3.head_id WHERE T3.born_state  =  'Alabama'": \
+        "t1 = pd.merge(department, management, on='department_id')\nt2 = pd.merge(t1, head, on='head_id')\nt3 = t2[t2['born_state'] == 'Alabama']\nanswer = t3['creation'].unique()",
+    # train-15
+    "SELECT T1.department_id ,  T1.name ,  count(*) FROM management AS T2 JOIN department AS T1 ON T1.department_id  =  T2.department_id GROUP BY T1.department_id HAVING count(*)  >  1": \
+        "t1 = pd.merge(management, department, on='department_id')\nt2 = pd.merge(t1, t1.groupby('department_id').size().rename('count'), on='department_id')\nt3 = t2[t2['count'] > 1]\nanswer = t3[['department_id', 'name', 'count']].drop_duplicates()",
 }
 
 def example_to_demonstration_sql(example: Dict, train: bool = True) -> Text:
@@ -58,20 +58,23 @@ def promptify_sql(prompt_examples: List[Dict], example: Dict) -> Text:
     return prompt
 
 
-def example_to_demonstration_python(example: Dict, train: bool = True) -> Text:
+def example_to_demonstration_python(example: Dict, train: bool = True, code_as_is: bool = False) -> Text:
     text = f'# Dataset {example["db_id"]}:\n\n'
     
     for table_name, columns in example['db_table_headers'].items():
         column_representation = ', '.join(columns)
-        text += f"""# DataFrame {table_name}: {column_representation}
+        text += f"""# DataFrame {table_name}: {column_representation.lower()}
 {table_name} = df_dict['{table_name}']\n"""
     
     text += '\n' + f'# Question: {example["question"]}\n'
 
     if train:
-        text += f'answer = {example["pandas_converted"]}'
+        if code_as_is:
+            text += f'{example["pandas_converted"]}\n\n'
+        else:
+            text += f'answer = {example["pandas_converted"]}\n\n'
     else:
-        text += 'answer = '
+        text += ''
 
     return text
 
@@ -80,7 +83,8 @@ def promptify_python(prompt_examples: List[Dict], example: Dict) -> Text:
     prompt = '# Translate natural language questions into Pandas programs.\n'
 
     for idx, prompt_example in enumerate(prompt_examples, 1):
-        example_text = example_to_demonstration_python(prompt_example)
+        code_as_is = "answer = " in prompt_example["pandas_converted"]
+        example_text = example_to_demonstration_python(prompt_example, code_as_is=code_as_is)
         prompt += '\n' + example_text + '\n'
 
     example_text = example_to_demonstration_python(example, train=False)
@@ -150,10 +154,11 @@ def test_spider_few_shot(train_examples: List[Dict[str, Any]], dev_examples: Lis
     # split the data into few-shot examples and test examples
     few_shot_examples, _ = select_few_shot_examples(train_examples, n=5)
     test_examples = dev_examples
+    random.shuffle(few_shot_examples)
     random.shuffle(test_examples)
 
     # save the results to file line by line
-    f = open("spider_codex_sql_py_few_shot_results_v3.jsonl", "w+")
+    f = open("spider_codex_sql_py_few_shot_results_v5.jsonl", "w+")
 
     sql_result_list = []
     py_result_list = []
@@ -164,6 +169,7 @@ def test_spider_few_shot(train_examples: List[Dict[str, Any]], dev_examples: Lis
         try:
             df_dict = db_to_df_dict(conn)
         except sqlite3.OperationalError as e:
+            print("skip example with unsucessful db_to_df_dict conversion")
             continue
 
         # get the two versions of the prompt
@@ -182,7 +188,7 @@ def test_spider_few_shot(train_examples: List[Dict[str, Any]], dev_examples: Lis
                 continue
     
         generated_sql = sql_results[0].split('\n')[0]
-        generated_py = py_results[0].split('\n')[0]
+        generated_py = py_results[0].split('\n\n')[0]
 
         assert len(sql_results) == 1
         assert len(py_results) == 1
@@ -227,7 +233,7 @@ if __name__ == "__main__":
 
     exit(0)
 
-    with open("spider_codex_sql_py_few_shot_results.jsonl", "r") as f:
+    with open("spider_codex_sql_py_few_shot_results_v3.jsonl", "r") as f:
         data = [json.loads(line) for line in f]
 
         sql_acc_accum, sql_rate = 0, 0
