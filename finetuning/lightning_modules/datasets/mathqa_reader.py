@@ -4,12 +4,13 @@ import sys
 import os
 import torch
 
+from functools import partial
 from typing import Dict, Iterable, List, Any, Optional, Union
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import Dataset
 
-from lightning_modules.models.seq2seq_model_util import get_model, left_pad_sequences
+from lightning_modules.models.seq2seq_model_util import get_model, left_pad_sequences, right_pad_sequences
 from execution.program_tracing import get_state_repr, is_trivial_state
 
 from torch.utils.data import DataLoader
@@ -40,7 +41,7 @@ class MathQADataset(Dataset):
         assert mode in ["train", "test", "test_few_shot"]
 
         _, self.tokenizer = get_model(transformer_model_name, tokenizer_only=True)
-
+        self.transformer_model_name = transformer_model_name
         self.max_instances = max_instances
         self.mode = mode
         self.multi_example_instance = multi_example_instance
@@ -55,7 +56,12 @@ class MathQADataset(Dataset):
 
         tokenizer_outputs = self.tokenizer("\n".join([example["text"], example["code"]]))
 
-
+        if self.transformer_model_name.startswith("Salesforce/codet5"):
+            tokenizer_outputs = self.tokenizer(example["text"] + "\n")
+            example_dict["labels"] = self.tokenizer(example["code"])["input_ids"]
+        else:   
+            tokenizer_outputs = self.tokenizer("\n".join([example["text"], example["code"]]))
+            
         example_dict["input_ids"] = tokenizer_outputs["input_ids"] + [self.tokenizer.eos_token_id]
         example_dict["attention_mask"] = tokenizer_outputs["attention_mask"] + [1]
         example_dict["metadata"]["pad_token_id"] = self.tokenizer.pad_token_id
@@ -148,7 +154,7 @@ class MathQAMmlDataset(MathQADataset):
         return example_dict
 
 
-def customized_collate_fn(examples: List[Dict[str, Any]]) -> Dict[str, Any]:
+def customized_collate_fn(examples: List[Dict[str, Any]], padding_fn) -> Dict[str, Any]:
     result_dict = {}
 
     pad_token_id = examples[0]["metadata"]["pad_token_id"]
@@ -157,16 +163,16 @@ def customized_collate_fn(examples: List[Dict[str, Any]]) -> Dict[str, Any]:
         if k == "metadata":
             result_dict[k] = [ex[k] for ex in examples]
         elif k == "input_ids":
-            result_dict[k] = left_pad_sequences([torch.tensor(ex[k]) for ex in examples], 
+            result_dict[k] = padding_fn([torch.tensor(ex[k]) for ex in examples], 
                                 batch_first=True, padding_value=pad_token_id)
         elif k == "attention_mask":
-            result_dict[k] = left_pad_sequences([torch.tensor(ex[k]) for ex in examples], 
+            result_dict[k] = padding_fn([torch.tensor(ex[k]) for ex in examples], 
                                 batch_first=True, padding_value=0)
         elif k == "state_mask":
-            result_dict[k] = left_pad_sequences([torch.tensor(ex[k]) for ex in examples], 
+            result_dict[k] = padding_fn([torch.tensor(ex[k]) for ex in examples], 
                                 batch_first=True, padding_value=0)
         elif k == "labels":
-            result_dict[k] = left_pad_sequences([torch.tensor(ex[k]) for ex in examples], 
+            result_dict[k] = padding_fn([torch.tensor(ex[k]) for ex in examples], 
                                 batch_first=True, padding_value=pad_token_id)
         else:
             raise ValueError(f"Unknown key {k} in example instance")
@@ -219,17 +225,25 @@ class MathQADataModule(LightningDataModule):
     def train_dataloader(self):
         if self.train_data is None:
             self.setup(stage="fit")
+        if self.transformer_model_name.startswith("Salesforce/codet5"):
+            dtloader = DataLoader(self.train_data, batch_size=self.batch_size, 
+                               shuffle=True, drop_last=True, collate_fn=partial(customized_collate_fn, padding_fn=right_pad_sequences))
+        else:
+            dtloader = DataLoader(self.train_data, batch_size=self.batch_size, 
+                               shuffle=True, drop_last=True, collate_fn=partial(customized_collate_fn, padding_fn=left_pad_sequences))
 
-        dtloader = DataLoader(self.train_data, batch_size=self.batch_size, 
-                               shuffle=True, drop_last=True, collate_fn=customized_collate_fn)
         return dtloader
 
     def val_dataloader(self):
         if self.val_data is None:
             self.setup(stage="validate")
-
-        dtloader = DataLoader(self.val_data, batch_size=self.val_batch_size, 
-                               shuffle=False, drop_last=True, collate_fn=customized_collate_fn)
+            
+        if self.transformer_model_name.startswith("Salesforce/codet5"):
+            dtloader = DataLoader(self.val_data, batch_size=self.val_batch_size, 
+                               shuffle=False, drop_last=True, collate_fn=partial(customized_collate_fn, padding_fn=right_pad_sequences))
+        else:
+            dtloader = DataLoader(self.val_data, batch_size=self.val_batch_size, 
+                               shuffle=False, drop_last=True, collate_fn=partial(customized_collate_fn, padding_fn=left_pad_sequences))
         return dtloader
 
     def test_dataloader(self):

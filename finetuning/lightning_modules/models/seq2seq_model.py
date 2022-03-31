@@ -74,6 +74,14 @@ def post_process_code(code, remove_comments=True, remove_extra_lines=False, ast_
 
     return code
 
+def get_generated_programs(transformer_model_name, tokenizer, generated_strs):
+    if transformer_model_name.startswith("Salesforce/codet5"):
+        temp =  [s.split(tokenizer.eos_token)[0] for s in generated_strs]
+        return [s.split(tokenizer.cls_token)[1] if tokenizer.cls_token in s else s for s in temp]
+    else:
+        return [s.split(tokenizer.eos_token)[0] for s in generated_strs]
+        
+    
 class Seq2SeqModel(LightningModule):
     def __init__(self, 
                  transformer_model_name: str,
@@ -91,7 +99,7 @@ class Seq2SeqModel(LightningModule):
                  lr_scheduler: Dict[str, Any] = None,
                  load_ckpt_file: str = None) -> None:
         super().__init__()
-
+        self.transformer_model_name = transformer_model_name
         self.max_gen_len = max_gen_len
         self.sampling_temp = sampling_temp
         self.sampling_temp_at_k = sampling_temp_at_k
@@ -142,36 +150,34 @@ class Seq2SeqModel(LightningModule):
     ) -> List[Dict[str, Any]]:
         """
         The inference time behavior of the model.
-
         Args:
             input_ids [torch.Tensor]: Tokens from the context. 
             metadata (Optional[List[Dict[str, Any]]], optional): All additional information, `List` for the batch. Defaults to None.
-
         Returns:
             Dict[str, Any]: results saved in a `Dict` object.
         """        
-
+        shift_flag = not self.transformer_model_name.startswith("Salesforce/codet5")
         generated_token_ids = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=True, 
-                                                max_length=input_ids.shape[1]+self.max_gen_len, 
+                                                max_length = shift_flag*input_ids.shape[1]+self.max_gen_len, 
                                                 temperature=self.sampling_temp)
 
-        generated_token_ids = generated_token_ids[:, input_ids.shape[1]:]
+        generated_token_ids = generated_token_ids[:, shift_flag*input_ids.shape[1]:]
 
         generated_strs = self.tokenizer.batch_decode(generated_token_ids)
 
         # truncate after the first '#' to be consistent with the codex prompting experiments
-        generated_programs = [s.split(self.tokenizer.eos_token)[0] for s in generated_strs]
+        generated_programs = get_generated_programs(self.transformer_model_name, self.tokenizer, generated_strs)
 
         output_dicts = [{"generated_program": generated_programs[i], "metadata": metadata[i]} \
                         for i in range(len(generated_programs))]
 
         if self.eval_greedy_search:
             generated_token_ids = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=False, 
-                                                    max_length=input_ids.shape[1]+self.max_gen_len)
-            generated_token_ids = generated_token_ids[:, input_ids.shape[1]:]
+                                                    max_length=shift_flag*input_ids.shape[1]+self.max_gen_len)
+            generated_token_ids = generated_token_ids[:, shift_flag*input_ids.shape[1]:]
             generated_strs = self.tokenizer.batch_decode(generated_token_ids)
             # truncate after the first '#' to be consistent with the codex prompting experiments
-            generated_programs = [s.split(self.tokenizer.eos_token)[0] for s in generated_strs]
+            generated_programs = get_generated_programs(self.transformer_model_name, self.tokenizer, generated_strs)
 
             for i in range(len(metadata)):
                 output_dicts[i]["greedy_generated_program"] =  generated_programs[i]
@@ -185,13 +191,13 @@ class Seq2SeqModel(LightningModule):
                 remaining_k -= generate_batch_size
                 batch_generated_token_ids = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, 
                                                         do_sample=True, 
-                                                        max_length=input_ids.shape[1]+self.max_gen_len, 
+                                                        max_length=shift_flag*input_ids.shape[1]+self.max_gen_len, 
                                                         temperature=self.sampling_temp_at_k, 
                                                         num_return_sequences=generate_batch_size)
 
-                batch_generated_token_ids = batch_generated_token_ids[:, input_ids.shape[1]:]
+                batch_generated_token_ids = batch_generated_token_ids[:, shift_flag*input_ids.shape[1]:]
                 batch_generated_strs = self.tokenizer.batch_decode(batch_generated_token_ids)
-                batch_generated_programs = [s.split(self.tokenizer.eos_token)[0] for s in batch_generated_strs]
+                batch_generated_programs = get_generated_programs(self.transformer_model_name, self.tokenizer, batch_generated_programs)
 
                 for i in range(len(metadata)):
                     generated_strs_list[i].extend(batch_generated_programs[i*generate_batch_size:(i+1)*generate_batch_size])
@@ -201,6 +207,7 @@ class Seq2SeqModel(LightningModule):
 
 
         return output_dicts
+
 
     def training_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
         input_ids = batch["input_ids"]
