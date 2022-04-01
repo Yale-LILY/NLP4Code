@@ -1,6 +1,6 @@
 from typing import Dict
 from clean_query import remove_consecutive_spaces
-from helpers import get_next_token_idx, get_cur_token, get_prev_token, get_next_token
+from helpers import get_next_token_idx, get_cur_token, get_prev_token, get_next_token, remove_prev_token
 import re
 
 
@@ -30,14 +30,14 @@ def extract_table_expr_from_query(simple_sql_query: str) -> str:
         start_idx += 1
     idx = get_next_token_idx(simple_sql_query, start_idx)
     while idx < len(simple_sql_query):
-        cur_word = get_cur_token(simple_sql_query, idx)
-        if cur_word == "JOIN":
+        cur_token = get_cur_token(simple_sql_query, idx)
+        if cur_token == "JOIN":
             idx = get_next_token_idx(simple_sql_query, idx)
             idx = get_next_token_idx(simple_sql_query, idx)
-        elif cur_word == "AS":
+        elif cur_token == "AS":
             idx = get_next_token_idx(simple_sql_query, idx)
             idx = get_next_token_idx(simple_sql_query, idx)
-        elif cur_word == "ON" or cur_word == "AND":
+        elif cur_token == "ON" or cur_token == "AND":
             idx = get_next_token_idx(simple_sql_query, idx)
             idx = simple_sql_query.find("=", idx)
             if idx < 0:
@@ -65,8 +65,8 @@ def extract_table_aliases(sql_table_expr: str) -> Dict[str, str]:
 
     idx = 0
     while idx < len(sql_table_expr):
-        cur_word = get_cur_token(sql_table_expr, idx)
-        if cur_word == "AS":
+        cur_token = get_cur_token(sql_table_expr, idx)
+        if cur_token == "AS":
             table_name = get_prev_token(sql_table_expr, idx)
             alias_name = get_next_token(sql_table_expr, idx)
             table_alias_dict.setdefault(alias_name, table_name)
@@ -76,6 +76,31 @@ def extract_table_aliases(sql_table_expr: str) -> Dict[str, str]:
             idx = get_next_token_idx(sql_table_expr, idx)
 
     return table_alias_dict
+
+
+def remove_table_aliases(sql_table_expr: str) -> str:
+    """Removes AS aliases for tables in table expression.
+
+    Args:
+        sql_table_expr (str): SQL table expression from which to create alias table.
+
+    Returns:
+        str: Redacted table expression, with just the aliases.
+    """
+
+    idx = 0
+    aliased_sql_table_expr = ""
+    while idx < len(sql_table_expr):
+        cur_token = get_cur_token(sql_table_expr, idx)
+        next_token = get_next_token(sql_table_expr, idx)
+        if next_token == "AS":
+            idx = get_next_token_idx(sql_table_expr, idx)
+            idx = get_next_token_idx(sql_table_expr, idx)
+        else:
+            aliased_sql_table_expr += cur_token + " "
+            idx = get_next_token_idx(sql_table_expr, idx)
+
+    return remove_consecutive_spaces(aliased_sql_table_expr)
 
 
 def substitute_symbol_for_table_expr(simple_sql_query: str, sql_table_expr: str, sub_symbol: str):

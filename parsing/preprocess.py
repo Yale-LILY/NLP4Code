@@ -188,7 +188,7 @@ def extract_pandas_table_expr_symbols_dfs(node: ProcessedSQLQueryNode, code_snip
     if node.node_type == ProcessedSQLQueryNodeType.LEAF:
         table_expr = node.sql_query_table_expr
         code_snippets.append(table_expr.table_expr_symbol_key + " = " +
-                             table_expr.orig_table_expr)  # TODO: turn this into pandas
+                             table_expr.aliased_table_expr)  # TODO: turn this into pandas
         return
 
     extract_pandas_table_expr_symbols_dfs(node.right_node, code_snippets)
@@ -224,7 +224,10 @@ def get_pandas_code_snippet_from_tree(sql_query_tree: ProcessedSQLQueryTree) -> 
     extract_pandas_table_expr_symbols_dfs(
         sql_query_tree.root_node, code_snippets)
     get_pandas_code_snippets_dfs(sql_query_tree.root_node, code_snippets)
-    return code_snippets
+
+    # Temp: remove duplicate code snippets (from repeated tables in subqueries)
+    # TODO: move table aliases to tree metainformation
+    return list(dict.fromkeys(code_snippets))
 
 
 def check_processed_sql_tree_dfs(node: ProcessedSQLQueryNode) -> Union[str, None]:

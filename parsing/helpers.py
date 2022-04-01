@@ -1,7 +1,7 @@
+from typing import Tuple
+
+
 # Removes any characters in `chars_to_remove` from the front of `s`
-from tracemalloc import start
-
-
 def trim_front(s, chars_to_remove):
     while s[0] in chars_to_remove:
         s = s[1:]
@@ -49,6 +49,9 @@ def is_next_token_select(partial_sql_query):
 
 
 def is_idx_at_token_start(sql_query: str, idx: int):
+    if idx >= len(sql_query):
+        return False
+
     if sql_query[idx] == " ":
         print("[is_idx_at_token_start] idx not in word")
         return False
@@ -110,3 +113,31 @@ def get_next_token(sql_query: str, idx: int):
 
     start_idx = get_next_token_idx(sql_query, idx)
     return get_cur_token(sql_query, start_idx)
+
+
+def remove_prev_token(s: str, idx: int) -> Tuple[str, int]:
+    """Removes previous token from idx, where idx is at start of token.
+
+    Args:
+        s (str): String from which to remove previous token
+        idx (int): Index of start of token, where previous token from idx is removed.
+
+    Returns:
+        Tuple[str, int]: Redacted string, and new position of idx
+    """
+    if idx == 0:
+        print("[get_prev_token] no prev token")
+        return None
+
+    if not is_idx_at_token_start(s, idx):
+        return None
+
+    finish_idx = idx - 1
+    while finish_idx - 1 >= 0 and s[finish_idx-1] == " ":
+        finish_idx -= 1
+
+    start_idx = finish_idx - 1
+    while start_idx - 1 >= 0 and s[start_idx - 1] != " ":
+        start_idx -= 1
+
+    return s[:start_idx] + s[finish_idx:], idx - (finish_idx - start_idx)

@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Union
 
-from process_table_expr import extract_table_aliases
+from process_table_expr import extract_table_aliases, remove_table_aliases
 
 
 class ProcessedSQLQueryNodeType(Enum):
@@ -27,6 +27,7 @@ class ProcessedSQLTableExpr:
         table_expr_symbol_key: str,
     ):
         self.orig_table_expr = orig_table_expr
+        self.aliased_table_expr = remove_table_aliases(orig_table_expr)
         self.table_expr_symbol_key = table_expr_symbol_key
         self.table_aliases = extract_table_aliases(orig_table_expr)
         self.pandas_table_expr = ""  # TODO
@@ -38,6 +39,8 @@ class ProcessedSQLTableExpr:
 
     def dump_table_expr(self, indent=4):
         print(" " * indent + "orig_table_expr: " + str(self.orig_table_expr))
+        print(" " * indent + "aliased_table_expr: " +
+              str(self.aliased_table_expr))
         print(" " * indent + "table_expr_symbol_key: " +
               str(self.table_expr_symbol_key))
         print(" " * indent + "table_aliases:")
