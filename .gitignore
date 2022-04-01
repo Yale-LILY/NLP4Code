@@ -138,3 +138,6 @@ data/
 debug-tmp/
 wandb/
 results/
+
+# defined by Troy
+.DS_Store
