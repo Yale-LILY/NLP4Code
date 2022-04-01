@@ -42,7 +42,8 @@ def extract_select_subquery(sql_query: str, query_type: ProcessedSQLQueryNodeTyp
     if query_type == ProcessedSQLQueryNodeType.NESTED_SELECT:
         finish_idx = find_closing_parenthesis(sql_query, start_idx)
         if finish_idx == -1:
-            print("[handle_nested_select] parenthesis imbalance detected: " + sql_query)
+            print(
+                f"[handle_nested_select] parenthesis imbalance detected: {sql_query}")
             return None
 
     extracted_subquery = sql_query[start_idx:finish_idx]
@@ -103,6 +104,7 @@ def convert_query_to_tree_node(sql_query: str, internal_symbol: str, tree_header
     left_symbol_key = tree_header.get_symbol_key()
     right_symbol_key = tree_header.get_symbol_key()
 
+    # Handle nested SELECT separately because of external key
     if query_type == ProcessedSQLQueryNodeType.NESTED_SELECT:
         left_query = sql_query[0:idx] + \
             right_symbol_key + sql_query[idx+len(subquery):]
@@ -187,8 +189,9 @@ def extract_pandas_table_expr_symbols_dfs(node: ProcessedSQLQueryNode, code_snip
 
     if node.node_type == ProcessedSQLQueryNodeType.LEAF:
         table_expr = node.sql_query_table_expr
-        code_snippets.append(table_expr.table_expr_symbol_key + " = " +
-                             table_expr.aliased_table_expr)  # TODO: turn this into pandas
+        # TODO: turn this into pandas
+        code_snippets.append(
+            f"{table_expr.table_expr_symbol_key} = {table_expr.aliased_table_expr}")
         return
 
     extract_pandas_table_expr_symbols_dfs(node.right_node, code_snippets)
@@ -242,7 +245,7 @@ def check_processed_sql_tree_dfs(node: ProcessedSQLQueryNode) -> Union[str, None
         assert(node.pandas_query != None)
         # assert(node.pandas_query.find("Error:") < 0)
         if node.pandas_query.find("Error:") >= 0:
-            return node.sql_query + " -> " + node.pandas_query
+            return f"{node.sql_query} -> {node.pandas_query}"
         return None
 
     assert(node.left_node != None and node.right_node != None)

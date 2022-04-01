@@ -16,8 +16,9 @@ def dump_dict(dict_obj, indent=4):
     if dict_obj == None:
         print("None")
     else:
+        indent_spaces = indent * " "
         for key in dict_obj.keys():
-            print(indent * " " + key + ": " + dict_obj[key])
+            print(f"{indent_spaces}{key}: {dict_obj[key]}")
 
 
 class ProcessedSQLTableExpr:
@@ -35,17 +36,17 @@ class ProcessedSQLTableExpr:
     def extract_table_aliases(self, code_snippets: List[str]):
         for key in self.table_aliases:
             # TODO: turn this into pandas
-            code_snippets.append(key + " = " + self.table_aliases[key])
+            code_snippets.append(f"{key} = {self.table_aliases[key]}")
 
     def dump_table_expr(self, indent=4):
-        print(" " * indent + "orig_table_expr: " + str(self.orig_table_expr))
-        print(" " * indent + "aliased_table_expr: " +
-              str(self.aliased_table_expr))
-        print(" " * indent + "table_expr_symbol_key: " +
-              str(self.table_expr_symbol_key))
-        print(" " * indent + "table_aliases:")
+        indent_spaces = indent * " "
+
+        print(f"{indent_spaces}orig_table_expr: {self.orig_table_expr}")
+        print(f"{indent_spaces}aliased_table_expr: {self.aliased_table_expr}")
+        print(f"{indent_spaces}table_expr_symbol_key: {self.table_expr_symbol_key}")
+        print(f"{indent_spaces}table_aliases:")
         dump_dict(self.table_aliases, indent=2*indent)
-        print(" " * indent + "pandas_table_expr: " + str(self.pandas_table_expr))
+        print(f"{indent_spaces}pandas_table_expr: {self.pandas_table_expr}")
 
 
 class ProcessedSQLQueryNode:
@@ -93,15 +94,15 @@ class ProcessedSQLQueryNode:
         if not self.left_node == None:
             self.left_node.dump_processed_sql_tree()
 
-        print("node_type: " + str(self.node_type))
-        print("internal_symbol: " + str(self.internal_symbol))
+        print(f"node_type: {self.node_type}")
+        print(f"internal_symbol: {self.internal_symbol}")
 
         if self.node_type == ProcessedSQLQueryNodeType.LEAF:
-            print("processed_query: " + str(self.sql_query))
+            print(f"processed_query: {self.sql_query}")
             print("sql_query_table_expr:")
             self.sql_query_table_expr.dump_table_expr()
-            print("pandas_query: " + str(self.pandas_query))
-            print("external_symbol: " + str(self.external_symbol))
+            print(f"pandas_query: {self.pandas_query}")
+            print(f"external_symbol: {self.external_symbol}")
 
         print()
 
@@ -125,7 +126,7 @@ class ProcessedSQLQueryTree:
 
     def get_symbol_key(self):
         """Generate symbol key based on number of symbols currently in tree."""
-        symbol_key = "symbol_" + str(self.symbol_count)
+        symbol_key = f"symbol_{self.symbol_count}"
         self.symbol_count += 1
         return symbol_key
 
@@ -148,8 +149,7 @@ class ProcessedSQLQueryTree:
         print("-------- symbol_table --------")
         for key in self.symbol_table.keys():
             (query_str, tree_node) = self.symbol_table[key]
-            print(key + ": " + query_str +
-                  " (rooted at node " + str(tree_node) + ")")
+            print(f"{key}: {query_str} (rooted at node {tree_node})")
 
         print("\n-------- symbol_count --------")
         print(str(self.symbol_count))
