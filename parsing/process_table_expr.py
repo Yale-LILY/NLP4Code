@@ -1,6 +1,6 @@
-from typing import Dict
+from typing import Dict, List, Tuple
 from clean_query import remove_consecutive_spaces
-from helpers import get_next_token_idx, get_cur_token, get_prev_token, get_next_token, remove_prev_token
+from helpers import get_next_token_idx, get_cur_token, get_prev_token, get_next_token, extract_table_column, get_first_token
 import re
 
 
@@ -52,7 +52,7 @@ def extract_table_expr_from_query(simple_sql_query: str) -> str:
     return simple_sql_query[start_idx:idx].strip()
 
 
-def extract_table_aliases(sql_table_expr: str) -> Dict[str, str]:
+def extract_table_aliases_from_table_expr(sql_table_expr: str) -> Dict[str, str]:
     """Extracts AS aliases for tables in table expression.
 
     Args:
@@ -122,13 +122,113 @@ def substitute_symbol_for_table_expr(simple_sql_query: str, sql_table_expr: str,
     return re.sub(sql_table_expr, sub_symbol, simple_sql_query)
 
 
-def sql_table_expr_to_pandas(sql_table_expr: str) -> str:
-    """TODO
+def extract_join_segments(aliased_sql_table_expr: str) -> List[str]:
+    """Extracts JOIN segments.
 
     Args:
-        sql_table_expr (str): _description_
+        aliased_sql_table_expr (str): SQL table expression with aliases only.
 
     Returns:
-        str: _description_
+        List[str]: Extract tokens between JOINs.
     """
-    return ""
+    # TODO: replace find JOIN with find(token) for list of tokens
+    join_segments = []
+    idx = 0
+    while idx < len(aliased_sql_table_expr):
+        next_idx = aliased_sql_table_expr.find("JOIN", idx)
+        if next_idx < 0:
+            segment = aliased_sql_table_expr[idx:]
+            segment = remove_consecutive_spaces(segment)
+            join_segments.append(segment)
+            return join_segments
+
+        segment = aliased_sql_table_expr[idx:next_idx]
+        segment = remove_consecutive_spaces(segment)
+        join_segments.append(segment)
+        idx = next_idx + len("JOIN")
+
+    return join_segments
+
+
+# TODO: extract ONs for each segment
+def extract_on_cols_from_join_segment(join_segment: str) -> List[Tuple[str, str]]:
+    on_cols = []
+    idx = 0
+    while idx < len(join_segment):
+        cur_token = get_cur_token(join_segment, idx)
+        if cur_token == "ON":
+            idx = get_next_token_idx(join_segment, idx)
+            left_finish_idx = join_segment.find("=", idx)
+            if left_finish_idx < 0:
+                print("[extract_on_from_join_segment] left_finish_idx < 0")
+                return on_cols
+
+            left_col = join_segment[idx:left_finish_idx]
+            left_col = remove_consecutive_spaces(left_col)
+            idx = left_finish_idx + 1
+            idx = get_next_token_idx(join_segment, idx)
+            right_finish_idx = join_segment.find(" ", idx)
+            if right_finish_idx < 0:
+                right_finish_idx = len(join_segment)
+
+            right_col = join_segment[idx:right_finish_idx]
+            right_col = remove_consecutive_spaces(right_col)
+            on_cols.append((left_col, right_col))
+            idx = get_next_token_idx(join_segment, right_finish_idx)
+        else:
+            idx = get_next_token_idx(join_segment, idx)
+
+    return on_cols
+
+
+def join_two_tables(t1: str, t2: str, on_cols: List[Tuple[str, str]]) -> str:
+    # TODO: different types of JOINs
+    if len(on_cols) == 0:
+        return f"pd.merge({t1}, {t2})"
+
+    left_on = []
+    right_on = []
+    for l_on_col, r_on_col in on_cols:
+        # TODO: clean this up?
+        left_on.append(extract_table_column(l_on_col))
+        right_on.append(extract_table_column(r_on_col))
+    return f"pd.merge({t1}, {t2}, left_on={left_on}, right_on={right_on})"
+
+
+def sql_table_expr_join_segments_to_snippets(join_segments: List[Tuple[str, str]], left_symbol: str, right_idx: int, pandas_snippets: List[str], get_symbol) -> str:
+    if right_idx >= len(join_segments):
+        return left_symbol
+
+    right_segment = join_segments[right_idx]
+    on_cols = extract_on_cols_from_join_segment(right_segment)
+    joined_table_expr = join_two_tables(
+        left_symbol, get_first_token(right_segment), on_cols)
+    new_symbol = get_symbol()
+    snippet = f"{new_symbol} = {joined_table_expr}"
+    pandas_snippets.append(snippet)
+
+    return sql_table_expr_join_segments_to_snippets(
+        join_segments, new_symbol, right_idx+1, pandas_snippets, get_symbol)
+
+
+def sql_table_expr_to_pandas_snippets(table_expr_symbol: str, aliased_sql_table_expr: str, get_symbol) -> List[str]:
+    """Given aliased SQL table expression (i.e. JOIN, ON, AND), return code snippets corresponding to pandas conversion.
+
+    Args:
+        aliased_sql_table_expr (str): Simple table expression (no AS aliases, only symbols).
+
+    Returns:
+        List[str]: List of pandas snippets corresponding to aliased_sql_table_expr.
+    """
+    join_segments = extract_join_segments(aliased_sql_table_expr)
+
+    if len(join_segments) == 0:
+        return [join_segments[0]]
+
+    pandas_snippets = []
+    final_symbol = sql_table_expr_join_segments_to_snippets(
+        join_segments, join_segments[0], 1, pandas_snippets, get_symbol)
+
+    pandas_snippets.append(f"{table_expr_symbol} = {final_symbol}")
+
+    return pandas_snippets

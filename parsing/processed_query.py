@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Union
 
-from process_table_expr import extract_table_aliases, remove_table_aliases
+from process_table_expr import extract_table_aliases_from_table_expr, remove_table_aliases, sql_table_expr_to_pandas_snippets
 
 
 class ProcessedSQLQueryNodeType(Enum):
@@ -26,16 +26,19 @@ class ProcessedSQLTableExpr:
         self,
         orig_table_expr: str,
         table_expr_symbol_key: str,
+        get_symbol,
     ):
         self.orig_table_expr = orig_table_expr
-        self.aliased_table_expr = remove_table_aliases(orig_table_expr)
+        aliased_table_expr = remove_table_aliases(orig_table_expr)
+        self.aliased_table_expr = aliased_table_expr
         self.table_expr_symbol_key = table_expr_symbol_key
-        self.table_aliases = extract_table_aliases(orig_table_expr)
-        self.pandas_table_expr = ""  # TODO
+        self.table_aliases = extract_table_aliases_from_table_expr(
+            orig_table_expr)
+        self.table_expr_pandas_snippets = sql_table_expr_to_pandas_snippets(
+            table_expr_symbol=table_expr_symbol_key, aliased_sql_table_expr=aliased_table_expr, get_symbol=get_symbol)
 
     def extract_table_aliases(self, code_snippets: List[str]):
         for key in self.table_aliases:
-            # TODO: turn this into pandas
             code_snippets.append(f"{key} = {self.table_aliases[key]}")
 
     def dump_table_expr(self, indent=4):
@@ -46,7 +49,8 @@ class ProcessedSQLTableExpr:
         print(f"{indent_spaces}table_expr_symbol_key: {self.table_expr_symbol_key}")
         print(f"{indent_spaces}table_aliases:")
         dump_dict(self.table_aliases, indent=2*indent)
-        print(f"{indent_spaces}pandas_table_expr: {self.pandas_table_expr}")
+        print(
+            f"{indent_spaces}table_expr_pandas_snippets: {self.table_expr_pandas_snippets}")
 
 
 class ProcessedSQLQueryNode:

@@ -141,3 +141,23 @@ def remove_prev_token(s: str, idx: int) -> Tuple[str, int]:
         start_idx -= 1
 
     return s[:start_idx] + s[finish_idx:], idx - (finish_idx - start_idx)
+
+
+def extract_table_column(join_on_col: str) -> str:
+    """For a table column of the form TABLE.COLUMN (as in JOIN), extract COLUMN.
+
+    Args:
+        join_on_col (str): Full name of column, potentially with table specified.
+
+    Returns:
+        str: Extracted column (without specified table, if specified).
+    """
+    dot_idx = join_on_col.find(".")
+    return join_on_col if dot_idx < 0 else join_on_col[dot_idx+1:]
+
+
+def get_first_token(s: str) -> str:
+    idx = s.find(" ")
+    if idx < 0:
+        idx = len(s)
+    return s[:idx]

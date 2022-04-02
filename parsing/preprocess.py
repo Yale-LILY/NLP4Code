@@ -77,7 +77,7 @@ def convert_query_to_tree_node(sql_query: str, internal_symbol: str, tree_header
         table_expr_str = extract_table_expr_from_query(sql_query)
         table_expr_symbol_key = tree_header.get_symbol_key()
         table_expr = ProcessedSQLTableExpr(
-            orig_table_expr=table_expr_str, table_expr_symbol_key=table_expr_symbol_key)
+            orig_table_expr=table_expr_str, table_expr_symbol_key=table_expr_symbol_key, get_symbol=tree_header.get_symbol_key)
 
         final_sql_query = substitute_symbol_for_table_expr(
             sql_query, table_expr_str, table_expr_symbol_key)
@@ -188,10 +188,8 @@ def extract_pandas_table_expr_symbols_dfs(node: ProcessedSQLQueryNode, code_snip
         return
 
     if node.node_type == ProcessedSQLQueryNodeType.LEAF:
-        table_expr = node.sql_query_table_expr
-        # TODO: turn this into pandas
-        code_snippets.append(
-            f"{table_expr.table_expr_symbol_key} = {table_expr.aliased_table_expr}")
+        code_snippets.extend(
+            node.sql_query_table_expr.table_expr_pandas_snippets)
         return
 
     extract_pandas_table_expr_symbols_dfs(node.right_node, code_snippets)
@@ -224,8 +222,12 @@ def get_pandas_code_snippet_from_tree(sql_query_tree: ProcessedSQLQueryTree) -> 
     code_snippets = list()
     extract_pandas_table_aliases_dfs(
         sql_query_tree.root_node, code_snippets)
+    code_snippets.append("")
+
     extract_pandas_table_expr_symbols_dfs(
         sql_query_tree.root_node, code_snippets)
+    code_snippets.append("")
+
     get_pandas_code_snippets_dfs(sql_query_tree.root_node, code_snippets)
 
     # Temp: remove duplicate code snippets (from repeated tables in subqueries)
