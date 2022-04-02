@@ -291,4 +291,9 @@ def sql_query_to_pandas_code_snippets(sql_query: str) -> List[str]:
         List[str]: Executable pandas lines, in order.
     """
     sql_tree = preprocess_sql_query_into_tree(sql_query=sql_query)
+    error_check = check_processed_sql_tree(sql_query_tree=sql_tree)
+
+    if error_check is not None:
+        return [f"# Error: unable to convert {error_check}"]
+
     return get_pandas_code_snippets_from_tree(sql_query_tree=sql_tree)
