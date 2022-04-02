@@ -151,7 +151,7 @@ def convert_query_to_tree_node(sql_query: str, internal_symbol: str, tree_header
     return root_node
 
 
-def preprocess_sql_query(sql_query: str) -> ProcessedSQLQueryTree:
+def preprocess_sql_query_into_tree(sql_query: str) -> ProcessedSQLQueryTree:
     """Processes SQL query string into ProcessedSQLQueryTree.
 
     Args:
@@ -210,7 +210,7 @@ def get_pandas_code_snippets_dfs(sql_query_node: ProcessedSQLQueryNode, code_sni
     code_snippets.append(extract_pandas_code_snippet_from_node(sql_query_node))
 
 
-def get_pandas_code_snippet_from_tree(sql_query_tree: ProcessedSQLQueryTree) -> List[str]:
+def get_pandas_code_snippets_from_tree(sql_query_tree: ProcessedSQLQueryTree) -> List[str]:
     """Generate list of executable pandas code from SQL query tree decomposition.
 
     Args:
@@ -220,14 +220,14 @@ def get_pandas_code_snippet_from_tree(sql_query_tree: ProcessedSQLQueryTree) -> 
         List[str]: List of executable pandas statements, in order.
     """
     code_snippets = list()
+    code_snippets.append("# Tables")
     extract_pandas_table_aliases_dfs(
         sql_query_tree.root_node, code_snippets)
-    code_snippets.append("")
 
     extract_pandas_table_expr_symbols_dfs(
         sql_query_tree.root_node, code_snippets)
-    code_snippets.append("")
 
+    code_snippets.append("\n# Query")
     get_pandas_code_snippets_dfs(sql_query_tree.root_node, code_snippets)
 
     # Temp: remove duplicate code snippets (from repeated tables in subqueries)
@@ -279,3 +279,16 @@ def check_processed_sql_tree(sql_query_tree: ProcessedSQLQueryTree) -> Union[str
         Union[str, None]: Error string if tree is invalid, or None if tree is valid.
     """
     return check_processed_sql_tree_dfs(sql_query_tree.root_node)
+
+
+def sql_query_to_pandas_code_snippets(sql_query: str) -> List[str]:
+    """Exposed function API to convert raw SQL query string into pandas code snippets.
+
+    Args:
+        sql_query (str): Raw SQL query.
+
+    Returns:
+        List[str]: Executable pandas lines, in order.
+    """
+    sql_tree = preprocess_sql_query_into_tree(sql_query=sql_query)
+    return get_pandas_code_snippets_from_tree(sql_query_tree=sql_tree)

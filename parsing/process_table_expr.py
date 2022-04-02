@@ -125,6 +125,8 @@ def substitute_symbol_for_table_expr(simple_sql_query: str, sql_table_expr: str,
 def extract_join_segments(aliased_sql_table_expr: str) -> List[str]:
     """Extracts JOIN segments.
 
+    Each segment is of the form "TABLE_NAME [ON left_col = right_col AND ...]".
+
     Args:
         aliased_sql_table_expr (str): SQL table expression with aliases only.
 
@@ -150,8 +152,15 @@ def extract_join_segments(aliased_sql_table_expr: str) -> List[str]:
     return join_segments
 
 
-# TODO: extract ONs for each segment
 def extract_on_cols_from_join_segment(join_segment: str) -> List[Tuple[str, str]]:
+    """Extracts all left/right ON cols from JOIN segment.
+
+    Args:
+        join_segment (str): JOIN segment from which to extract JOIN ON cols.
+
+    Returns:
+        List[Tuple[str, str]]: List of (left_col, right_col) pairs.
+    """
     on_cols = []
     idx = 0
     while idx < len(join_segment):
@@ -182,6 +191,16 @@ def extract_on_cols_from_join_segment(join_segment: str) -> List[Tuple[str, str]
 
 
 def join_two_tables(t1: str, t2: str, on_cols: List[Tuple[str, str]]) -> str:
+    """Given two tables, and the columns on which to join them, return pandas code to join those two tables.
+
+    Args:
+        t1 (str): Left table symbol.
+        t2 (str): Right table symbol.
+        on_cols (List[Tuple[str, str]]): Columns on which to JOIN left/right tables.
+
+    Returns:
+        str: One line of pandas code corresponding to JOIN operation.
+    """
     # TODO: different types of JOINs
     if len(on_cols) == 0:
         return f"pd.merge({t1}, {t2})"
@@ -196,6 +215,18 @@ def join_two_tables(t1: str, t2: str, on_cols: List[Tuple[str, str]]) -> str:
 
 
 def sql_table_expr_join_segments_to_snippets(join_segments: List[Tuple[str, str]], left_symbol: str, right_idx: int, pandas_snippets: List[str], get_symbol) -> str:
+    """Recursively create pandas snippets to JOIN segments together.
+
+    Args:
+        join_segments (List[Tuple[str, str]]): Segments to JOIN together.
+        left_symbol (str): Symbol corresponding to left table.
+        right_idx (int): Index of JOIN segment corresponding to right table.
+        pandas_snippets (List[str]): Destination for executable snippets.
+        get_symbol (Function): When invoked, generates unique symbol.
+
+    Returns:
+        str: The last symbol created.
+    """
     if right_idx >= len(join_segments):
         return left_symbol
 
@@ -215,7 +246,9 @@ def sql_table_expr_to_pandas_snippets(table_expr_symbol: str, aliased_sql_table_
     """Given aliased SQL table expression (i.e. JOIN, ON, AND), return code snippets corresponding to pandas conversion.
 
     Args:
+        table_expr_symbol (str): Symbol to assign to final result of JOIN.
         aliased_sql_table_expr (str): Simple table expression (no AS aliases, only symbols).
+        get_symbol (Function): When invoked, generates unique symbol.
 
     Returns:
         List[str]: List of pandas snippets corresponding to aliased_sql_table_expr.
@@ -229,6 +262,7 @@ def sql_table_expr_to_pandas_snippets(table_expr_symbol: str, aliased_sql_table_
     final_symbol = sql_table_expr_join_segments_to_snippets(
         join_segments, join_segments[0], 1, pandas_snippets, get_symbol)
 
+    # Assign final symbol to result of recursive JOINs
     pandas_snippets.append(f"{table_expr_symbol} = {final_symbol}")
 
     return pandas_snippets
