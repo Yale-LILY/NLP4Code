@@ -5,6 +5,9 @@ from transformers import GPTNeoForCausalLM, GPT2Tokenizer
 from transformers import PreTrainedModel, PreTrainedTokenizer, GPT2LMHeadModel
 from transformers import GPT2Tokenizer, GPTJForCausalLM
 from transformers import RobertaTokenizer, T5ForConditionalGeneration
+from transformers import AutoTokenizer, GPT2TokenizerFast
+from CodeGen.jaxformer.hf.codegen.modeling_codegen import CodeGenForCausalLM
+
 
 def get_model(model_name: str, 
             tokenizer_only: bool = False,
@@ -46,6 +49,16 @@ def get_model(model_name: str,
                                                  additional_special_tokens=additional_special_tokens)
         if not tokenizer_only:
             model = T5ForConditionalGeneration.from_pretrained(model_name, 
+                                                    pad_token_id=tokenizer.eos_token_id,
+                                                    gradient_checkpointing=gradient_ckpt, 
+                                                    use_cache=not gradient_ckpt)
+            if len(additional_special_tokens) > 0:
+                model.resize_token_embeddings(len(tokenizer))
+    elif "codegen" in model_name:
+        tokenizer = GPT2TokenizerFast.from_pretrained('gpt2', 
+                                                 additional_special_tokens=additional_special_tokens) # used in official codegen demo https://github.com/salesforce/CodeGen/blob/main/jaxformer/hf/sample.py, will update
+        if not tokenizer_only:
+            model = CodeGenForCausalLM.from_pretrained(model_name, 
                                                     pad_token_id=tokenizer.eos_token_id,
                                                     gradient_checkpointing=gradient_ckpt, 
                                                     use_cache=not gradient_ckpt)

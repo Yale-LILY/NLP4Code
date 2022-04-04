@@ -134,3 +134,7 @@ data/
 debug-tmp/
 wandb/
 results/
+
+# defined by Yilun
+CodeGen/
+checkpoints/
