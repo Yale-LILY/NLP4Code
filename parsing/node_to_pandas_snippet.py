@@ -2,7 +2,6 @@ from processed_query import ProcessedSQLQueryNodeType, ProcessedSQLQueryNode
 
 
 # TODO:
-# - INTERSECT/EXCEPT
 # - UNION ALL, other unsupported SQL keywords?
 
 
@@ -15,8 +14,13 @@ def symbols_to_pandas(s1: str, s2: str, node_type: ProcessedSQLQueryNodeType) ->
     if node_type == ProcessedSQLQueryNodeType.UNION:
         return f"pd.concat([{s1}, {s2}]).drop_duplicates()"
 
-    # TODO: how to do INTERSECT/EXCEPT?
-    return f"{s1} {node_type.name} {s2}"
+    if node_type == ProcessedSQLQueryNodeType.INTERSECT:
+        return f"pd.merge({s1}, {s2}, how='inner')"
+
+    if node_type == ProcessedSQLQueryNodeType.EXCEPT:
+        return f"{s1}[~({s1}.isin({s2}).all(axis=1))]"
+    
+    raise ValueError(f"Unsupported SQL operation type: {node_type}")
 
 
 def extract_pandas_code_snippet_from_node(sql_query_node: ProcessedSQLQueryNode) -> str:
