@@ -66,7 +66,6 @@ class Seq2SeqModel(LightningModule):
         self.opt_params = optimizer["init_args"]
         self.lrs_params = lr_scheduler
         assert lr_scheduler["name"] in ["linear", "cosine", "constant"], "lr_scheduler must be one of 'linear', 'cosine', 'constant'"
-        self.lr_scheduler = lr_scheduler
 
         # load the state dict from the checkpoint file
         if load_ckpt_file is not None:
@@ -251,14 +250,14 @@ class Seq2SeqModel(LightningModule):
 
     def configure_optimizers(self):
         optimizer = AdamW(self.parameters(), **self.opt_params)
-        if self.lr_scheduler["name"] == "cosine":
-            lr_scheduler = get_cosine_schedule_with_warmup(optimizer, **self.lr_scheduler["init_args"])
-        elif self.lr_scheduler["name"] == "linear":
-            lr_scheduler = get_linear_schedule_with_warmup(optimizer, **self.lr_scheduler["init_args"])
-        elif self.lr_scheduler["name"] == "constant":
-            lr_scheduler = get_constant_schedule_with_warmup(optimizer, **self.lr_scheduler["init_args"])
+        if self.lrs_params["name"] == "cosine":
+            lr_scheduler = get_cosine_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
+        elif self.lrs_params["name"] == "linear":
+            lr_scheduler = get_linear_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
+        elif self.lrs_params["name"] == "constant":
+            lr_scheduler = get_constant_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
         else:
-            raise ValueError(f"lr_scheduler {self.lr_scheduler} is not supported")
+            raise ValueError(f"lr_scheduler {self.lrs_params} is not supported")
 
         return {"optimizer": optimizer, 
                 "lr_scheduler": {
