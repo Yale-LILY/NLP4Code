@@ -11,7 +11,7 @@ def connect_databse(db_path: str) -> sqlite3.Connection:
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     return conn
 
-def spider_execution_sql(sql: str, conn: sqlite3.Connection) -> Any:
+def spider_execution_sql(sql: str, conn: sqlite3.Connection, return_error_msg: bool = False) -> Any:
     cursor = conn.cursor()
 
     try:
@@ -19,8 +19,12 @@ def spider_execution_sql(sql: str, conn: sqlite3.Connection) -> Any:
 
         return cursor.fetchall()
     except sqlite3.OperationalError as e:
+        error_msg = f"ERROR: {str(e)}"
         print(f"Error {str(e)} in execution sql query {sql}")
-        return None
+        if return_error_msg:
+            return error_msg
+        else:
+            return None
 
 def db_to_df_dict(conn: sqlite3.Connection) -> Dict[str, pd.DataFrame]:
     df_dict = {}
@@ -29,14 +33,14 @@ def db_to_df_dict(conn: sqlite3.Connection) -> Dict[str, pd.DataFrame]:
         df_dict[table_name[0]].rename(columns=lambda x: x.lower(), inplace=True)
     return df_dict
 
-def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame]) -> Any:
+def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame], return_error_msg: bool = False) -> Any:
     local_vars = {"df_dict": df_dict}
 
     # use the tables as part of the code context
     table_vars_code = "import pandas as pd\n"
     for table_name in df_dict.keys():
-        table_vars_code += f"{table_name} = df_dict['{table_name}']\n"
-    code = table_vars_code + "\n" + f"answer = {code}"
+        table_vars_code += f"# {' '.join(list(df_dict[table_name].columns))}\n{table_name} = df_dict['{table_name}']\n"
+    code = table_vars_code + "\n" + code
 
     # execute the code
     try:
@@ -47,8 +51,12 @@ def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame]) -> Any:
         else:
             return None
     except Exception as e:
+        error_msg = f"ERROR: {str(e)}"
         print(f"error {str(e)} in execution code {code}")
-        return None
+        if return_error_msg:
+            return error_msg
+        else:
+            return None
 
 def flatten_list_of_list(l: List[List[Any]]) -> List[Any]:
     result = []

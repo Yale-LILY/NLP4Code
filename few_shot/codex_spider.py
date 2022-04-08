@@ -19,7 +19,13 @@ manually_annotated_sql_to_py = {
         "t1 = pd.merge(department, management, on='department_id')\nt2 = pd.merge(t1, head, on='head_id')\nt3 = t2[t2['born_state'] == 'Alabama']\nanswer = t3['creation'].unique()",
     # train-15
     "SELECT T1.department_id ,  T1.name ,  count(*) FROM management AS T2 JOIN department AS T1 ON T1.department_id  =  T2.department_id GROUP BY T1.department_id HAVING count(*)  >  1": \
-        "t1 = pd.merge(management, department, on='department_id')\nt2 = pd.merge(t1, t1.groupby('department_id').size().rename('count'), on='department_id')\nt3 = t2[t2['count'] > 1]\nanswer = t3[['department_id', 'name', 'count']].drop_duplicates()",
+        "t1 = pd.merge(management, department, left_on='department_id', right_on='department_id')\nt2 = t1.groupby(['department_id', 'name']).size().rename('count')\nanswer = t2[t2 > 1].to_frame().reset_index()",
+    # train-9
+    "SELECT creation FROM department GROUP BY creation ORDER BY count(*) DESC LIMIT 1": \
+        "t1 = department.groupby('creation').size().rename('count')\nt2= t1.sort_values(ascending=False).head(1).to_frame().reset_index()\nanswer = t2['creation']",
+    # train-35
+    "SELECT T2.Year ,  T1.Official_Name FROM city AS T1 JOIN farm_competition AS T2 ON T1.City_ID  =  T2.Host_city_ID": \
+        "t1 = pd.merge(city, farm_competition, left_on='city_id', right_on='host_city_id')\nanswer = t1[['year', 'official_name']]",
 }
 
 def example_to_demonstration_sql(example: Dict, train: bool = True) -> Text:
@@ -152,17 +158,17 @@ def select_few_shot_examples(examples: List[Dict[str, Any]], n: int) -> Tuple[Li
 
 def test_spider_few_shot(train_examples: List[Dict[str, Any]], dev_examples: List[Dict[str, Any]]) -> bool:
     # split the data into few-shot examples and test examples
-    few_shot_examples, _ = select_few_shot_examples(train_examples, n=5)
+    few_shot_examples, _ = select_few_shot_examples(train_examples, n=10)
     test_examples = dev_examples
     random.shuffle(few_shot_examples)
     random.shuffle(test_examples)
 
     # save the results to file line by line
-    f = open("spider_codex_sql_py_few_shot_results_v5.jsonl", "w+")
+    f = open("spider_codex_sql_py_10_shot_results.jsonl", "w+")
 
     sql_result_list = []
     py_result_list = []
-    for example in tqdm(test_examples[:100]):
+    for example in tqdm(test_examples[:50]):
         # get two versions of the database
         db_file_path = f"data/spider/database/{example['db_id']}/{example['db_id']}.sqlite"
         conn = connect_databse(db_file_path)
@@ -193,8 +199,19 @@ def test_spider_few_shot(train_examples: List[Dict[str, Any]], dev_examples: Lis
         assert len(sql_results) == 1
         assert len(py_results) == 1
 
-        sql_exec_result = spider_execution_sql(generated_sql, conn)
-        py_exec_result = spider_execution_py(generated_py, df_dict)
+        sql_exec_result = spider_execution_sql(generated_sql, conn, return_error_msg=True)
+        py_exec_result = spider_execution_py(generated_py, df_dict, return_error_msg=True)
+
+        if isinstance(sql_exec_result, str) and sql_exec_result.startswith("ERROR"):
+            sql_error = sql_exec_result
+            sql_exec_result = None
+        else:
+            sql_error = None
+        if isinstance(py_exec_result, str) and py_exec_result.startswith("ERROR"):
+            py_error = py_exec_result
+            py_exec_result = None
+        else:
+            sql_error = None
 
         sql_result_list.append(spider_answer_eq(sql_exec_result, example["answer"]))
         py_result_list.append(spider_answer_eq(py_exec_result, example["answer"]))
@@ -202,10 +219,13 @@ def test_spider_few_shot(train_examples: List[Dict[str, Any]], dev_examples: Lis
         result_dict = {
             "generated_sql": generated_sql,
             "generated_py": generated_py,
+            "sql_error": sql_error,
+            "py_error": py_error,
             "sql_exec_result": str(sql_exec_result),
             "py_exec_result": str(py_exec_result),
             "gold_answer": example["answer"],
             "gold_sql": example["query"],
+            "table_headers": example["db_table_headers"],
             "gold_py": example["pandas_converted"] if "pandas_converted" in example else None,
         }
 
@@ -229,11 +249,11 @@ def main():
     test_spider_few_shot(train_data, dev_data)
 
 if __name__ == "__main__":
-    main()
+    # main()
 
-    exit(0)
+    # exit(0)
 
-    with open("spider_codex_sql_py_few_shot_results_v3.jsonl", "r") as f:
+    with open("spider_codex_sql_py_10_shot_results.jsonl", "r") as f:
         data = [json.loads(line) for line in f]
 
         sql_acc_accum, sql_rate = 0, 0
