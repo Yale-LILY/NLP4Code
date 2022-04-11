@@ -80,5 +80,5 @@ data:
     val_batch_size: 2
     train_file_path: data/mathqa/train-python.jsonl
     val_file_path: data/mathqa/val-python.jsonl
-    train_max_instances: 20
-    val_max_instances: 40
+    # train_max_instances: 20
+    # val_max_instances: 40
