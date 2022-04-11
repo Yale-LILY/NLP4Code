@@ -50,8 +50,9 @@ def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame]) -> Any:
     # lower everything in quotes
     code = re.sub(r"'(.*?)'", lambda p: f"'{p.group(1).lower()}'", code)
     # move select statements after sorting or drop_dup
-    # TODO further processing needed
-    code = re.sub(r"(.*?)(\[\[?.*?\]?\])(\.sort_values.*)", r"\1\3\2", code)
+    # TODO further processing needed, case 784, 1721,
+    #  and select, drop_duplicate, followed by sorting
+    code = re.sub(r"(.*(?<!\[))(\[\[?.*?\]?\])(\.sort_values.*)", r"\1\3\2", code)
     code = table_vars_code + "\n" + f"answer = {code}"
 
     # execute the code
@@ -101,8 +102,9 @@ def spider_answer_eq(prediction: Union[pd.DataFrame, pd.Series, List[Tuple[Any]]
             result = False
     elif isinstance(prediction, pd.DataFrame):
         if isinstance(gold_answer, list):
-            # convert the dataframe to a list of tuples and check
-            pred_list = flatten_list_of_list(list(prediction.itertuples(index=False, name=None)))
+            # we include the index only when it exists
+            pred_list = flatten_list_of_list(list(prediction.itertuples(
+                index=bool(prediction.index.name), name=None)))
             gold_list = list_to_lower_case(flatten_list_of_list(gold_answer))
             result = pred_list == gold_list
         else:
@@ -110,7 +112,11 @@ def spider_answer_eq(prediction: Union[pd.DataFrame, pd.Series, List[Tuple[Any]]
     elif isinstance(prediction, pd.Series):
         if isinstance(gold_answer, list):
             # convert the series to a list of tuples and check
-            pred_list = flatten_list_of_list(prediction.tolist())
+            # we include the index only when it exists
+            if prediction.index.name:
+                pred_list = flatten_list_of_list(list(prediction.items()))
+            else:
+                pred_list = flatten_list_of_list(prediction.tolist())
             gold_list = list_to_lower_case(flatten_list_of_list(gold_answer))
             result = pred_list == gold_list
         else:
