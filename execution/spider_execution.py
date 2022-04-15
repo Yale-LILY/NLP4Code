@@ -32,36 +32,42 @@ def db_to_df_dict(conn: sqlite3.Connection) -> Dict[str, pd.DataFrame]:
     df_dict = {}
     for table_name in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall():
         # modify to change everything including labels lower case
-        df = pd.read_sql_query(f"SELECT * FROM {table_name[0]}", conn)
+        df: pd.DataFrame = pd.read_sql_query(f"SELECT * FROM {table_name[0]}", conn)
         df = df.applymap(lambda s: s.lower() if type(s) == str else s)
         df_dict[table_name[0].lower()] = df
         df_dict[table_name[0].lower()].rename(columns=lambda x: x.lower(), inplace=True)
     return df_dict
 
-def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame], return_error_msg: bool = False) -> Any:
-    local_vars = {"df_dict": df_dict}
-
+def construct_spider_exec_code(code: str, df_dict: Dict[str, pd.DataFrame]) -> str:
     # use the tables as part of the code context
     table_vars_code = "import pandas as pd\n"
     for table_name in df_dict.keys():
         # table names may be reserved words like "class"
-        if table_name in keyword.kwlist:
-            table_vars_code += f"_{table_name} = df_dict['{table_name}']\n"
-            code = code.replace(table_name, f"_{table_name}")
-        else:
-            table_vars_code += f"{table_name} = df_dict['{table_name}']\n"
+        table_vars_code += f"# {table_name}: {df_dict[table_name].columns.values.tolist()}\n"
+        table_vars_code += f"t_{table_name} = df_dict['{table_name}']\n"
+        # code = code.replace(table_name, f"t_{table_name}")
+        code = re.sub(rf"(?<!')\b({table_name})\b(?!')", f"t_{table_name}", code)
 
     # lower everything in quotes
     code = re.sub(r"'(.*?)'", lambda p: f"'{p.group(1).lower()}'", code)
+    # replace "tn.column" to "column"
+    code = re.sub(r"\b(t\d\.)(\w+)\b", lambda p: f"{p.group(2)}", code)
     # move select statements after sorting or drop_dup
     # TODO further processing needed, case 784, 1721,
     #  and select, drop_duplicate, followed by sorting
     code = re.sub(r"(.*(?<!\[))(\[\[?.*?\]?\])(\.sort_values.*)", r"\1\3\2", code)
-    code = table_vars_code + "\n" + f"answer = {code}"
+    code = table_vars_code + "\n" + f"{code}" + "\nanswer=symbol_0"
+
+    return code
+
+def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame], return_error_msg: bool = False) -> Any:
+    local_vars = {"df_dict": df_dict}
+
+    processed_code = construct_spider_exec_code(code, df_dict)
 
     # execute the code
     try:
-        exec_result = exec(code, {}, local_vars)
+        exec_result = exec(processed_code, {}, local_vars)
 
         if "answer" in local_vars:
             return local_vars["answer"]
@@ -69,7 +75,7 @@ def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame], return_erro
             return None
     except Exception as e:
         error_msg = f"ERROR: {str(e)}"
-        print(f"error {str(e)} in execution code {code}")
+        print(f"error {str(e)} in execution code: \n{'#'*10}\n{processed_code}\n{'#'*10}")
         if return_error_msg:
             return error_msg
         else:
