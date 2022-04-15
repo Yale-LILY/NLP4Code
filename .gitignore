@@ -130,7 +130,7 @@ dmypy.json
 
 # sandboxes
 **sandbox.py
-parsing/sandbox*
+parsing/**sandbox**
 
 # defined by Ansong
 .venv
