@@ -110,6 +110,7 @@ def convert_and_preprocess_dataset(file_path: str, output_path: str) -> None:
         conn.close()
 
     print(f"{len(list(filter(lambda x: x['conversion']['answer_match'] is True, result)))} examples out of {len(result)} are successfully converted.")
+    print(f"{len(list(filter(lambda x: x['conversion']['py_exec_result'] is not None, result)))} examples out of {len(result)} executed successfully.")
 
     print("")
     with open(output_path, "w+") as f:
