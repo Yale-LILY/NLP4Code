@@ -1,15 +1,15 @@
 from enum import Enum
 from typing import Any, Dict, List, Union
 
-from process_table_expr import extract_table_aliases_from_table_expr, remove_table_aliases, sql_table_expr_to_pandas_snippets
+from parsing.process_table_expr import extract_table_aliases_from_table_expr, remove_table_aliases, sql_table_expr_to_pandas_snippets
 
 
 class ProcessedSQLQueryNodeType(Enum):
-    LEAF = "LEAF"
-    NESTED_SELECT = "(SELECT"
-    INTERSECT = "INTERSECT "
-    UNION = "UNION "
-    EXCEPT = "EXCEPT "
+    LEAF = "leaf"
+    NESTED_SELECT = "(select"
+    INTERSECT = "intersect "
+    UNION = "union "
+    EXCEPT = "except "
 
 
 def dump_dict(dict_obj, indent=4):

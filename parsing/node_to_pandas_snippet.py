@@ -1,4 +1,4 @@
-from processed_query import ProcessedSQLQueryNodeType, ProcessedSQLQueryNode
+from parsing.processed_query import ProcessedSQLQueryNodeType, ProcessedSQLQueryNode
 
 
 # TODO:

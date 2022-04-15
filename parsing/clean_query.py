@@ -1,5 +1,5 @@
 import re
-from helpers import trim_front_and_back
+from parsing.helpers import trim_front_and_back
 
 
 # TODO:

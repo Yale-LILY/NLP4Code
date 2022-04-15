@@ -1,6 +1,8 @@
 from typing import Dict, List, Tuple
-from clean_query import remove_consecutive_spaces
-from helpers import get_next_token_idx, get_cur_token, get_prev_token, get_next_token, extract_table_column, get_first_token
+
+from parsing.clean_query import remove_consecutive_spaces
+from parsing.helpers import get_next_token_idx, get_cur_token, get_prev_token, get_next_token
+from parsing.helpers import extract_table_column, get_first_token, SQLKW
 import re
 
 
@@ -20,24 +22,24 @@ def extract_table_expr_from_query(simple_sql_query: str) -> str:
         str: Substring containing table expression of SQL query.
     """
     simple_sql_query = remove_consecutive_spaces(simple_sql_query)
-    start_idx = simple_sql_query.find("FROM ")
+    start_idx = simple_sql_query.find(f"{SQLKW.FROM} ")
     if start_idx < 0:
         print("[extract_table] no FROM in simple_sql_query")
         return None
 
-    start_idx += len("FROM ")
+    start_idx += len(f"{SQLKW.FROM} ")
     while start_idx < len(simple_sql_query) and simple_sql_query[start_idx] == " ":
         start_idx += 1
     idx = get_next_token_idx(simple_sql_query, start_idx)
     while idx < len(simple_sql_query):
         cur_token = get_cur_token(simple_sql_query, idx)
-        if cur_token == "JOIN":
+        if cur_token == SQLKW.JOIN:
             idx = get_next_token_idx(simple_sql_query, idx)
             idx = get_next_token_idx(simple_sql_query, idx)
-        elif cur_token == "AS":
+        elif cur_token == SQLKW.AS:
             idx = get_next_token_idx(simple_sql_query, idx)
             idx = get_next_token_idx(simple_sql_query, idx)
-        elif cur_token == "ON" or cur_token == "AND":
+        elif cur_token == SQLKW.ON or cur_token == SQLKW.AND:
             idx = get_next_token_idx(simple_sql_query, idx)
             idx = simple_sql_query.find("=", idx)
             if idx < 0:
@@ -66,7 +68,7 @@ def extract_table_aliases_from_table_expr(sql_table_expr: str) -> Dict[str, str]
     idx = 0
     while idx < len(sql_table_expr):
         cur_token = get_cur_token(sql_table_expr, idx)
-        if cur_token == "AS":
+        if cur_token == SQLKW.AS:
             table_name = get_prev_token(sql_table_expr, idx)
             alias_name = get_next_token(sql_table_expr, idx)
             table_alias_dict.setdefault(alias_name, table_name)
@@ -93,7 +95,7 @@ def remove_table_aliases(sql_table_expr: str) -> str:
     while idx < len(sql_table_expr):
         cur_token = get_cur_token(sql_table_expr, idx)
         next_token = get_next_token(sql_table_expr, idx)
-        if next_token == "AS":
+        if next_token == SQLKW.AS:
             idx = get_next_token_idx(sql_table_expr, idx)
             idx = get_next_token_idx(sql_table_expr, idx)
         else:
@@ -143,7 +145,7 @@ def extract_join_segments(aliased_sql_table_expr: str) -> List[str]:
     join_segments = []
     idx = 0
     while idx < len(aliased_sql_table_expr):
-        next_idx = aliased_sql_table_expr.find("JOIN", idx)
+        next_idx = aliased_sql_table_expr.find(SQLKW.JOIN, idx)
         if next_idx < 0:
             segment = aliased_sql_table_expr[idx:]
             segment = remove_consecutive_spaces(segment)
@@ -153,7 +155,7 @@ def extract_join_segments(aliased_sql_table_expr: str) -> List[str]:
         segment = aliased_sql_table_expr[idx:next_idx]
         segment = remove_consecutive_spaces(segment)
         join_segments.append(segment)
-        idx = next_idx + len("JOIN")
+        idx = next_idx + len(SQLKW.JOIN)
 
     return join_segments
 
@@ -171,7 +173,7 @@ def extract_on_cols_from_join_segment(join_segment: str) -> List[Tuple[str, str]
     idx = 0
     while idx < len(join_segment):
         cur_token = get_cur_token(join_segment, idx)
-        if cur_token == "ON":
+        if cur_token == SQLKW.ON:
             idx = get_next_token_idx(join_segment, idx)
             left_finish_idx = join_segment.find("=", idx)
             if left_finish_idx < 0:

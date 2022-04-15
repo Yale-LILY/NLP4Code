@@ -1,4 +1,14 @@
+from enum import Enum
+
 from typing import Tuple
+
+class SQLKW:
+    AS = "as"
+    JOIN = "join"
+    FROM = "from"
+    ON = "on"
+    AND = "and"
+    SELECT = "select"
 
 
 # Removes any characters in `chars_to_remove` from the front of `s`
@@ -45,7 +55,7 @@ def find_closing_parenthesis(s, open_idx):
 
 # Determines if first non-whitespace char in `partial_sql_query` is "SELECT"
 def is_next_token_select(partial_sql_query):
-    return partial_sql_query.strip().find("SELECT") == 0
+    return partial_sql_query.strip().find(SQLKW.SELECT) == 0
 
 
 def is_idx_at_token_start(sql_query: str, idx: int):
