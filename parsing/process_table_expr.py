@@ -119,7 +119,13 @@ def substitute_symbol_for_table_expr(simple_sql_query: str, sql_table_expr: str,
         print("[substitute_symbol_for_table] sql_table_expr not in simple_sql_query")
         return simple_sql_query
 
-    return re.sub(sql_table_expr, sub_symbol, simple_sql_query)
+    # return re.sub(sql_table_expr, sub_symbol, simple_sql_query)
+    # TODO: do this better
+    simple_sql_query = re.sub(
+        f" {sql_table_expr} ", f" {sub_symbol} ", simple_sql_query)
+    simple_sql_query = re.sub(
+        f" {sql_table_expr}\.", f" {sub_symbol}.", simple_sql_query)
+    return simple_sql_query
 
 
 def extract_join_segments(aliased_sql_table_expr: str) -> List[str]:
