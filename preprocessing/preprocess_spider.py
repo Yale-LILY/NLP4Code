@@ -1,5 +1,8 @@
 import json
 import sqlite3
+import random
+
+random.seed(333)
 
 from tqdm import tqdm
 from typing import Dict, List, Any
@@ -7,8 +10,10 @@ from typing import Dict, List, Any
 from execution.spider_execution import connect_databse, spider_execution_sql
 from execution.spider_execution import db_to_df_dict, spider_execution_py, spider_answer_eq
 
+from parsing.preprocess import sql_query_to_pandas_code_snippets
 
-TRAIN_DATA_PATH = "data/spider/train_spider_converted.json"
+
+TRAIN_DATA_PATH = "data/spider/train_spider.json"
 DEV_DATA_PATH = "data/spider/dev.json"
 
 """
@@ -67,35 +72,54 @@ def verify_py_code(example: Dict[str, Any], conn: sqlite3.Connection) -> bool:
     else:
         return False
 
-def preprocess_dataset(file_path: str, output_path: str, verify_py: bool = False) -> None:
+def convert_and_preprocess_dataset(file_path: str, output_path: str) -> None:
     data = load_json(file_path)
+    random.shuffle(data)
+    data = data[:100]
+
 
     result = []
     for example in tqdm(data):
+        # first get the database in two forms
         db_file_path = f"data/spider/database/{example['db_id']}/{example['db_id']}.sqlite"
         conn = connect_databse(db_file_path)
+        df_dict = db_to_df_dict(conn)
 
-        add_db_header_info(example, conn)
+        # perform the conversion and verify the result
+        converted_py_code = "\n".join(sql_query_to_pandas_code_snippets(example["query"].lower()))
+        sql_exec_result = spider_execution_sql(example["query"], conn)
+        py_exec_result = spider_execution_py(converted_py_code, df_dict)
+
+        if py_exec_result is not None:
+            match_result = spider_answer_eq(py_exec_result, sql_exec_result)
+        else:
+            match_result = False
         
-        if add_answer_info(example, conn):
-            result.append(example)            
+        # add the conversion result
+        example["conversion"] = {
+            "pandas_converted": converted_py_code,
+            "py_exec_result": py_exec_result,
+            "sql_exec_result": sql_exec_result,
+            "answer_match": match_result
+        }
 
-        if verify_py:
-            if verify_py_code(example, conn):
-                result.append(example)
+        # other preprocessing
+        add_db_header_info(example, conn)
 
+        result.append(example)
         conn.close()
 
-    print(f"{len(result)} examples out of {len(data)} are processed.")
+    print(f"{len(list(filter(lambda x: x['conversion']['answer_match'] is True, result)))} examples out of {len(result)} are successfully converted.")
 
-    # with open(output_path, "w+") as f:
-    #     for example in result:
-    #         json.dump(example, f)
-    #         f.write("\n")
+    print("")
+    with open(output_path, "w+") as f:
+        for example in result:
+            json.dump(example, f)
+            f.write("\n")
 
 def main():
     print(f"Preprocessing train data from {TRAIN_DATA_PATH}...")
-    preprocess_dataset(TRAIN_DATA_PATH, "data/spider/train_spider_converted_processed.jsonl", True)
+    convert_and_preprocess_dataset(TRAIN_DATA_PATH, "data/spider/tmp.jsonl")
     # print(f"Preprocessing dev data from {DEV_DATA_PATH}...")
     # preprocess_dataset(DEV_DATA_PATH, "data/spider/dev_processed.jsonl")
 
