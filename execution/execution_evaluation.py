@@ -1,48 +1,9 @@
-import multiprocessing
 import multiprocessing.pool
 import ast
 
 from typing import List, Dict, Tuple, Any
 from concurrent.futures import ProcessPoolExecutor as Pool
 from execution.safe_execution_util import execute
-
-######################################################################################################
-# following are some dataset specific functions for getting the execution result
-######################################################################################################
-
-def mathqa_answer_eq(prediction: Any, gold_answer: Any):
-    try:
-        # if the execution result is a numpy array, valueError will be raised
-        if prediction == gold_answer:
-            return True
-        else:
-            return False
-    except ValueError:
-        return False
-
-def mathqa_execution(program: str) -> Any:
-    """
-    for mathqa-python, we should be getting the answers from the "answer" variable in the local() variables
-    """
-
-    result = execute(program)
-    
-    if result["result"] == "passed":
-        if "answer" in result["locals"]:
-            executed_answer = result["locals"]["answer"]
-        else:
-            # FIXME: this is so ad-hoc
-            executed_answer = -10000
-    else:
-        executed_answer = None
-
-    return executed_answer
-
-
-######################################################################################################
-# following are different metrics for evaluating the execution result
-# FIXME: Right now we only consider single test cases
-######################################################################################################
 
 def batch_exec_programs(programs: List[str], exec_func: callable, n_processes: int = 20) -> List[Any]:
     # build a dict to optimize for potential same programs
@@ -77,7 +38,8 @@ def batch_exec_programs(programs: List[str], exec_func: callable, n_processes: i
     return executed_answers, len(unique_programs)
 
 def batch_execution_acc(programs: List[str], exec_func: callable, answers: List[str], 
-                        n_examples: int, eval_at_k: int, n_processes: int = 20) -> List[Tuple[float, float]]:
+                        n_examples: int, eval_at_k: int, answer_eq_func: callable, 
+                        n_processes: int = 20) -> List[Tuple[float, float]]:
     """
     This function evaluates execution accuracy for a batch of programs using multiprocessing.
 
@@ -96,7 +58,7 @@ def batch_execution_acc(programs: List[str], exec_func: callable, answers: List[
     for predicted_answers, gold_answer in zip(grouped_executed_answers, answers):
         correct_count = 0.0
         for predicted_answer in predicted_answers:
-            if mathqa_answer_eq(predicted_answer, gold_answer):
+            if answer_eq_func(predicted_answer, gold_answer):
                 correct_count += 1
 
         accuracy_at_k = correct_count / eval_at_k
@@ -106,21 +68,21 @@ def batch_execution_acc(programs: List[str], exec_func: callable, answers: List[
 
     return grouped_execution_evals
 
-def execution_acc(program: str, exec_func: callable, answer: str) -> Tuple[float, float]:
+def execution_acc(program: str, exec_func: callable, answer: str, answer_eq_func: callable) -> Tuple[float, float]:
     """
     This function is used to evaluate the accuracy of the execution of the program.
 
     Returns: execution accuracy, execution rate
     """
     executed_answer = exec_func(program)
-    if executed_answer is not None and mathqa_answer_eq(executed_answer, answer):
+    if executed_answer is not None and answer_eq_func(executed_answer, answer):
         return 1.0, 1.0
     elif executed_answer is not None:
         return 0.0, 1.0
     else:
         return 0.0, 0.0
 
-def execution_eval_at_k(programs: List[str], exec_func: callable, answer: str, k: int) -> Tuple[float, float]:
+def execution_eval_at_k(programs: List[str], exec_func: callable, answer_eq_func: callable, answer: str, k: int) -> Tuple[float, float]:
     """
     Assign 1.0 when at least one out of the k programs execute to the correct answer
 
@@ -132,7 +94,7 @@ def execution_eval_at_k(programs: List[str], exec_func: callable, answer: str, k
     with Pool(20) as p:
         executed_answers = p.map(exec_func, programs[:k])
     for executed_answer in executed_answers:
-        if mathqa_answer_eq(executed_answer, answer):
+        if answer_eq_func(executed_answer, answer):
             correct_count += 1
 
     accuracy_at_k = correct_count / k
