@@ -44,9 +44,9 @@ programs, acc, pass_at_k = codex_evaluate_pass_at_k(
     few_shot_enabled=True,
 )
 
-print("Evaluated on {} examples...\n".format(n_examples))
-print("Used {} examples for few-shot evaluation.\n".format(few_shot_n))
-print(k = 80)
-print("Used prompt: \nprompt")
+print("Evaluated on {} examples...".format(n_examples))
+print("Used {} examples for few-shot evaluation.".format(few_shot_n))
+print(k)
+print(f"Used prompt: \n{prompt}")
 print(f"Pass@{k}:", pass_at_k)
 print("Accuracy:", acc)

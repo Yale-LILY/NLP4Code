@@ -51,6 +51,15 @@ def get_model(model_name: str,
                                                     use_cache=not gradient_ckpt)
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
+    elif model_name.startswith("./"):
+        tokenizer = GPT2Tokenizer.from_pretrained("EleutherAI/gpt-neo-125M", additional_special_tokens=additional_special_tokens)
+        tokenizer.pad_token = tokenizer.eos_token
+
+        if not tokenizer_only: 
+            model = GPTNeoForCausalLM.from_pretrained(model_name, pad_token_id=tokenizer.eos_token_id, 
+                                                    gradient_checkpointing=gradient_ckpt, use_cache=not gradient_ckpt)
+            if len(additional_special_tokens) > 0:
+                model.resize_token_embeddings(len(tokenizer))
     else:
         raise NotImplementedError
 
