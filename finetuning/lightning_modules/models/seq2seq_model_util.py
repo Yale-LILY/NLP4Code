@@ -1,16 +1,74 @@
 import torch
+import io, tokenize, re
+import ast, astunparse
+
 from typing import Tuple, Optional, List, Union
 
 from transformers import GPTNeoForCausalLM, GPT2Tokenizer
 from transformers import PreTrainedModel, PreTrainedTokenizer, GPT2LMHeadModel
 from transformers import GPT2Tokenizer, GPTJForCausalLM
 from transformers import RobertaTokenizer, T5ForConditionalGeneration
+from transformers.generation_utils import GenerationMixin
+
+# from https://stackoverflow.com/questions/1769332/script-to-remove-python-comments-docstrings
+def remove_comments_and_docstrings(source):
+    io_obj = io.StringIO(source)
+    out = ""
+    prev_toktype = tokenize.INDENT
+    last_lineno = -1
+    last_col = 0
+    for tok in tokenize.generate_tokens(io_obj.readline):
+        token_type = tok[0]
+        token_string = tok[1]
+        start_line, start_col = tok[2]
+        end_line, end_col = tok[3]
+        ltext = tok[4]
+        if start_line > last_lineno:
+            last_col = 0
+        if start_col > last_col:
+            out += (" " * (start_col - last_col))
+        if token_type == tokenize.COMMENT:
+            pass
+        elif token_type == tokenize.STRING:
+            if prev_toktype != tokenize.INDENT:
+                if prev_toktype != tokenize.NEWLINE:
+                    if start_col > 0:
+                        out += token_string
+        else:
+            out += token_string
+        prev_toktype = token_type
+        last_col = end_col
+        last_lineno = end_line
+    out = '\n'.join(l for l in out.splitlines() if l.strip())
+    return out
+
+def post_process_code(code, remove_comments=True, remove_extra_lines=False, ast_back_parse=True):
+    """ a series of post-processing steps to clean up the code and avoid duplicated code """
+
+    if remove_comments:
+        code = remove_comments_and_docstrings(code)
+    
+    if ast_back_parse:
+        code = astunparse.unparse(ast.parse(code))
+
+    if remove_extra_lines:
+        # remove the code after "answer" is generated
+        result = []
+        for line in code.split("\n"):
+            result.append(line)
+            if line.startswith("answer"):
+                break
+        code = "\n".join(result)
+
+    code = code.strip()
+
+    return code
 
 def get_model(model_name: str, 
             tokenizer_only: bool = False,
             gradient_ckpt: bool = False,
             additional_special_tokens: Optional[List[str]] = None) \
-        -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
+        -> Tuple[GenerationMixin, PreTrainedTokenizer]:
     if additional_special_tokens is None:
         additional_special_tokens = []
 
