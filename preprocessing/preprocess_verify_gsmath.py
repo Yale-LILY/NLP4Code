@@ -18,6 +18,7 @@ parser.set_language(PY_LANGUAGE)
 
 #set file to evaluate
 input_file = "./annotated data/gsmath/gsmath_failed_train.jsonl"
+# input_file = "./annotated data/gsmath/test_errors.jsonl"
 
 def get_answer_from_answer_str(answer_str: str) -> float:
     result_str = answer_str.split("\n")[-1].split(" ")[-1]
@@ -61,7 +62,8 @@ def get_code_from_answer_str(answer_str: str, question_str: str) -> str:
         expression, result = formula.split("=")
         if "/" in result:
             result = eval(result)
-        if not eval(expression) == float(result):
+        if not math.isclose(eval(expression), float(result)):
+            logging.debug(f"expression: {eval(expression)} result: {float(result)}")
             return "NULL"
 
         # interpret the formula with a parse tree
@@ -132,7 +134,7 @@ def get_code_from_answer_str(answer_str: str, question_str: str) -> str:
 def verify_code(code: str, gold_answer: str) -> bool:
     try:
         exec(code)
-        if float(gold_answer) == float(eval("answer")):
+        if math.isclose(float(gold_answer), float(eval("answer"))):
             return True
         else:
             return False

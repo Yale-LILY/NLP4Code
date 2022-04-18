@@ -61,7 +61,7 @@ def get_code_from_answer_str(answer_str: str, question_str: str) -> str:
         expression, result = formula.split("=")
         if "/" in result:
             result = eval(result)
-        if not eval(expression) == float(result):
+        if not math.isclose(eval(expression), float(result)):
             return "NULL"
 
         # interpret the formula with a parse tree
@@ -132,7 +132,7 @@ def get_code_from_answer_str(answer_str: str, question_str: str) -> str:
 def verify_code(code: str, gold_answer: str) -> bool:
     try:
         exec(code)
-        if float(gold_answer) == float(eval("answer")):
+        if math.isclose(float(gold_answer), float(eval("answer"))):
             return True
         else:
             return False
@@ -207,8 +207,9 @@ def process_gsmath(instances: List[Dict[str, str]], set_name: str) -> List[Dict[
 
 if __name__ == "__main__":
     # load the train and test data
-    os.remove("example.log")
-    logging.basicConfig(filename='example.log',level=logging.DEBUG)
+    if (os.path.exists("failed.log")):
+        os.remove("failed.log")
+    logging.basicConfig(filename='failed.log',level=logging.DEBUG)
 
     with open(train_file, "r") as f:
         train_lines = f.readlines()
