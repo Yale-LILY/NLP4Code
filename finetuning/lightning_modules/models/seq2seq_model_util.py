@@ -8,6 +8,7 @@ from transformers import GPTNeoForCausalLM, GPT2Tokenizer
 from transformers import PreTrainedModel, PreTrainedTokenizer, GPT2LMHeadModel
 from transformers import GPT2Tokenizer, GPTJForCausalLM
 from transformers import RobertaTokenizer, T5ForConditionalGeneration
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers.generation_utils import GenerationMixin
 
 # from https://stackoverflow.com/questions/1769332/script-to-remove-python-comments-docstrings
@@ -107,6 +108,16 @@ def get_model(model_name: str,
                                                     pad_token_id=tokenizer.eos_token_id,
                                                     gradient_checkpointing=gradient_ckpt, 
                                                     use_cache=not gradient_ckpt)
+            if len(additional_special_tokens) > 0:
+                model.resize_token_embeddings(len(tokenizer))
+    elif model_name in ["facebook/incoder-1B", "facebook/incoder-6B"]:
+        tokenizer = AutoTokenizer.from_pretrained(model_name, additional_special_tokens=additional_special_tokens)
+        print(tokenizer.pad_token_id)
+        tokenizer.pad_token_id = 1
+        tokenizer.eos_token_id = 2
+        # print(tokenizer)
+        if not tokenizer_only:
+            model = AutoModelForCausalLM.from_pretrained(model_name, pad_token_id=1, eos_token_id=2)
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
     else:

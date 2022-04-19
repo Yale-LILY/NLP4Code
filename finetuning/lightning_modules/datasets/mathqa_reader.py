@@ -157,6 +157,7 @@ def customized_collate_fn(examples: List[Dict[str, Any]]) -> Dict[str, Any]:
         if k == "metadata":
             result_dict[k] = [ex[k] for ex in examples]
         elif k == "input_ids":
+            print(examples[0][k])
             result_dict[k] = left_pad_sequences([torch.tensor(ex[k]) for ex in examples], 
                                 batch_first=True, padding_value=pad_token_id)
         elif k == "attention_mask":

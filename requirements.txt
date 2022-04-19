@@ -12,3 +12,17 @@ astunparse
 scipy
 numpy
 wandb
+
+
+
+#  Found existing installation: tokenizers 0.10.3
+#     Uninstalling tokenizers-0.10.3:
+#       Successfully uninstalled tokenizers-0.10.3
+#   Attempting uninstall: huggingface-hub
+#     Found existing installation: huggingface-hub 0.0.19
+#     Uninstalling huggingface-hub-0.0.19:
+#       Successfully uninstalled huggingface-hub-0.0.19
+#   Attempting uninstall: transformers
+#     Found existing installation: transformers 4.11.3
+#     Uninstalling transformers-4.11.3:
+#       Successfully uninstalled transformers-4.11.3
