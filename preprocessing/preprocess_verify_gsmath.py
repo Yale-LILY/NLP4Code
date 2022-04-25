@@ -164,6 +164,11 @@ def process_gsmath(instances: List[Dict[str, str]]) -> List[Dict[str, Any]]:
             logging.debug(f"{instance['task_id']} failed to verify, " \
                   f"original_answer: {instance['original_answer']}, " \
                   f"code: \n{instance['code']}\nanswer: {instance['answer']}")
+        
+        # used to check instances that work
+        # logging.debug(f"{instance['task_id']} Works!!!, " \
+        #           f"original_answer: {instance['original_answer']}, " \
+        #           f"code: \n{instance['code']}\nanswer: {instance['answer']}")
 
     all_failed_indices = sorted(failed_code_extraction_indices + failed_code_execution_indices)
 
