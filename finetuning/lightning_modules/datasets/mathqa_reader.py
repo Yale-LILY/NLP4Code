@@ -25,6 +25,18 @@ FEW_SHOT_RESERVED = 10
 
 class MathQADataset(Dataset):
 
+    task_prompt_header = "# Generate Python code to solve the following math word problems:"
+
+    @staticmethod
+    def promptify(example: Dict[str, Any], include_sol: bool) -> str:
+        # preprocess the code to make sure it doesn't have double newlines as we will use that as the end of generation
+        example["code"] = example["code"].replace("\n\n", "\n")
+
+        prompt = example["text"] + "\n"
+        if include_sol:
+            prompt += example["code"] + "\n"
+        return prompt
+
     def __init__(
         self, 
         file_path: str,
