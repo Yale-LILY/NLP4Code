@@ -52,11 +52,13 @@ def process_squall_example(example: Dict[str, Any]) -> Dict[str, Any]:
     if len(df_dict) != 1:
         print(f"{len(df_dict)} tables found in {db_file_path}")
 
-    
+    # get the original column dict
+    original_col_name_dict = json.load(open(COLUMN_DICT_FILE))[example["tbl"]]
     # convert the column names to the original ones in the df_dict
+    
     df_dict_headers = {}
     for table_name, df in df_dict.items():
-        df_dict[table_name].rename(columns=lambda x: original_col_name_dict[x], inplace=True)
+        df_dict[table_name].rename(columns=lambda x: original_col_name_dict[x] if x in original_col_name_dict.keys() else x,  inplace=True)
         df_dict_headers[table_name] = list(df.columns)
     processed_example["db_table_headers"] = df_dict_headers
 
@@ -97,25 +99,32 @@ def build_column_name_dict(dataset: List[Dict[str, Any]]):
         db_column_dict[example["tbl"]] = original_col_name_dict
     
     print(f"Built the dict for {len(db_column_dict)} tables")
-
+    
     # dump to file
     with open(COLUMN_DICT_FILE, "w") as f:
-        for table_id, original_col_name_dict in db_column_dict.items():
-            f.write(f"{table_id}: {original_col_name_dict}\n")
+        f.write(json.dumps(db_column_dict))
+    #     for table_id, original_col_name_dict in db_column_dict.items():
+    #         entry = {table_id: original_col_name_dict}
+    #         f.write(json.dumps(entry)+"\n")
 
 def preprocess_squall_dataset(dataset: List[Dict[str, Any]]):
 
     processed_data = []
     for example in tqdm(dataset):
         processed_data.append(process_squall_example(example))
+    
+    with open("data/squall/squall_processed.json", "w+") as f:
+        json.dump(processed_data, f)
 
 
 def main():
     # read the data
     data = load_json(DATA_PATH)
-    # preprocess_squall_dataset(data)
 
     build_column_name_dict(data)
+
+    preprocess_squall_dataset(data)
+
 
 if __name__ == "__main__":
     main()
