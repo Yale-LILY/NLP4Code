@@ -52,7 +52,7 @@ def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame], return_erro
             return None
     except Exception as e:
         error_msg = f"ERROR: {str(e)}"
-        print(f"error {str(e)} in execution code {code}")
+        # print(f"error {str(e)} in execution code {code}")
         if return_error_msg:
             return error_msg
         else:

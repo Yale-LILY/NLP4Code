@@ -1,0 +1,2294 @@
+[
+  {
+    "example": {
+      "db_id": "department_store",
+      "query": "SELECT T1.address_details FROM addresses AS T1 JOIN customer_addresses AS T2 ON T1.address_id  =  T2.address_id WHERE T2.customer_id  =  10",
+      "query_toks": [
+        "SELECT",
+        "T1.address_details",
+        "FROM",
+        "addresses",
+        "AS",
+        "T1",
+        "JOIN",
+        "customer_addresses",
+        "AS",
+        "T2",
+        "ON",
+        "T1.address_id",
+        "=",
+        "T2.address_id",
+        "WHERE",
+        "T2.customer_id",
+        "=",
+        "10"
+      ],
+      "query_toks_no_value": [
+        "select",
+        "t1",
+        ".",
+        "address_details",
+        "from",
+        "addresses",
+        "as",
+        "t1",
+        "join",
+        "customer_addresses",
+        "as",
+        "t2",
+        "on",
+        "t1",
+        ".",
+        "address_id",
+        "=",
+        "t2",
+        ".",
+        "address_id",
+        "where",
+        "t2",
+        ".",
+        "customer_id",
+        "=",
+        "value"
+      ],
+      "question": "What is the address for the customer with id 10?",
+      "question_toks": [
+        "What",
+        "is",
+        "the",
+        "address",
+        "for",
+        "the",
+        "customer",
+        "with",
+        "id",
+        "10",
+        "?"
+      ],
+      "sql": {
+        "from": {
+          "table_units": [
+            [
+              "table_unit",
+              0
+            ],
+            [
+              "table_unit",
+              7
+            ]
+          ],
+          "conds": [
+            [
+              false,
+              2,
+              [
+                0,
+                [
+                  0,
+                  1,
+                  false
+                ],
+                null
+              ],
+              [
+                0,
+                27,
+                false
+              ],
+              null
+            ]
+          ]
+        },
+        "select": [
+          false,
+          [
+            [
+              0,
+              [
+                0,
+                [
+                  0,
+                  2,
+                  false
+                ],
+                null
+              ]
+            ]
+          ]
+        ],
+        "where": [
+          [
+            false,
+            2,
+            [
+              0,
+              [
+                0,
+                26,
+                false
+              ],
+              null
+            ],
+            10.0,
+            null
+          ]
+        ],
+        "groupBy": [],
+        "having": [],
+        "orderBy": [],
+        "limit": null,
+        "intersect": null,
+        "union": null,
+        "except": null
+      },
+      "db_table_headers": {
+        "Addresses": [
+          "address_id",
+          "address_details"
+        ],
+        "Staff": [
+          "staff_id",
+          "staff_gender",
+          "staff_name"
+        ],
+        "Suppliers": [
+          "supplier_id",
+          "supplier_name",
+          "supplier_phone"
+        ],
+        "Department_Store_Chain": [
+          "dept_store_chain_id",
+          "dept_store_chain_name"
+        ],
+        "Customers": [
+          "customer_id",
+          "payment_method_code",
+          "customer_code",
+          "customer_name",
+          "customer_address",
+          "customer_phone",
+          "customer_email"
+        ],
+        "Products": [
+          "product_id",
+          "product_type_code",
+          "product_name",
+          "product_price"
+        ],
+        "Supplier_Addresses": [
+          "supplier_id",
+          "address_id",
+          "date_from",
+          "date_to"
+        ],
+        "Customer_Addresses": [
+          "customer_id",
+          "address_id",
+          "date_from",
+          "date_to"
+        ],
+        "Customer_Orders": [
+          "order_id",
+          "customer_id",
+          "order_status_code",
+          "order_date"
+        ],
+        "Department_Stores": [
+          "dept_store_id",
+          "dept_store_chain_id",
+          "store_name",
+          "store_address",
+          "store_phone",
+          "store_email"
+        ],
+        "Departments": [
+          "department_id",
+          "dept_store_id",
+          "department_name"
+        ],
+        "Order_Items": [
+          "order_item_id",
+          "order_id",
+          "product_id"
+        ],
+        "Product_Suppliers": [
+          "product_id",
+          "supplier_id",
+          "date_supplied_from",
+          "date_supplied_to",
+          "total_amount_purchased",
+          "total_value_purchased"
+        ],
+        "Staff_Department_Assignments": [
+          "staff_id",
+          "department_id",
+          "date_assigned_from",
+          "job_title_code",
+          "date_assigned_to"
+        ]
+      },
+      "answer": [
+        [
+          "36594 O'Keefe Lock\nNew Cali, RI 42319"
+        ]
+      ]
+    },
+    "generated_programs": [
+      "t1 = pd.merge(Addresses, Customer_Addresses, left_on='address_id', right_on='address_id')\nt2 = t1[t1['customer_id'] == 10]\nanswer = t2[['address_details']]",
+      "t1 = pd.merge(Addresses, Customer_Addresses, left_on='address_id', right_on='address_id')\nt2 = t1[t1['customer_id'] == 10]\nanswer = t2['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, left_on='address_id', right_on='address_id')\nt2 = t1[t1['customer_id'] == 10][['address_details']]\nanswer = t2",
+      "t1 = pd.merge(Addresses, Customer_Addresses, left_on='address_id', right_on='address_id')\nt2 = t1[t1['customer_id'] == 10]\nanswer = t2['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, on='address_id')\nt2 = t1[t1['customer_id'] == 10]\nanswer = t2['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, left_on='address_id', right_on='address_id')\nanswer = t1[t1['customer_id'] == 10]['address_details']",
+      "t1= pd.merge(Addresses, Customer_Addresses, on='address_id')\nt2 = t1[t1['customer_id'] == 10]\nanswer = t2['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, left_on='address_id', right_on='address_id')\nt2 = t1[t1['customer_id'] == 10]\nanswer = t2['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, left_on='address_id', right_on='address_id')\nt2 = t1[t1['customer_id'] == 10]\nanswer = t2['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, on='address_id')\nanswer = t1[t1['customer_id'] == 10]['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, left_on='address_id', right_on='address_id')\nanswer = t1[t1['customer_id'] == 10]['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, on='address_id')\nanswer = t1[t1['customer_id'] == 10]['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, left_on='address_id', right_on='address_id')\nt2 = t1[t1['customer_id'] == 10]\nanswer = t2['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, on='address_id')\nanswer = t1[t1['customer_id'] == 10]",
+      "t1 = pd.merge(Addresses, Customer_Addresses, on='address_id')\nanswer = t1['address_details'][t1['customer_id'] == 10]",
+      "t1 = pd.merge(Addresses, Customer_Addresses, on = 'address_id')\nanswer = t1[t1['customer_id'] == 10]['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, on='address_id')\nanswer = t1[t1['customer_id'] == 10]['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, left_on='address_id', right_on='address_id')\nt2 = t1[t1['customer_id'] == 10][['address_details']]\nanswer = t2",
+      "t1 = pd.merge(Addresses, Customer_Addresses, left_on='address_id', right_on='address_id')\nanswer = t1[t1['customer_id'] == 10]['address_details']",
+      "t1 = pd.merge(Addresses, Customer_Addresses, left_on='address_id', right_on='address_id')\nanswer = t1[t1['customer_id'] == 10][['address_details']]"
+    ],
+    "acc@20": 19,
+    "pass@20": 1.0
+  },
+  {
+    "example": {
+      "db_id": "products_gen_characteristics",
+      "query": "SELECT count(*) FROM products WHERE product_category_code  =  \"Seeds\"",
+      "query_toks": [
+        "SELECT",
+        "count",
+        "(",
+        "*",
+        ")",
+        "FROM",
+        "products",
+        "WHERE",
+        "product_category_code",
+        "=",
+        "``",
+        "Seeds",
+        "''"
+      ],
+      "query_toks_no_value": [
+        "select",
+        "count",
+        "(",
+        "*",
+        ")",
+        "from",
+        "products",
+        "where",
+        "product_category_code",
+        "=",
+        "value"
+      ],
+      "question": "Count the number of products in the category 'Seeds'.",
+      "question_toks": [
+        "Count",
+        "the",
+        "number",
+        "of",
+        "products",
+        "in",
+        "the",
+        "category",
+        "'Seeds",
+        "'",
+        "."
+      ],
+      "sql": {
+        "from": {
+          "table_units": [
+            [
+              "table_unit",
+              4
+            ]
+          ],
+          "conds": []
+        },
+        "select": [
+          false,
+          [
+            [
+              3,
+              [
+                0,
+                [
+                  0,
+                  0,
+                  false
+                ],
+                null
+              ]
+            ]
+          ]
+        ],
+        "where": [
+          [
+            false,
+            2,
+            [
+              0,
+              [
+                0,
+                15,
+                false
+              ],
+              null
+            ],
+            "\"Seeds\"",
+            null
+          ]
+        ],
+        "groupBy": [],
+        "having": [],
+        "orderBy": [],
+        "limit": null,
+        "intersect": null,
+        "union": null,
+        "except": null
+      },
+      "db_table_headers": {
+        "Ref_Characteristic_Types": [
+          "characteristic_type_code",
+          "characteristic_type_description"
+        ],
+        "Ref_Colors": [
+          "color_code",
+          "color_description"
+        ],
+        "Ref_Product_Categories": [
+          "product_category_code",
+          "product_category_description",
+          "unit_of_measure"
+        ],
+        "Characteristics": [
+          "characteristic_id",
+          "characteristic_type_code",
+          "characteristic_data_type",
+          "characteristic_name",
+          "other_characteristic_details"
+        ],
+        "Products": [
+          "product_id",
+          "color_code",
+          "product_category_code",
+          "product_name",
+          "typical_buying_price",
+          "typical_selling_price",
+          "product_description",
+          "other_product_details"
+        ],
+        "Product_Characteristics": [
+          "product_id",
+          "characteristic_id",
+          "product_characteristic_value"
+        ]
+      },
+      "answer": [
+        [
+          5
+        ]
+      ]
+    },
+    "generated_programs": [
+      "answer = pd.Series(Products[Products['product_category_code'] == 'seeds'].shape[0])",
+      "t1 = pd.merge(Products, Ref_Product_Categories, on='product_category_code')\nt2 = t1[t1['product_category_description'] == 'Seeds']['product_id']\nanswer = pd.Series(t2.shape[0])",
+      "answer = pd.Series(Products[Products['product_category_code'] == 'Seeds'].shape[0])",
+      "answer = pd.Series(Products[Products['product_category_code'] == 'Seeds'].shape[0])",
+      "answer = pd.Series(Products[Products['product_category_code'] == 'seeds'].shape[0])",
+      "answer = pd.Series(Products[Products['product_category_code'] == 'seeds'].shape[0])",
+      "t1 = Products[Products['product_category_code'] == 'Seeds']\nanswer = pd.Series(t1.shape[0])",
+      "t1 = pd.merge(Products, Ref_Product_Categories, on='product_category_code')\nanswer = pd.Series(t1[t1['product_category_description'] == 'Seeds'].shape[0])",
+      "t1 = pd.merge(Products, Ref_Product_Categories, on='product_category_code')\nanswer = pd.Series(t1[t1['product_category_description'] == 'Seeds'].shape[0])",
+      "answer = Products[Products['product_category_code'] == 'Seeds'].shape[0]",
+      "answer = pd.Series(Products[Products['product_category_code'] == 'seeds'].shape[0])",
+      "t1 = pd.merge(Products, Ref_Product_Categories, on='product_category_code')\nt2 = t1[t1['product_category_description'] == 'Seeds']\nanswer = pd.Series(t2.shape[0])",
+      "t1 = Products[Products['product_category_code'] == 'Seeds']\nanswer = pd.Series(t1.shape[0])",
+      "answer = pd.Series(Products[Products['product_category_code'] == 'Seeds'].shape[0])",
+      "t1 = Products.merge(Ref_Product_Categories, on='product_category_code')\nt2 = t1[t1['product_category_description'] == 'seeds']\nanswer = pd.Series(t2.shape[0])",
+      "t1 = pd.merge(Products, Ref_Product_Categories, left_on='product_category_code', right_on='product_category_code')\nt2 = t1[t1['product_category_description'] == 'Seeds']\nanswer = pd.Series(t2.shape[0])",
+      "answer = pd.Series(Products[Products['product_category_code'] == 'seeds'].shape[0])",
+      "t1 = pd.merge(Ref_Product_Categories, Products, on='product_category_code')\nanswer = pd.Series(t1[t1['product_category_description']=='Seeds'].shape[0])",
+      "answer = pd.Series(Products[Products['product_category_code'] == 'seeds'].shape[0])",
+      "t1 = pd.merge(Products, Ref_Product_Categories, left_on='product_category_code', right_on='product_category_code')\nanswer = pd.Series(t1[t1['product_category_description'] == 'Seeds'].shape[0])"
+    ],
+    "acc@20": 13,
+    "pass@20": 1.0
+  },
+  {
+    "example": {
+      "db_id": "manufactory_1",
+      "query": "SELECT count(*) FROM manufacturers WHERE founder  =  'Andy'",
+      "query_toks": [
+        "SELECT",
+        "count",
+        "(",
+        "*",
+        ")",
+        "FROM",
+        "manufacturers",
+        "WHERE",
+        "founder",
+        "=",
+        "'Andy",
+        "'"
+      ],
+      "query_toks_no_value": [
+        "select",
+        "count",
+        "(",
+        "*",
+        ")",
+        "from",
+        "manufacturers",
+        "where",
+        "founder",
+        "=",
+        "value"
+      ],
+      "question": "How many companies were created by Andy?",
+      "question_toks": [
+        "How",
+        "many",
+        "companies",
+        "were",
+        "created",
+        "by",
+        "Andy",
+        "?"
+      ],
+      "sql": {
+        "from": {
+          "table_units": [
+            [
+              "table_unit",
+              0
+            ]
+          ],
+          "conds": []
+        },
+        "select": [
+          false,
+          [
+            [
+              3,
+              [
+                0,
+                [
+                  0,
+                  0,
+                  false
+                ],
+                null
+              ]
+            ]
+          ]
+        ],
+        "where": [
+          [
+            false,
+            2,
+            [
+              0,
+              [
+                0,
+                4,
+                false
+              ],
+              null
+            ],
+            "\"Andy\"",
+            null
+          ]
+        ],
+        "groupBy": [],
+        "having": [],
+        "orderBy": [],
+        "limit": null,
+        "intersect": null,
+        "union": null,
+        "except": null
+      },
+      "db_table_headers": {
+        "Manufacturers": [
+          "Code",
+          "Name",
+          "Headquarter",
+          "Founder",
+          "Revenue"
+        ],
+        "Products": [
+          "Code",
+          "Name",
+          "Price",
+          "Manufacturer"
+        ]
+      },
+      "answer": [
+        [
+          1
+        ]
+      ]
+    },
+    "generated_programs": [
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'Andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'Andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'Andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'Andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'Andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'Andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'andy'].shape[0])",
+      "answer = pd.Series(Manufacturers[Manufacturers['founder'] == 'Andy'].shape[0])"
+    ],
+    "acc@20": 7,
+    "pass@20": 1.0
+  },
+  {
+    "example": {
+      "db_id": "store_1",
+      "query": "SELECT billing_country ,  AVG(total) FROM invoices GROUP BY billing_country ORDER BY AVG(total) DESC LIMIT 10;",
+      "query_toks": [
+        "SELECT",
+        "billing_country",
+        ",",
+        "AVG",
+        "(",
+        "total",
+        ")",
+        "FROM",
+        "invoices",
+        "GROUP",
+        "BY",
+        "billing_country",
+        "ORDER",
+        "BY",
+        "AVG",
+        "(",
+        "total",
+        ")",
+        "DESC",
+        "LIMIT",
+        "10",
+        ";"
+      ],
+      "query_toks_no_value": [
+        "select",
+        "billing_country",
+        ",",
+        "avg",
+        "(",
+        "total",
+        ")",
+        "from",
+        "invoices",
+        "group",
+        "by",
+        "billing_country",
+        "order",
+        "by",
+        "avg",
+        "(",
+        "total",
+        ")",
+        "desc",
+        "limit",
+        "value"
+      ],
+      "question": "A list of the top 10 countries by average invoice size. List country name and average invoice size.",
+      "question_toks": [
+        "A",
+        "list",
+        "of",
+        "the",
+        "top",
+        "10",
+        "countries",
+        "by",
+        "average",
+        "invoice",
+        "size",
+        ".",
+        "List",
+        "country",
+        "name",
+        "and",
+        "average",
+        "invoice",
+        "size",
+        "."
+      ],
+      "sql": {
+        "from": {
+          "table_units": [
+            [
+              "table_unit",
+              6
+            ]
+          ],
+          "conds": []
+        },
+        "select": [
+          false,
+          [
+            [
+              0,
+              [
+                0,
+                [
+                  0,
+                  44,
+                  false
+                ],
+                null
+              ]
+            ],
+            [
+              5,
+              [
+                0,
+                [
+                  0,
+                  46,
+                  false
+                ],
+                null
+              ]
+            ]
+          ]
+        ],
+        "where": [],
+        "groupBy": [
+          [
+            0,
+            44,
+            false
+          ]
+        ],
+        "having": [],
+        "orderBy": [
+          "desc",
+          [
+            [
+              0,
+              [
+                5,
+                46,
+                false
+              ],
+              null
+            ]
+          ]
+        ],
+        "limit": 10,
+        "intersect": null,
+        "union": null,
+        "except": null
+      },
+      "db_table_headers": {
+        "artists": [
+          "id",
+          "name"
+        ],
+        "sqlite_sequence": [
+          "name",
+          "seq"
+        ],
+        "albums": [
+          "id",
+          "title",
+          "artist_id"
+        ],
+        "employees": [
+          "id",
+          "last_name",
+          "first_name",
+          "title",
+          "reports_to",
+          "birth_date",
+          "hire_date",
+          "address",
+          "city",
+          "state",
+          "country",
+          "postal_code",
+          "phone",
+          "fax",
+          "email"
+        ],
+        "customers": [
+          "id",
+          "first_name",
+          "last_name",
+          "company",
+          "address",
+          "city",
+          "state",
+          "country",
+          "postal_code",
+          "phone",
+          "fax",
+          "email",
+          "support_rep_id"
+        ],
+        "genres": [
+          "id",
+          "name"
+        ],
+        "invoices": [
+          "id",
+          "customer_id",
+          "invoice_date",
+          "billing_address",
+          "billing_city",
+          "billing_state",
+          "billing_country",
+          "billing_postal_code",
+          "total"
+        ],
+        "media_types": [
+          "id",
+          "name"
+        ],
+        "tracks": [
+          "id",
+          "name",
+          "album_id",
+          "media_type_id",
+          "genre_id",
+          "composer",
+          "milliseconds",
+          "bytes",
+          "unit_price"
+        ],
+        "invoice_lines": [
+          "id",
+          "invoice_id",
+          "track_id",
+          "unit_price",
+          "quantity"
+        ],
+        "playlists": [
+          "id",
+          "name"
+        ],
+        "playlist_tracks": [
+          "playlist_id",
+          "track_id"
+        ]
+      },
+      "answer": [
+        [
+          "Chile",
+          6.659999999999999
+        ],
+        [
+          "Ireland",
+          6.517142857142857
+        ],
+        [
+          "Hungary",
+          6.517142857142857
+        ],
+        [
+          "Czech Republic",
+          6.445714285714287
+        ],
+        [
+          "Austria",
+          6.088571428571428
+        ],
+        [
+          "Finland",
+          5.945714285714287
+        ],
+        [
+          "Netherlands",
+          5.8028571428571425
+        ],
+        [
+          "India",
+          5.789230769230769
+        ],
+        [
+          "USA",
+          5.747912087912091
+        ],
+        [
+          "Norway",
+          5.659999999999999
+        ]
+      ]
+    },
+    "generated_programs": [
+      "t1 = invoices.groupby('billing_country').mean()['total'].rename('avg(total)').to_frame().reset_index()\nt2 = t1.sort_values('avg(total)', ascending=False).head(10)\nanswer = t2.rename(columns={'billing_country':'country'})",
+      "t1 = invoices.groupby('billing_country').mean().rename(columns = {'total':'avg(total)'})\nanswer = t1.iloc[0:10]",
+      "t1 = invoices.groupby('billing_country')['total'].mean().rename('avg_invoice_size')\nt2 = t1.sort_values(ascending=False).head(10).to_frame().reset_index()\nanswer = t2[['billing_country', 'avg_invoice_size']]",
+      "t1 = pd.merge(invoices, customers, on='customer_id')\nt2 = t1.groupby('billing_country').mean()['total'].rename('avg_total')\nt3 = t2.sort_values(ascending=False).head(10).to_frame().reset_index()\nanswer = t3[['billing_country', 'avg_total']]",
+      "t1 = invoices.groupby('billing_country').agg({'total': 'mean'})\nt2 = t1.sort_values('total', ascending=False).head(10).reset_index()\nanswer = t2[['billing_country', 'total']]",
+      "t1 = pd.merge(invoices, customers, on='customer_id')\nt2 = t1.groupby('billing_country').agg({'total': 'mean'}).rename(columns={'total': 'avg_total'})\nanswer = t2.sort_values('avg_total', ascending = False).head(10).reset_index()",
+      "t1 = invoices.groupby('billing_country').mean().rename(columns={'total': 'avg'})\nt2 = t1.sort_values('avg', ascending=False)\nanswer = t2[['avg']].head(10).reset_index()",
+      "t1 = invoices[['billing_country', 'total']]\nt2 = t1.groupby('billing_country').mean()\nanswer = t2.nlargest(10, 'total').reset_index()[['billing_country', 'total']]",
+      "t1 = pd.merge(invoices, customers, left_on='customer_id', right_on='id')\nt2 = t1.groupby('billing_country').mean().reset_index()\nanswer = t2[['billing_country', 'total']].sort_values('total', ascending=False).head(10)",
+      "t1 = pd.merge(invoices, customers, left_on='customer_id', right_on='id').drop('id_y', axis=1)\nt2 = t1.groupby('billing_country').mean()['total'].sort_values(ascending=False).head(10)\nt3 = t2.reset_index()\nt3.columns = ['Country', 'Average Invoice']\nanswer = t3",
+      "t1 = pd.merge(invoices, customers, left_on='customer_id', right_on='id')\nt2 = t1.groupby('billing_country').agg({'billing_country':'size', 'total':'mean'})\\\n                      .rename(columns={'billing_country':'count', 'total':'mean'})\\\n                      .sort_values('mean', ascending=False).head(10).reset_index()\nanswer = t2[['billing_country','mean']]",
+      "t1 = pd.merge(invoices, customers, on='customer_id') \nt2 = t1.groupby('billing_country').size().rename('count')\nt3 = t1.groupby('billing_country')['total'].mean().rename('average')\nt4 = pd.merge(t2.to_frame().reset_index(), t3.to_frame().reset_index(), on='billing_country')\nanswer = t4.sort_values('average', ascending=False)[['billing_country', 'average']].head(10)",
+      "t1 = invoices.groupby('billing_country').agg({'total':'mean'}).rename(columns={'total':'average_invoice'})\nt2 = t1.sort_values(by='average_invoice', ascending=False).head(10).reset_index()\nanswer = t2[['billing_country', 'average_invoice']]",
+      "t1 = invoices.groupby('billing_country')['total'].mean().rename('avg').reset_index()\nanswer = t1.sort_values('avg', ascending=False).head(10)",
+      "t1 = invoices.groupby('billing_country').mean()['total'].rename('avg')\nt2 = t1.to_frame()\nanswer = t2.sort_values('avg', ascending=False).head(10)",
+      "t1 = pd.merge(invoices, customers, on='customer_id')\nt2 = t1.groupby('billing_country')['total'].agg(np.mean).rename('avg').to_frame().reset_index()\nanswer = t2.sort_values(by='avg', ascending=False).head(10)",
+      "t1 = pd.merge(invoices, customers, on='customer_id')\nt2 = t1.groupby('billing_country').agg({'total': 'mean'})\nt3 = t2.sort_values('total', ascending=False).head(10).reset_index()\nanswer = t3[['billing_country', 'total']]",
+      "t1 = invoices.groupby('billing_country').size().rename('count')\nt2 = invoices.groupby('billing_country').sum()\nt3 = pd.concat([t1, t2], axis=1).drop(['id'], axis=1)\nt4 = t3['total']/t3['count']\nanswer = pd.concat([t4, t1], axis=1).sort_values('total', ascending = False).iloc[:10]",
+      "t1 = invoices[['billing_country', 'total']]\nt2 = t1.groupby('billing_country').mean()\nanswer = t2.sort_values('total', ascending=False).head(10)",
+      "t1 = pd.merge(invoices, customers, left_on='customer_id', right_on='id')\nt2 = t1.groupby('billing_country')['total'].mean().rename('avg_total')\nanswer = t2.sort_values(ascending=False).head(10).to_frame(name='avg_total').reset_index()"
+    ],
+    "acc@20": 0,
+    "pass@20": 0.0
+  },
+  {
+    "example": {
+      "db_id": "insurance_and_eClaims",
+      "query": "SELECT DISTINCT t2.customer_details FROM policies AS t1 JOIN customers AS t2 ON t1.customer_id  =  t2.customer_id WHERE t1.policy_type_code  =  \"Deputy\"",
+      "query_toks": [
+        "SELECT",
+        "DISTINCT",
+        "t2.customer_details",
+        "FROM",
+        "policies",
+        "AS",
+        "t1",
+        "JOIN",
+        "customers",
+        "AS",
+        "t2",
+        "ON",
+        "t1.customer_id",
+        "=",
+        "t2.customer_id",
+        "WHERE",
+        "t1.policy_type_code",
+        "=",
+        "``",
+        "Deputy",
+        "''"
+      ],
+      "query_toks_no_value": [
+        "select",
+        "distinct",
+        "t2",
+        ".",
+        "customer_details",
+        "from",
+        "policies",
+        "as",
+        "t1",
+        "join",
+        "customers",
+        "as",
+        "t2",
+        "on",
+        "t1",
+        ".",
+        "customer_id",
+        "=",
+        "t2",
+        ".",
+        "customer_id",
+        "where",
+        "t1",
+        ".",
+        "policy_type_code",
+        "=",
+        "value"
+      ],
+      "question": "Which customers have an insurance policy with the type code \"Deputy\"? Give me the customer details.",
+      "question_toks": [
+        "Which",
+        "customers",
+        "have",
+        "an",
+        "insurance",
+        "policy",
+        "with",
+        "the",
+        "type",
+        "code",
+        "``",
+        "Deputy",
+        "''",
+        "?",
+        "Give",
+        "me",
+        "the",
+        "customer",
+        "details",
+        "."
+      ],
+      "sql": {
+        "from": {
+          "table_units": [
+            [
+              "table_unit",
+              2
+            ],
+            [
+              "table_unit",
+              0
+            ]
+          ],
+          "conds": [
+            [
+              false,
+              2,
+              [
+                0,
+                [
+                  0,
+                  6,
+                  false
+                ],
+                null
+              ],
+              [
+                0,
+                1,
+                false
+              ],
+              null
+            ]
+          ]
+        },
+        "select": [
+          true,
+          [
+            [
+              0,
+              [
+                0,
+                [
+                  0,
+                  2,
+                  false
+                ],
+                null
+              ]
+            ]
+          ]
+        ],
+        "where": [
+          [
+            false,
+            2,
+            [
+              0,
+              [
+                0,
+                7,
+                false
+              ],
+              null
+            ],
+            "\"Deputy\"",
+            null
+          ]
+        ],
+        "groupBy": [],
+        "having": [],
+        "orderBy": [],
+        "limit": null,
+        "intersect": null,
+        "union": null,
+        "except": null
+      },
+      "db_table_headers": {
+        "Customers": [
+          "Customer_ID",
+          "Customer_Details"
+        ],
+        "Staff": [
+          "Staff_ID",
+          "Staff_Details"
+        ],
+        "Policies": [
+          "Policy_ID",
+          "Customer_ID",
+          "Policy_Type_Code",
+          "Start_Date",
+          "End_Date"
+        ],
+        "Claim_Headers": [
+          "Claim_Header_ID",
+          "Claim_Status_Code",
+          "Claim_Type_Code",
+          "Policy_ID",
+          "Date_of_Claim",
+          "Date_of_Settlement",
+          "Amount_Claimed",
+          "Amount_Piad"
+        ],
+        "Claims_Documents": [
+          "Claim_ID",
+          "Document_Type_Code",
+          "Created_by_Staff_ID",
+          "Created_Date"
+        ],
+        "Claims_Processing_Stages": [
+          "Claim_Stage_ID",
+          "Next_Claim_Stage_ID",
+          "Claim_Status_Name",
+          "Claim_Status_Description"
+        ],
+        "Claims_Processing": [
+          "Claim_Processing_ID",
+          "Claim_ID",
+          "Claim_Outcome_Code",
+          "Claim_Stage_ID",
+          "Staff_ID"
+        ]
+      },
+      "answer": [
+        [
+          "Buddy Marquardt"
+        ],
+        [
+          "Selena Gerhold"
+        ],
+        [
+          "Dr. Diana Rath"
+        ]
+      ]
+    },
+    "generated_programs": [
+      "t1 = pd.merge(Policies, Customers, on='customer_id')\nt2 = t1[t1['policy_type_code'] == 'Deputy']\nanswer = t2['customer_details']",
+      "t1 = pd.merge(Policies, Customers, left_on='customer_id', right_on='customer_id')\nt2 = t1[['customer_id', 'customer_details']][t1['policy_type_code'] =='Deputy']\nanswer = t2['customer_details'].unique()",
+      "t1 = pd.merge(Policies, Customers, left_on='customer_id', right_on='customer_id')\nanswer = t1[t1['policy_type_code'] == 'Deputy']['customer_details'].drop_duplicates()",
+      "t1 = pd.merge(Customers, Policies, left_on='customer_id', right_on='customer_id')\nanswer = t1[t1['policy_type_code'] == 'Deputy']['customer_details'].unique()",
+      "t1 = pd.merge(Customers, Policies, on='customer_id')\nt2 = t1[t1['policy_type_code'] == 'Deputy']\nanswer = t2['customer_details'].unique()",
+      "answer = Customers[Customers['customer_id'].isin(Policies[Policies['policy_type_code'] == 'Deputy']['customer_id'])]['customer_details']",
+      "t1 = pd.merge(Policies, Customers, on='customer_id')\nanswer = t1[t1['policy_type_code'] == 'Deputy']['customer_details'].drop_duplicates()",
+      "t1 = pd.merge(Customers, Policies, on='customer_id')\nanswer = t1[t1['policy_type_code'] == 'Deputy']['customer_details'].unique()",
+      "t1 = pd.merge(Policies, Customers, on='customer_id')\nanswer = t1[t1['policy_type_code'] == 'Deputy']['customer_details'].drop_duplicates()",
+      "t1 = pd.merge(Customers, Policies.drop_duplicates(), left_on='customer_id', right_on='customer_id')\nanswer = t1[t1['policy_type_code'] == 'Deputy']['customer_details'].unique()",
+      "t1 = pd.merge(Policies, Customers, on='customer_id')\nt2 = t1[t1['policy_type_code'] == 'Deputy']\nanswer = t2['customer_details'].unique()",
+      "t1 = pd.merge(Policies, Customers, on='customer_id')\nanswer = t1[t1['policy_type_code'] == 'Deputy']['customer_details'].drop_duplicates()",
+      "t1 = pd.merge(Policies, Customers, left_on='customer_id', right_on='customer_id')\nt2 = t1[t1['policy_type_code'] == 'Deputy'][['customer_details']]\nanswer = t2.drop_duplicates()",
+      "t1 = pd.merge(Policies, Customers, on='customer_id')\nanswer = t1[t1['policy_type_code'] == 'Deputy']['customer_details'].drop_duplicates()",
+      "t1 = pd.merge(Policies, Customers, on='customer_id')\nt2 = t1[t1['policy_type_code'] == 'Deputy']\nanswer = t2['customer_details'].unique()",
+      "t1 = pd.merge(Policies, Customers, left_on='customer_id', right_on='customer_id')\nanswer = t1[t1['policy_type_code'] == 'Deputy']['customer_details'].unique()",
+      "t1 = pd.merge(Policies, Customers, left_on='customer_id', right_on='customer_id')\nt2 = t1[t1['policy_type_code'] == 'Deputy']['customer_details'].drop_duplicates()\nanswer = t2",
+      "t1 = pd.merge(Policies, Customers, left_on='customer_id', right_on='customer_id')\nt2 = t1[t1['policy_type_code'] == 'Deputy']\nanswer = t2['customer_details'].drop_duplicates()",
+      "t1 = pd.merge(Policies, Customers, on='customer_id')\nanswer = t1[t1['policy_type_code'] == 'deputy']['customer_details'].drop_duplicates()",
+      "t1 = pd.merge(Policies, Customers, on='customer_id')\nt2 = t1[t1['policy_type_code'] == 'Deputy']\nanswer = t2['customer_details'].unique()"
+    ],
+    "acc@20": 0,
+    "pass@20": 0.0
+  },
+  {
+    "example": {
+      "db_id": "store_1",
+      "query": "SELECT count(*) FROM customers WHERE city = \"Prague\";",
+      "query_toks": [
+        "SELECT",
+        "count",
+        "(",
+        "*",
+        ")",
+        "FROM",
+        "customers",
+        "WHERE",
+        "city",
+        "=",
+        "``",
+        "Prague",
+        "''",
+        ";"
+      ],
+      "query_toks_no_value": [
+        "select",
+        "count",
+        "(",
+        "*",
+        ")",
+        "from",
+        "customers",
+        "where",
+        "city",
+        "=",
+        "value"
+      ],
+      "question": "How many customers live in Prague city?",
+      "question_toks": [
+        "How",
+        "many",
+        "customers",
+        "live",
+        "in",
+        "Prague",
+        "city",
+        "?"
+      ],
+      "sql": {
+        "from": {
+          "table_units": [
+            [
+              "table_unit",
+              4
+            ]
+          ],
+          "conds": []
+        },
+        "select": [
+          false,
+          [
+            [
+              3,
+              [
+                0,
+                [
+                  0,
+                  0,
+                  false
+                ],
+                null
+              ]
+            ]
+          ]
+        ],
+        "where": [
+          [
+            false,
+            2,
+            [
+              0,
+              [
+                0,
+                28,
+                false
+              ],
+              null
+            ],
+            "\"Prague\"",
+            null
+          ]
+        ],
+        "groupBy": [],
+        "having": [],
+        "orderBy": [],
+        "limit": null,
+        "intersect": null,
+        "union": null,
+        "except": null
+      },
+      "db_table_headers": {
+        "artists": [
+          "id",
+          "name"
+        ],
+        "sqlite_sequence": [
+          "name",
+          "seq"
+        ],
+        "albums": [
+          "id",
+          "title",
+          "artist_id"
+        ],
+        "employees": [
+          "id",
+          "last_name",
+          "first_name",
+          "title",
+          "reports_to",
+          "birth_date",
+          "hire_date",
+          "address",
+          "city",
+          "state",
+          "country",
+          "postal_code",
+          "phone",
+          "fax",
+          "email"
+        ],
+        "customers": [
+          "id",
+          "first_name",
+          "last_name",
+          "company",
+          "address",
+          "city",
+          "state",
+          "country",
+          "postal_code",
+          "phone",
+          "fax",
+          "email",
+          "support_rep_id"
+        ],
+        "genres": [
+          "id",
+          "name"
+        ],
+        "invoices": [
+          "id",
+          "customer_id",
+          "invoice_date",
+          "billing_address",
+          "billing_city",
+          "billing_state",
+          "billing_country",
+          "billing_postal_code",
+          "total"
+        ],
+        "media_types": [
+          "id",
+          "name"
+        ],
+        "tracks": [
+          "id",
+          "name",
+          "album_id",
+          "media_type_id",
+          "genre_id",
+          "composer",
+          "milliseconds",
+          "bytes",
+          "unit_price"
+        ],
+        "invoice_lines": [
+          "id",
+          "invoice_id",
+          "track_id",
+          "unit_price",
+          "quantity"
+        ],
+        "playlists": [
+          "id",
+          "name"
+        ],
+        "playlist_tracks": [
+          "playlist_id",
+          "track_id"
+        ]
+      },
+      "answer": [
+        [
+          2
+        ]
+      ],
+      "pandas_converted": "pd.Series(customers[customers['city'] == 'Prague'].shape[0])"
+    },
+    "generated_programs": [
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = customers[customers['city'] == 'Prague'].shape[0]",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.DataFrame({'count':[customers[customers['city'] == 'Prague'].shape[0]]})",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = customers[customers['city'] == 'Prague'].shape[0]",
+      "answer = customers['city'].str.count(\"Prague\")",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.Series(customers[customers['city'] == 'Prague'].shape[0])",
+      "answer = pd.Series(customers[customers['city']=='Prague'].shape[0])"
+    ],
+    "acc@20": 19,
+    "pass@20": 1.0
+  },
+  {
+    "example": {
+      "db_id": "browser_web",
+      "query": "SELECT Operating_system ,  count(*) FROM web_client_accelerator GROUP BY Operating_system",
+      "query_toks": [
+        "SELECT",
+        "Operating_system",
+        ",",
+        "count",
+        "(",
+        "*",
+        ")",
+        "FROM",
+        "web_client_accelerator",
+        "GROUP",
+        "BY",
+        "Operating_system"
+      ],
+      "query_toks_no_value": [
+        "select",
+        "operating_system",
+        ",",
+        "count",
+        "(",
+        "*",
+        ")",
+        "from",
+        "web_client_accelerator",
+        "group",
+        "by",
+        "operating_system"
+      ],
+      "question": "Find the number of web accelerators used for each Operating system.",
+      "question_toks": [
+        "Find",
+        "the",
+        "number",
+        "of",
+        "web",
+        "accelerators",
+        "used",
+        "for",
+        "each",
+        "Operating",
+        "system",
+        "."
+      ],
+      "sql": {
+        "from": {
+          "table_units": [
+            [
+              "table_unit",
+              0
+            ]
+          ],
+          "conds": []
+        },
+        "select": [
+          false,
+          [
+            [
+              0,
+              [
+                0,
+                [
+                  0,
+                  3,
+                  false
+                ],
+                null
+              ]
+            ],
+            [
+              3,
+              [
+                0,
+                [
+                  0,
+                  0,
+                  false
+                ],
+                null
+              ]
+            ]
+          ]
+        ],
+        "where": [],
+        "groupBy": [
+          [
+            0,
+            3,
+            false
+          ]
+        ],
+        "having": [],
+        "orderBy": [],
+        "limit": null,
+        "intersect": null,
+        "union": null,
+        "except": null
+      },
+      "db_table_headers": {
+        "Web_client_accelerator": [
+          "id",
+          "name",
+          "Operating_system",
+          "Client",
+          "Connection"
+        ],
+        "browser": [
+          "id",
+          "name",
+          "market_share"
+        ],
+        "accelerator_compatible_browser": [
+          "accelerator_id",
+          "browser_id",
+          "compatible_since_year"
+        ]
+      },
+      "answer": [
+        [
+          "Android, Linux, Mac and Windows devices",
+          1
+        ],
+        [
+          "Any",
+          1
+        ],
+        [
+          "Any system with Java 1.6 VM available",
+          1
+        ],
+        [
+          "Appliance (Linux)",
+          1
+        ],
+        [
+          "Unix (Linux, *BSD, Mac OS X, others)",
+          1
+        ],
+        [
+          "Unix (Linux, *BSD, Mac OS X, others), Windows",
+          2
+        ],
+        [
+          "Windows",
+          3
+        ],
+        [
+          "Windows (2000 onwards)",
+          1
+        ],
+        [
+          "Windows, Linux, Mac OS, Symbian, WindowsMobile",
+          1
+        ],
+        [
+          "Windows, Mac",
+          3
+        ],
+        [
+          "Windows, Mac and Mobile devices",
+          1
+        ],
+        [
+          "Windows, Mac, Linux and Mobile devices",
+          1
+        ],
+        [
+          "Windows, Mac, Mobile devices",
+          1
+        ],
+        [
+          "Windows, except NT and 95",
+          1
+        ]
+      ]
+    },
+    "generated_programs": [
+      "answer = Web_client_accelerator.groupby('operating_system').size().rename('count').to_frame().reset_index()",
+      "t1 = Web_client_accelerator.groupby('operating_system').size().rename('count')\nanswer = pd.DataFrame(t1).reset_index()",
+      "t1 = Web_client_accelerator.groupby('operating_system').size().rename('count')\nanswer = t1.to_frame().reset_index()",
+      "t1 = Web_client_accelerator.groupby(['operating_system']).size().rename('count')\nanswer = t1.to_frame().reset_index()",
+      "t1 = Web_client_accelerator.groupby('operating_system').size().rename('count')\nanswer = t1.to_frame().reset_index()",
+      "answer = Web_client_accelerator.groupby('operating_system').size().rename('count').to_frame()",
+      "answer = Web_client_accelerator.groupby('operating_system').size().rename('count').to_frame().reset_index()",
+      "answer = Web_client_accelerator.groupby('operating_system').size().rename('count')",
+      "answer = Web_client_accelerator.groupby('operating_system').size().rename('count')",
+      "t1 = Web_client_accelerator.groupby('operating_system').size().rename('count')\nanswer = t1.to_frame().reset_index()",
+      "answer = Web_client_accelerator.groupby('operating_system').size()",
+      "answer = Web_client_accelerator.groupby('operating_system').size().rename('count')",
+      "answer = Web_client_accelerator.groupby('operating_system').size().rename('count').to_frame().reset_index()",
+      "t1 = Web_client_accelerator.groupby('operating_system').size().rename('count')\nanswer = t1.to_frame().reset_index()",
+      "t1 = Web_client_accelerator.groupby('operating_system').size().rename('count')\nanswer = pd.Series(t1)",
+      "answer = Web_client_accelerator.groupby('operating_system').size().rename('count')",
+      "answer = Web_client_accelerator.groupby('operating_system').size()",
+      "t1 = Web_client_accelerator.groupby('operating_system').size().rename('count')\nanswer = t1.to_frame().reset_index()",
+      "answer = Web_client_accelerator.groupby('operating_system').size().rename('count')",
+      "t1 = Web_client_accelerator.groupby('operating_system').size().rename('count').to_frame().reset_index()\nanswer = t1[['operating_system', 'count']]"
+    ],
+    "acc@20": 11,
+    "pass@20": 1.0
+  },
+  {
+    "example": {
+      "db_id": "hospital_1",
+      "query": "SELECT DISTINCT name FROM medication ORDER BY name",
+      "query_toks": [
+        "SELECT",
+        "DISTINCT",
+        "name",
+        "FROM",
+        "medication",
+        "ORDER",
+        "BY",
+        "name"
+      ],
+      "query_toks_no_value": [
+        "select",
+        "distinct",
+        "name",
+        "from",
+        "medication",
+        "order",
+        "by",
+        "name"
+      ],
+      "question": "What is the alphabetically ordered list of all distinct medications?",
+      "question_toks": [
+        "What",
+        "is",
+        "the",
+        "alphabetically",
+        "ordered",
+        "list",
+        "of",
+        "all",
+        "distinct",
+        "medications",
+        "?"
+      ],
+      "sql": {
+        "from": {
+          "table_units": [
+            [
+              "table_unit",
+              8
+            ]
+          ],
+          "conds": []
+        },
+        "select": [
+          true,
+          [
+            [
+              0,
+              [
+                0,
+                [
+                  0,
+                  37,
+                  false
+                ],
+                null
+              ]
+            ]
+          ]
+        ],
+        "where": [],
+        "groupBy": [],
+        "having": [],
+        "orderBy": [
+          "asc",
+          [
+            [
+              0,
+              [
+                0,
+                37,
+                false
+              ],
+              null
+            ]
+          ]
+        ],
+        "limit": null,
+        "intersect": null,
+        "union": null,
+        "except": null
+      },
+      "db_table_headers": {
+        "Physician": [
+          "EmployeeID",
+          "Name",
+          "Position",
+          "SSN"
+        ],
+        "Department": [
+          "DepartmentID",
+          "Name",
+          "Head"
+        ],
+        "Affiliated_With": [
+          "Physician",
+          "Department",
+          "PrimaryAffiliation"
+        ],
+        "Procedures": [
+          "Code",
+          "Name",
+          "Cost"
+        ],
+        "Trained_In": [
+          "Physician",
+          "Treatment",
+          "CertificationDate",
+          "CertificationExpires"
+        ],
+        "Patient": [
+          "SSN",
+          "Name",
+          "Address",
+          "Phone",
+          "InsuranceID",
+          "PCP"
+        ],
+        "Nurse": [
+          "EmployeeID",
+          "Name",
+          "Position",
+          "Registered",
+          "SSN"
+        ],
+        "Appointment": [
+          "AppointmentID",
+          "Patient",
+          "PrepNurse",
+          "Physician",
+          "Start",
+          "End",
+          "ExaminationRoom"
+        ],
+        "Medication": [
+          "Code",
+          "Name",
+          "Brand",
+          "Description"
+        ],
+        "Prescribes": [
+          "Physician",
+          "Patient",
+          "Medication",
+          "Date",
+          "Appointment",
+          "Dose"
+        ],
+        "Block": [
+          "BlockFloor",
+          "BlockCode"
+        ],
+        "Room": [
+          "RoomNumber",
+          "RoomType",
+          "BlockFloor",
+          "BlockCode",
+          "Unavailable"
+        ],
+        "On_Call": [
+          "Nurse",
+          "BlockFloor",
+          "BlockCode",
+          "OnCallStart",
+          "OnCallEnd"
+        ],
+        "Stay": [
+          "StayID",
+          "Patient",
+          "Room",
+          "StayStart",
+          "StayEnd"
+        ],
+        "Undergoes": [
+          "Patient",
+          "Procedures",
+          "Stay",
+          "DateUndergoes",
+          "Physician",
+          "AssistingNurse"
+        ]
+      },
+      "answer": [
+        [
+          "Awakin"
+        ],
+        [
+          "Crescavitin"
+        ],
+        [
+          "Melioraurin"
+        ],
+        [
+          "Procrastin-X"
+        ],
+        [
+          "Thesisin"
+        ]
+      ]
+    },
+    "generated_programs": [
+      "answer = Medication['name'].drop_duplicates().sort_values()",
+      "answer = pd.DataFrame([[x] for x in Medication['name'].unique()], columns=['name']).sort_values('name', ascending = True)",
+      "answer = pd.Series(sorted(Medication['name'].unique()))",
+      "answer = Medication['name'].unique().tolist()",
+      "answer = Medication['name'].drop_duplicates().sort_values(ascending=True)",
+      "answer = Medication['name'].unique()",
+      "answer = pd.Series(Medication['name'].unique()).sort_values()",
+      "answer = Medication.sort_values('name').drop_duplicates()",
+      "answer = Medication['name'].unique().tolist()",
+      "answer = Medication['name'].unique()",
+      "answer = pd.Series(Medication['name'].sort_values().unique())",
+      "t1 = pd.Series(Medication['name'].drop_duplicates().values)\nanswer = t1.sort_values()",
+      "answer = pd.Series(Medication['name'].unique())",
+      "answer = Medication['name'].unique()\nanswer = answer.sort_values()\nanswer = pd.Series(answer)",
+      "answer = Medication['name'].drop_duplicates().sort_values()",
+      "answer = pd.Series(sorted(Medication['name'].unique()))",
+      "answer = Medication.sort_values('name')['name'].unique()",
+      "answer = Medication['name'].unique().tolist()",
+      "answer = Medication['name'].unique()",
+      "answer = Medication['name'].sort_values(ascending=True).unique()"
+    ],
+    "acc@20": 11,
+    "pass@20": 1.0
+  },
+  {
+    "example": {
+      "db_id": "wine_1",
+      "query": "SELECT Grape ,  Winery ,  YEAR FROM WINE WHERE Price  >   100 ORDER BY YEAR",
+      "query_toks": [
+        "SELECT",
+        "Grape",
+        ",",
+        "Winery",
+        ",",
+        "YEAR",
+        "FROM",
+        "WINE",
+        "WHERE",
+        "Price",
+        ">",
+        "100",
+        "ORDER",
+        "BY",
+        "YEAR"
+      ],
+      "query_toks_no_value": [
+        "select",
+        "grape",
+        ",",
+        "winery",
+        ",",
+        "year",
+        "from",
+        "wine",
+        "where",
+        "price",
+        ">",
+        "value",
+        "order",
+        "by",
+        "year"
+      ],
+      "question": "List the grape, winery and year of the wines whose price is bigger than 100 ordered by year.",
+      "question_toks": [
+        "List",
+        "the",
+        "grape",
+        ",",
+        "winery",
+        "and",
+        "year",
+        "of",
+        "the",
+        "wines",
+        "whose",
+        "price",
+        "is",
+        "bigger",
+        "than",
+        "100",
+        "ordered",
+        "by",
+        "year",
+        "."
+      ],
+      "sql": {
+        "from": {
+          "table_units": [
+            [
+              "table_unit",
+              2
+            ]
+          ],
+          "conds": []
+        },
+        "select": [
+          false,
+          [
+            [
+              0,
+              [
+                0,
+                [
+                  0,
+                  11,
+                  false
+                ],
+                null
+              ]
+            ],
+            [
+              0,
+              [
+                0,
+                [
+                  0,
+                  12,
+                  false
+                ],
+                null
+              ]
+            ],
+            [
+              0,
+              [
+                0,
+                [
+                  0,
+                  16,
+                  false
+                ],
+                null
+              ]
+            ]
+          ]
+        ],
+        "where": [
+          [
+            false,
+            3,
+            [
+              0,
+              [
+                0,
+                17,
+                false
+              ],
+              null
+            ],
+            100.0,
+            null
+          ]
+        ],
+        "groupBy": [],
+        "having": [],
+        "orderBy": [
+          "asc",
+          [
+            [
+              0,
+              [
+                0,
+                16,
+                false
+              ],
+              null
+            ]
+          ]
+        ],
+        "limit": null,
+        "intersect": null,
+        "union": null,
+        "except": null
+      },
+      "db_table_headers": {
+        "grapes": [
+          "ID",
+          "Grape",
+          "Color"
+        ],
+        "appellations": [
+          "No",
+          "Appelation",
+          "County",
+          "State",
+          "Area",
+          "isAVA"
+        ],
+        "wine": [
+          "No",
+          "Grape",
+          "Winery",
+          "Appelation",
+          "State",
+          "Name",
+          "Year",
+          "Price",
+          "Score",
+          "Cases",
+          "Drink"
+        ]
+      },
+      "answer": [
+        [
+          "Grenache",
+          "Sine Qua Non",
+          2006
+        ],
+        [
+          "Syrah",
+          "Sine Qua Non",
+          2006
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Hourglass",
+          2006
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Lewis",
+          2006
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Bucella",
+          2006
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Casa Piena",
+          2006
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Chappellet",
+          2007
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Lewis",
+          2007
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Carter",
+          2007
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Carter",
+          2007
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Janzen",
+          2007
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Morlet",
+          2007
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Darioush",
+          2007
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Chimeney Rock",
+          2007
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Paul Hobbs",
+          2007
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Dos Lagos",
+          2007
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "David Arthur",
+          2007
+        ],
+        [
+          "Grenache",
+          "Sine Qua Non",
+          2007
+        ],
+        [
+          "Syrah",
+          "Sine Qua Non",
+          2007
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Lewis",
+          2008
+        ],
+        [
+          "Cabernet Sauvingnon",
+          "Caymus",
+          2008
+        ]
+      ]
+    },
+    "generated_programs": [
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year', ascending = True)",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year', ascending = True)",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year', ascending = True)",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year')",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year', ascending = True)",
+      "answer = wine.loc[wine['price']>100, ['grape', 'winery', 'year']].sort_values('year', ascending = True)",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year')",
+      "answer = wine[wine['price'] > 100].sort_values('year', ascending = True)[['grape', 'winery', 'year']]",
+      "answer = wine.where(wine['price'] > 100).sort_values('year').dropna()[['grape', 'winery', 'year']]",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year', ascending = True)",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values(by = 'year')",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year')",
+      "answer = wine[wine['price'] > 100].sort_values(['year'])[['grape', 'winery', 'year']]",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year', ascending = True)",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year')",
+      "t1 = wine[wine['price'] > 100]\nanswer = t1[['grape', 'winery', 'year']].sort_values('year')",
+      "answer = wine[wine['price'] > 100].sort_values(by='year', ascending=True)[['grape', 'winery', 'year']]",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year', ascending = True)",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year')",
+      "answer = wine[wine['price'] > 100][['grape', 'winery', 'year']].sort_values('year', ascending = True)"
+    ],
+    "acc@20": 0,
+    "pass@20": 0.0
+  },
+  {
+    "example": {
+      "db_id": "customer_complaints",
+      "query": "SELECT email_address ,  phone_number FROM customers ORDER BY email_address ,  phone_number",
+      "query_toks": [
+        "SELECT",
+        "email_address",
+        ",",
+        "phone_number",
+        "FROM",
+        "customers",
+        "ORDER",
+        "BY",
+        "email_address",
+        ",",
+        "phone_number"
+      ],
+      "query_toks_no_value": [
+        "select",
+        "email_address",
+        ",",
+        "phone_number",
+        "from",
+        "customers",
+        "order",
+        "by",
+        "email_address",
+        ",",
+        "phone_number"
+      ],
+      "question": "What are the emails and phone numbers of all customers, sorted by email address and phone number?",
+      "question_toks": [
+        "What",
+        "are",
+        "the",
+        "emails",
+        "and",
+        "phone",
+        "numbers",
+        "of",
+        "all",
+        "customers",
+        ",",
+        "sorted",
+        "by",
+        "email",
+        "address",
+        "and",
+        "phone",
+        "number",
+        "?"
+      ],
+      "sql": {
+        "from": {
+          "table_units": [
+            [
+              "table_unit",
+              1
+            ]
+          ],
+          "conds": []
+        },
+        "select": [
+          false,
+          [
+            [
+              0,
+              [
+                0,
+                [
+                  0,
+                  13,
+                  false
+                ],
+                null
+              ]
+            ],
+            [
+              0,
+              [
+                0,
+                [
+                  0,
+                  14,
+                  false
+                ],
+                null
+              ]
+            ]
+          ]
+        ],
+        "where": [],
+        "groupBy": [],
+        "having": [],
+        "orderBy": [
+          "asc",
+          [
+            [
+              0,
+              [
+                0,
+                13,
+                false
+              ],
+              null
+            ],
+            [
+              0,
+              [
+                0,
+                14,
+                false
+              ],
+              null
+            ]
+          ]
+        ],
+        "limit": null,
+        "intersect": null,
+        "union": null,
+        "except": null
+      },
+      "db_table_headers": {
+        "Staff": [
+          "staff_id",
+          "gender",
+          "first_name",
+          "last_name",
+          "email_address",
+          "phone_number"
+        ],
+        "Customers": [
+          "customer_id",
+          "customer_type_code",
+          "address_line_1",
+          "address_line_2",
+          "town_city",
+          "state",
+          "email_address",
+          "phone_number"
+        ],
+        "Products": [
+          "product_id",
+          "parent_product_id",
+          "product_category_code",
+          "date_product_first_available",
+          "date_product_discontinued",
+          "product_name",
+          "product_description",
+          "product_price"
+        ],
+        "Complaints": [
+          "complaint_id",
+          "product_id",
+          "customer_id",
+          "complaint_outcome_code",
+          "complaint_status_code",
+          "complaint_type_code",
+          "date_complaint_raised",
+          "date_complaint_closed",
+          "staff_id"
+        ]
+      },
+      "answer": [
+        [
+          "cayla.satterfield@example.net",
+          "470-803-0244"
+        ],
+        [
+          "hsteuber@example.org",
+          "06963347450"
+        ],
+        [
+          "lavonne.frami@example.com",
+          "+38(3)9011433816"
+        ],
+        [
+          "paige.hyatt@example.com",
+          "1-369-302-7623x576"
+        ],
+        [
+          "rzulauf@example.org",
+          "578.019.7943x328"
+        ],
+        [
+          "ubeier@example.org",
+          "044-468-4549"
+        ],
+        [
+          "vbogisich@example.org",
+          "548.373.3603x59134"
+        ],
+        [
+          "vida86@example.com",
+          "997.698.4779x882"
+        ]
+      ]
+    },
+    "generated_programs": [
+      "answer = Customers.sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(by=['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(by=['email_address', 'phone_number'])",
+      "t1 = Customers.sort_values(['email_address', 'phone_number'])\nanswer = t1[['email_address', 'phone_number']]",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(by = ['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "# SQL: select email_address ,  phone_number from customers order by email_address ,  phone_number\nanswer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])",
+      "answer = Customers[['email_address', 'phone_number']].sort_values(['email_address', 'phone_number'])"
+    ],
+    "acc@20": 19,
+    "pass@20": 1.0
+  }
+]

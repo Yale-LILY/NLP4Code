@@ -1,0 +1,77 @@
+[
+  {
+    "example": {
+      "text": "# 50 % of x is greater than 1 / 3 rd of x by 110 . what is x ? n0 = 50.0 n1 = 1.0 n2 = 3.0 n3 = 110.0",
+      "code": "n0 = 50.0\nn1 = 1.0\nn2 = 3.0\nn3 = 110.0\nt0 = n0 / 100.0\nt1 = n1 / n2\nt2 = t0 - t1\nanswer = n3 / t2",
+      "dsl_code": "divide(n0,const_100)|divide(n1,n2)|subtract(#0,#1)|divide(n3,#2)|",
+      "reasoning": "5 x / 10 - x / 3 = 110 1 x / 6 = 110 x = 660 answer : e",
+      "answer": 659.9999999999999,
+      "task_id": 1130
+    },
+    "generated_programs": [
+      "n0 = 50.0\nn1 = 1.0\nn2 = 3.0\nn3 = 110.0\nt0 = n0 / 100.0\nt1 = n1 + t0\nt2 = n2 / t1\nt3 = n3 / t1\nt4 = 1.0 / t3\nanswer = t2 * t4"
+    ],
+    "acc@1": 0,
+    "pass@1": 0.0
+  },
+  {
+    "example": {
+      "text": "# a girl was asked to multiply a certain number by 43 . she multiplied it by 34 and got his answer less than the correct one by 1233 . find the number to be multiplied . n0 = 43.0 n1 = 34.0 n2 = 1233.0",
+      "code": "n0 = 43.0\nn1 = 34.0\nn2 = 1233.0\nt0 = n0 - n1\nanswer = n2 / t0",
+      "dsl_code": "subtract(n0,n1)|divide(n2,#0)|",
+      "reasoning": "let the required number be x . then , 43 x \u2013 34 x = 1233 or 9 x = 1233 or x = 137 . required number = 137 . answer : d",
+      "answer": 137.0,
+      "task_id": 2534
+    },
+    "generated_programs": [
+      "n0 = 43.0\nn1 = 34.0\nn2 = 1233.0\nt0 = n2 / n0\nt1 = n1 - t0\nt2 = 1.0 / n0\nt3 = t1 * t2\nanswer = t3 + 1.0"
+    ],
+    "acc@1": 0,
+    "pass@1": 0.0
+  },
+  {
+    "example": {
+      "text": "# two - third of a positive number and 144 / 216 of its reciprocal are equal . the number is : n0 = 144.0 n1 = 216.0",
+      "code": "import math\nn0 = 144.0\nn1 = 216.0\nt0 = n0 * 3.0\nt1 = n1 * 2.0\nt2 = t0 / t1\nanswer = math.sqrt(max(0, t2))",
+      "dsl_code": "multiply(n0,const_3)|multiply(n1,const_2)|divide(#0,#1)|sqrt(#2)|",
+      "reasoning": "let the number be x . then , 2 / 3 x = 144 / 216 * 1 / x x 2 = 144 / 216 * 3 / 2 = 144 / 144 x = 1 answer : e",
+      "answer": 1.0,
+      "task_id": 2664
+    },
+    "generated_programs": [
+      "n0 = 144.0\nn1 = 216.0\nt0 = n0 / 3.0\nt1 = n1 / 6.0\nt2 = t0 / t1\nanswer = t2"
+    ],
+    "acc@1": 0,
+    "pass@1": 0.0
+  },
+  {
+    "example": {
+      "text": "# if there are 86 workers in a factory , and on a certain day , 72 were present . calculate the percentage that showed up for work ? ( round to the nearest tenth ) . n0 = 86.0 n1 = 72.0",
+      "code": "n0 = 86.0\nn1 = 72.0\nt0 = n1 / n0\nanswer = t0 * 100.0",
+      "dsl_code": "divide(n1,n0)|multiply(#0,const_100)|",
+      "reasoning": "72 / 86 * 100 = 83.72 83.7 % correct answer c",
+      "answer": 83.72093023255815,
+      "task_id": 2641
+    },
+    "generated_programs": [
+      "n0 = 86.0\nn1 = 72.0\nt0 = n1 / n0\nanswer = t0 * 100.0"
+    ],
+    "acc@1": 1,
+    "pass@1": 1.0
+  },
+  {
+    "example": {
+      "text": "# find the greatest number which on dividing 6215 and 7373 , leaves a reminder of 23 and 29 respectively n0 = 6215.0 n1 = 7373.0 n2 = 23.0 n3 = 29.0",
+      "code": "import scipy\nn0 = 6215.0\nn1 = 7373.0\nn2 = 23.0\nn3 = 29.0\nt0 = n0 - n2\nt1 = n1 - n3\nanswer = scipy.gcd(int(t0), int(t1))",
+      "dsl_code": "subtract(n0,n2)|subtract(n1,n3)|gcd(#0,#1)|",
+      "reasoning": "explanation : in this type of question , its obvious we need to calculate the hcf , trick is hcf of ( 6215 - 23 ) and ( 7373 - 29 ) = hcf ( 6192 , 7344 ) = 144 option e",
+      "answer": 144.0,
+      "task_id": 1005
+    },
+    "generated_programs": [
+      "n0 = 6215.0\nn1 = 7373.0\nn2 = 23.0\nn3 = 29.0\nt0 = n0 / n1\nt1 = n2 / n3\nt2 = t0 + t1\nt3 = 1 / t2\nanswer = n0 * t3"
+    ],
+    "acc@1": 0,
+    "pass@1": 0.0
+  }
+]

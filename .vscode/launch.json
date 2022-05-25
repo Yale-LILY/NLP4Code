@@ -1,0 +1,38 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceRoot}",
+            "env": {
+                "PYTHONPATH": "${workspaceRoot}"
+            }
+        },
+        {
+            "name": "Debug gpt fine-tuning",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceRoot}/finetuning/trainer.py",
+            "args": [
+                "fit",
+                "--config",
+                "finetuning/training_configs/mathqa_gpt_finetuning.yaml"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceRoot}",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceRoot}"
+            }
+        },
+    ]
+}
