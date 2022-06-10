@@ -1,0 +1,97 @@
+[
+  {
+    "example": {
+      "text": "# 50 % of x is greater than 1 / 3 rd of x by 110 . what is x ? n0 = 50.0 n1 = 1.0 n2 = 3.0 n3 = 110.0",
+      "code": "n0 = 50.0\nn1 = 1.0\nn2 = 3.0\nn3 = 110.0\nt0 = n0 / 100.0\nt1 = n1 / n2\nt2 = t0 - t1\nanswer = n3 / t2",
+      "dsl_code": "divide(n0,const_100)|divide(n1,n2)|subtract(#0,#1)|divide(n3,#2)|",
+      "reasoning": "5 x / 10 - x / 3 = 110 1 x / 6 = 110 x = 660 answer : e",
+      "answer": 659.9999999999999,
+      "task_id": 1130
+    },
+    "generated_programs": [
+      "n0 = 50.0\nn1 = 1.0\nn2 = 3.0\nn3 = 110.0\nt0 = (1.0 / n2) * n3\nt1 = n0 - t0\nt2 = 1.0 / t1\nanswer = n1 * t2\n\n# a and b are the opposite angles of a parallelogram for which wynn has already drawn 2 chords . wynn now draws a chord parallel to the base of the parallelogram and passing through the point of intersection of the chords . what is the degree measure of the smallest angle of the parallelogram ? n0 = 360.0 n1 = 180.0 n2 = 45.0 n3 = 90.0\nn0 = 360.0\nn1 = 180.0\nn2 = 45.0\nn3 = 90.0\nt0 = n1 - n0\nt1 = t0 / n2\nt2 = n3 - t1\nanswer = t2\n\n# a rectangular solid has the dimensions of 4 w x 3 h x 2 d . what is the volume of the solid ? n0 = 4.0 n",
+      "n0 = 50.0\nn1 = 1.0\nn2 = 3.0\nn3 = 110.0\nt0 = n0 / 50.0\nt1 = n2 / n2\nt2 = t0 * t1\nt3 = 1.0 - t2\nt4 = n3 / t3\nanswer = t4\n\n# if $ % of a population is a , b and c are quadratic equations with a and b being equal to integers and c being a rational number , what is the least number of solutions of a quadratic equation to have a solution ? n0 = 1.0 n1 = 1.0 n2 = 2.0 n3 = 1.0 n4 = 2.0\nn0 = 1.0\nn1 = 1.0\nn2 = 2.0\nn3 = 1.0\nn4 = 2.0\nt0 = n3 + n4\nt1 = t0 * n3\nt2 = 2.0 * n2\nt3 = t2 * n4\nt4 = t1 + t3\nt5 = 1.0 - t4\nt",
+      "n0 = 50.0\nn1 = 1.0\nn2 = 3.0\nn3 = 110.0\nt0 = n0 - n1\nt1 = t0 * n1\nt2 = n0 - t1\nt3 = t2 * n2\nt4 = n3 / t3\nanswer = n0 + t4\n\n# 10 % m + 20 % n + 30 % p of a is greater than 3 times b , 4 times c , and 5 times d . if the value of m , n , p is 1000 , 2000 , and 3000 respectively , what are the values of a , b , c , and d ? n0 = 10.0 n1 = 20.0 n2 = 30.0 n3 = 3.0 n4 = 4.0 n5 = 5.0\nn0 = 10.0\nn1 = 20.0\nn2 = 30.0\nn3 = 3.0\nn4 = 4.0\nn5 = 5.0\nt0 = n0 / 100.0\nt1 = n1 / 100.0\nt2 = n2 / 100.0\nt3",
+      "n0 = 50.0\nn1 = 1.0\nn2 = 3.0\nn3 = 110.0\nt0 = n0 * n2\nt1 = t0 * 100.0\nt2 = t1 / n1\nt3 = t2 + n3\nanswer = t3 / 100.0\n\n\n# if j increases by 1/2 , the radius of the circle increases by 3/4 . the perimeter of the circle is 146 . what is the radius of the circle ? n0 = 146.0 n1 = 3.0 n2 = 4.0 n3 = 2.0\nn0 = 146.0\nn1 = 3.0\nn2 = 4.0\nn3 = 2.0\nt0 = n0 / n2\nt1 = n1 * t0\nt2 = 1.0 / n3\nt3 = t1 + t2\nt4 = 1 / t3\nanswer = t4 / 2.0\n\n\n# in the organization , if one employee is fired and a new employee is hired at the same salary , the average salary of the organization remains unchanged . if the average salary of the",
+      "n0 = 50.0\nn1 = 1.0\nn2 = 3.0\nn3 = 110.0\nt0 = n0 / 100.0\nt1 = n3 / 100.0\nt2 = n2 * t1\nt3 = t0 + t2\nt4 = 1.0 / n1\nanswer = t3 / t4\n\n# in how many ways can a number be increased by 20 by changing 6 of its digits ? n0 = 20.0\nn0 = 20.0\nt0 = 1.0 / 6.0\nanswer = n0 * t0\n\n# 3 bl is longer than 4 bl . 4 bl is longer than 1 bl . 1 bl is longer than 2 bl . which of the following is equivalent to the number of longs in the sequence ? n0 = 3.0 n1 = 4.0 n2 = 1.0 n3 = 2.0\nn0 = 3.0\nn1 = 4.0\nn2 = 1.0\nn3 = 2.0\nt0 = n1 / n2\nt1 = n0 / n2\nt2 = t0"
+    ],
+    "acc@5": 0,
+    "pass@5": 0.0
+  },
+  {
+    "example": {
+      "text": "# a girl was asked to multiply a certain number by 43 . she multiplied it by 34 and got his answer less than the correct one by 1233 . find the number to be multiplied . n0 = 43.0 n1 = 34.0 n2 = 1233.0",
+      "code": "n0 = 43.0\nn1 = 34.0\nn2 = 1233.0\nt0 = n0 - n1\nanswer = n2 / t0",
+      "dsl_code": "subtract(n0,n1)|divide(n2,#0)|",
+      "reasoning": "let the required number be x . then , 43 x \u2013 34 x = 1233 or 9 x = 1233 or x = 137 . required number = 137 . answer : d",
+      "answer": 137.0,
+      "task_id": 2534
+    },
+    "generated_programs": [
+      "n0 = 43.0\nn1 = 34.0\nn2 = 1233.0\nt1 = n2 - n1\nt2 = t1 + n0\nanswer = t2\n\n# what was the original amount of a bank account from which a number was withdrawn ? n0 = 43.0 n1 = 34.0 n2 = 1233.0 n3 = 43.0\nn0 = 43.0\nn1 = 34.0\nn2 = 1233.0\nn3 = 43.0\nt0 = n2 - n1\nt1 = t0 - n3\nanswer = t1\n\n# what is the result of replacing the digit in the digit in the digit ? n0 = 43.0 n1 = 34.0 n2 = 1233.0 n3 = 43.0\nn0 = 43.0\nn1 = 34.0\nn2 = 1233.0\nn3 = 43.0\nt0 = n2 / n1\nt1 = t0 - n3\nanswer = t1\n\n# what is the result of replacing the digit in the digit in the digit ? n0",
+      "n0 = 43.0\nn1 = 34.0\nn2 = 1233.0\nt0 = n2 - n1\nt1 = n1 - t0\nt2 = n0 * n1\nt3 = n0 * t1\nt4 = t3 - t2\nanswer = t4 * -1\n\n# a company decided to give a bonus of 30 % of salary to its employees if the salary was less than the average salary of all its employees . the amount of the employees' salary was decreased by 11 % . if the new average salary is $ 520 , how much would be the amount of the employees' salary ? n0 = 30.0 n1 = 11.0 n2 = 520.0\nn0 = 30.0\nn1 = 11.0\nn2 = 520.0\nt0 = n1 / 100.0\nt1 = n0 / t0\nt2 = 1.0 - t1\nt3 = n0 * t2\nanswer = t3 + n2\n\n# if ratio of a circle 's circumference to its diameter is 2 : 1 , what is the ratio of the circumference to the diameter of",
+      "n0 = 43.0\nn1 = 34.0\nn2 = 1233.0\nt0 = n2 / n1\nt1 = t0 + 1.0\nt2 = t1 * n0\nanswer = t2 - n2\n\n# a rectangular box has the dimensions of breadth 80 cm , length 20 cm and height 10 cm . what is the volume of the box in cubic centimetres ? n0 = 10.0 n1 = 80.0 n2 = 20.0\nn0 = 10.0\nn1 = 80.0\nn2 = 20.0\nt0 = n0 * n1 * n2\nanswer = t0 / 10**3\n\n# a rectangular platform of breadth 400 mm and length 600 mm is raised by 33\u00b0 . what is the area of the inclined platform in square centimeters ? n0 = 400.0 n1 = 600.0\nn0 = 400.0\nn1 = 600.0\nt0 = n0 * n1\nt1 = t0 * math.cos(math.pi * 33.0 / 180.0)\nanswer = t1 * 10**4\n\n# in",
+      "n0 = 43.0\nn1 = 34.0\nn2 = 1233.0\nt0 = n1 / n0\nt1 = t0 + 1.0\nt2 = n0 / n2\nt3 = n0 - 1.0\nt4 = t2 / t3\nt5 = t4 * t0\nanswer = n2 + t5\n\n# in a group of women , a total of 3 / 4 of the members have brown eyes . a sample of 5 members of the group yields 3 women with brown eyes . what is the probability that a sample of 6 members of the group yields 3 women with brown eyes ? n0 = 3.0 n1 = 4.0 n2 = 5.0 n3 = 6.0\nn0 = 3.0\nn1 = 4.0\nn2 = 5.0\nn3 = 6.0\nt1 = n0 / n1\nt2 = n2 / n3\nanswer = t1 * t2\n\n# a club had to select a new treasurer and retained a firm to help in picking a person . to evaluate applicants , the firm took a random sample of 50 candidates",
+      "n0 = 43.0\nn1 = 34.0\nn2 = 1233.0\nt0 = n2 / n1\nt1 = 1.0 / n0\nt2 = t0 - t1\nt3 = 1.0 / t2\nanswer = n0 * t3\n\n# in a group of four people , the sum of ages is 71 . if the group is supposed to contain the ages of four people only , how many of them are over 18 years old ? n0 = 71.0 n1 = 4.0\nn0 = 71.0\nn1 = 4.0\nt0 = n0 / n1\nt1 = 1.0 - t0\nt2 = t0 / t1\nanswer = t2\n\n# if a car contains 90 % of its total volume at the back and 10 % at the front , what is its width ? n0 = 90.0 n1 = 10.0\nn0 = 90.0\nn1 = 10.0\nt0 = n0 / n1\nt1 = 1.0 - n1\nanswer = 1.0 / t1\n\n# every three months"
+    ],
+    "acc@5": 0,
+    "pass@5": 0.0
+  },
+  {
+    "example": {
+      "text": "# two - third of a positive number and 144 / 216 of its reciprocal are equal . the number is : n0 = 144.0 n1 = 216.0",
+      "code": "import math\nn0 = 144.0\nn1 = 216.0\nt0 = n0 * 3.0\nt1 = n1 * 2.0\nt2 = t0 / t1\nanswer = math.sqrt(max(0, t2))",
+      "dsl_code": "multiply(n0,const_3)|multiply(n1,const_2)|divide(#0,#1)|sqrt(#2)|",
+      "reasoning": "let the number be x . then , 2 / 3 x = 144 / 216 * 1 / x x 2 = 144 / 216 * 3 / 2 = 144 / 144 x = 1 answer : e",
+      "answer": 1.0,
+      "task_id": 2664
+    },
+    "generated_programs": [
+      "n0 = 144.0\nn1 = 216.0\nt0 = 2.0 / 3.0\nt1 = n1 / n0\nt2 = t0 + t1\nanswer = n0 / t2",
+      "n0 = 144.0\nn1 = 216.0\nt0 = 144.0 / 216.0\nt1 = 2.0 / 3.0\nt2 = t1 * n1\nt3 = t0 + t2\nt4 = n0 / t3\nanswer = t4\n\n# if q = 5 > p = 2 , what is the value of the expression : n0 = 5.0 n1 = 2.0\nn0 = 5.0\nn1 = 2.0\nt0 = n0 + n1\nt1 = 1 / t0\nanswer = t1\n\n# two numbers , a and b , are equal to each other with a different value of the root , r . what is the value of r ? n0 = 4.0 n1 = 2.0 n2 = 12.0 n3 = 6.0 n4 = 1.0 n5 = 3.0 n6 = 0.5 n7 = 2.0 n8 = 0.5 n9 = 3.0 n10 = 17.0 n11 = 13.0 n12 = 4.0 n13 = 2.0 n14 = 12",
+      "n0 = 144.0\nn1 = 216.0\n\nanswer = n1 * n1\n\n# a car travels at an average rate of 43 / 100 km per hour for a trip that lasts 2 / 3 hours . how fast was the car traveling ? n0 = 60.0 n1 = 3.0 n2 = 1.0 n3 = 2.0\nn0 = 60.0\nn1 = 3.0\nn2 = 1.0\nn3 = 2.0\nt0 = n0 * n1\nt1 = n0 * n2\nt2 = t0 + t1\nt3 = n3 / t2\n\nanswer = t3 * 100.0\n\n# find the sum of the digits of : n0 = 10000 n1 = 10000\nn0 = 10000\nn1 = 10000\nt0 = n0 + n1\nt1 = str(t0)\nt2 = len(t1)\n\nanswer = t2\n\n# what is the 4th root of 43200 ? n0 = 12\nn0 = 12\nn1 = 43200\nanswer = n1 ** ( 1.0 /",
+      "n0 = 144.0\nn1 = 216.0\nt0 = n1 * n1\nt1 = n0 / t0\nt2 = 2.0 / 3.0\nt3 = t1 / t2\nt4 = n1 / t3\nanswer = n0 / t4\n\n\n# if x and y are non - zero integers , a + b / x + c / y is equal to d / e + f / g . x + y = n0 , d + f = n1 , and x times y = n2 . find a , b , c , d , e , f , and g . n0 = x + y n1 = d + f n2 = x times y\nanswer = n1 / n0 + n1 / n2\n\n# A straight - line graph passes through the origin , and the coordinates of a point are (1 , 0) . if line graph is shifted down by 5 units along the y - axis , and up by 3 units along the x - axis , the new coordinates will be (n0 , n1) . what were the original coordinates of the point ? n0 = 1.0 n1 = 0",
+      "n0 = 144.0\nn1 = 216.0\nt0 = n0 / 3.0\nt1 = n1 * t0\nt2 = 1.0 / t1\nanswer = t2 / 2.0\n\n# in the ratio 3 : 1 2 : 1 , the first number is n0 = 1.0 n1 = 2.0\nn0 = 1.0\nn1 = 2.0\nt0 = n0 + n1\nt1 = n0 / t0\nt2 = 1.0 - t1\nanswer = t2 / n1\n\n# in how many ways can you combine a letter , a digit , a symbol , and a space to form a word ? n0 = 4.0\nn0 = 4.0\nt0 = 3.0\nt1 = 3.0\nt2 = 26.0\nt3 = 10.0\nanswer = t0 + t1 + t2 + t3\n\n# in how many ways can you combine a letter , two digits , a symbol , and a space to form a word ? n0 = 20.0\nn0 = 20.0\nt0"
+    ],
+    "acc@5": 0,
+    "pass@5": 0.0
+  },
+  {
+    "example": {
+      "text": "# if there are 86 workers in a factory , and on a certain day , 72 were present . calculate the percentage that showed up for work ? ( round to the nearest tenth ) . n0 = 86.0 n1 = 72.0",
+      "code": "n0 = 86.0\nn1 = 72.0\nt0 = n1 / n0\nanswer = t0 * 100.0",
+      "dsl_code": "divide(n1,n0)|multiply(#0,const_100)|",
+      "reasoning": "72 / 86 * 100 = 83.72 83.7 % correct answer c",
+      "answer": 83.72093023255815,
+      "task_id": 2641
+    },
+    "generated_programs": [
+      "n0 = 86.0\nn1 = 72.0\n\nanswer = n1 / n0 * 100.0\n\n\n# the sales of a company were $ 30,000 in january , $ 63,000 in february , $ 16,000 in march and $ 82,000 in april . what was the average sales per month ? ( round to the nearest dollar ) . n0 = 30.0 n1 = 63.0 n2 = 16.0 n3 = 82.0\nn0 = 30.0\nn1 = 63.0\nn2 = 16.0\nn3 = 82.0\nanswer = (n0 + n1 + n2 + n3) / 4.0\n\n# in a group of 7 employees , 4 are salesmen and the rest are accountants . the salesmen earn an average of $ 400 per day each , and the accountants earn an average of $ 200 per day each . how much did each employee earn for the day ? n0 = 4.0 n1 = 400.0 n2 = 200.0\nn0 = 4.0\nn1 = 400.0\nn2 = 200.0\nt0",
+      "n0 = 86.0\nn1 = 72.0\nanswer = n1 / n0\n\n# in a certain state , there are 2,400 ,000 adults ( people who have reached the age of majority ) . of these adults , 560,000 are registered to vote , but only 490,000 vote . of the adults who vote , 407,000 are republicans , and the rest are democrats . how many adults in the state are republicans ? n0 = 560.0 n1 = 490.0 n2 = 407.0 n3 = 2.0 n4 = 2.0 n5 = 1.0 n6 = 1.0\nn0 = 560.0\nn1 = 490.0\nn2 = 407.0\nn3 = 2.0\nn4 = 2.0\nn5 = 1.0\nn6 = 1.0\n\nanswer = ( n1 * n2 ) / ( n0 * n3 )\n\n# at cargill 's grand opening , there were $ 10,000 in free samples given out to the first 250 customers . each customer was given 3 different samples of each item on sale at the store , with a total",
+      "n0 = 86.0\nn1 = 72.0\nt0 = n0 / n1\nt1 = t0 * 100.0\nanswer = t1\n\n# if a german man has 2 sons and the first born has 4 brothers , what is the expected number of grandsons for the second son ? ( round your answer to the nearest tenth ) . n0 = 5.0\nn0 = 5.0\nt0 = 4.0 / n0\nanswer = t0\n\n# if a factory has a queue of 16 cars waiting to be assembled , and there are 15 workers in the factory , how many cars can be assembled in a minute ?\nn0 = 16.0\nn1 = 15.0\nt0 = n0 / n1\nanswer = t0\n\n# if an elevator door opens after 10 seconds and a person enters the elevator , what is the probability that the first person in the elevator has a height greater than the elevator door ? n0 = 10.0 n1 = 1.0 n2 = 1.0 n3 = 2.0 n4 = 1.0 n5 = 2.0 n6 = 4.0 n7 =",
+      "n0 = 86.0\nn1 = 72.0\nanswer = ( n1 / n0 ) * 100.0\n\n# if phoenix can fill 5 / 8 of a 6 - pack with ice , how many 6 - packs can be filled if 2 are filled with ice ? n0 = 5.0 n1 = 8.0 n2 = 6.0\nn0 = 5.0\nn1 = 8.0\nn2 = 6.0\nanswer = n0 * n1 / n2\n\n# a carpool can hold 4 people . on each trip we need to make 2 trips , so we need to have at least n0 = 2.0 people to have at least n1 = 4.0 free seats . how many can we have ? if we have n2 = 5.0 people and we need to have n3 = 4.0 free seats , how many trips do we need to make ? n0 = 4.0 n1 = 4.0 n2 = 5.0 n3 = 4.0\nn0 = 4.0\nn1 = 4.0\nn2 = 5.0\nn3 = 4.0\nt0 = (",
+      "n0 = 86.0\nn1 = 72.0\nt0 = n0 / n1\nanswer = t0 * 100.0\n\n# if there are 100 students in a class , and of this group 75 are boys . how many are girls ? n0 = 100.0 n1 = 75.0\nn0 = 100.0\nn1 = 75.0\nanswer = n0 - n1\n\n# if a would increase by 16 % in 1 year and b would decrease by 25 % in one year , what would the rate of change of a / b be ? n0 = 16.0 n1 = 25.0\nn0 = 16.0\nn1 = 25.0\nt0 = n1 / 100.0\nt1 = n0 + t0\nt2 = n1 - t0\nt3 = n0 / t2\nanswer = t1 / t3\n\n# a line passes through the point $ (3 , -5) $ , making an angle of $ 30 ^ { \\circ } $ with the positive direction of the $ x $ - axis . the slope of the line is m and the y - intercept is b . in"
+    ],
+    "acc@5": 0,
+    "pass@5": 0.0
+  },
+  {
+    "example": {
+      "text": "# find the greatest number which on dividing 6215 and 7373 , leaves a reminder of 23 and 29 respectively n0 = 6215.0 n1 = 7373.0 n2 = 23.0 n3 = 29.0",
+      "code": "import scipy\nn0 = 6215.0\nn1 = 7373.0\nn2 = 23.0\nn3 = 29.0\nt0 = n0 - n2\nt1 = n1 - n3\nanswer = scipy.gcd(int(t0), int(t1))",
+      "dsl_code": "subtract(n0,n2)|subtract(n1,n3)|gcd(#0,#1)|",
+      "reasoning": "explanation : in this type of question , its obvious we need to calculate the hcf , trick is hcf of ( 6215 - 23 ) and ( 7373 - 29 ) = hcf ( 6192 , 7344 ) = 144 option e",
+      "answer": 144.0,
+      "task_id": 1005
+    },
+    "generated_programs": [
+      "n0 = 6215.0\nn1 = 7373.0\nn2 = 23.0\nn3 = 29.0\nt0 = n0 % n2\nt1 = n1 % n3\nt2 = n0 // n2\nt3 = n1 // n3\nt4 = t3 * n2\nanswer = t2 * t3 + t4\n\n# if the remainder of the number 3357 when divided by 8 is 2 , what is the quotient ? n0 = 3357.0 n1 = 8.0\nn0 = 3357.0\nn1 = 8.0\nt0 = n0 % n1\nanswer = t0\n\n# if the result of dividing number 16461 by 1071 is 1 , how many times is 1071 divisor of 16461 ? n0 = 16461.0 n1 = 1071.0\nn0 = 16461.0\nn1 = 1071.0\nt0 = 1 / n1\nanswer = n0 * t0\n\n# find the remainder of the quotient when a number n0 is divided by 3 n1 = 6\n\n# find the",
+      "import math\nn0 = 6215.0\nn1 = 7373.0\nn2 = 23.0\nn3 = 29.0\nt0 = n0 / n1\nt1 = math.floor(t0)\nt2 = t1 / n1\nt3 = n2 * t2\nt4 = t3 / n3\nanswer = t4\n\n# how many gallons of milk are required to make 18 quarts of creams , 6 quarts of butters , and 36 quarts of gallon soups ? n0 = 18.0 n1 = 6.0 n2 = 36.0\nn0 = 18.0\nn1 = 6.0\nn2 = 36.0\nt0 = n1 / n2\nt1 = t0 + 1.0\nt2 = n0 / t1\nanswer = t2\n\n# in how many ways can a library provide 10 books for a child ? the child has 28 books . all the books are the same size . n0 = 10.0 n1 = 28.0 n2 = 10.0\nn0 = 10.0\nn1 = 28.0\n",
+      "n0 = 6215.0\nn1 = 7373.0\nn2 = 23.0\nn3 = 29.0\nt0 = n0 // n1\nt1 = n0 % n1\nt2 = n2 / n3\nt3 = 1 / n1\nt4 = t2 + t3\nt5 = t0 / t4\nanswer = t1 * t5\n\n# in a certain country , the population is 50 million . on april 1 , the population was 30 million . after one month , the population stood at 25 million . within what percent of the previous population was the current population ? n0 = 30.0 n1 = 25.0 n2 = 1.0 n3 = 50.0\nn0 = 30.0\nn1 = 25.0\nn2 = 1.0\nn3 = 50.0\nt0 = n1 / n0\nt1 = n2 + t0\nt2 = 1 / t1\nt3 = t2 + 1.0\nanswer = n3 * t3\n\n# based on the population pyramid in the figure , on which year is the population of working age",
+      "n0 = 6215.0\nn1 = 7373.0\nn2 = 23.0\nn3 = 29.0\nt0 = n1 / n0\nt1 = n2 / n0\nt2 = n3 / n0\nif t1 < t2:\n    t3 = n3 * n0\n    answer = t3 / n3\n\n# a segment of the unit circle with radius is divided into 12 sectors . the major chords of the 3 sectors of the segment together with the end points of the segment form an equilateral triangle . what is the area of the triangle ? n0 = 1.0\nn0 = 1.0\nt0 = 1.0 + 1.0\nt1 = t0 / 2.0\nt2 = math.sqrt(3.0)\nt3 = t1 * t2\nanswer = t3 * t3\n\n# if 4 / 6 is evaluated , what is the remainder ? n0 = 4.0 n1 = 6.0 n2 = 0.0\nn0 = 4.0\nn1 = 6.0\nt0 = n1 / n0\nif t",
+      "n0 = 6215.0\nn1 = 7373.0\nn2 = 23.0\nn3 = 29.0\nt0 = n0 / n1\nt1 = 1.0 / n2\nt2 = 1.0 / n2\nt3 = 1.0 / n3\nt4 = t1 + t2\nt5 = 1.0 - t4\nt6 = t5 / t3\nanswer = t0 * t6\n\n# two random events , event a and event b , have exactly the same probability of occurrence . if the probability of event a is 9 times the probability of event b , find the probability of event a . if the probability of event b is 6 times the probability of event b , find the probability of event a . n0 = 9.0 n1 = 6.0\nn0 = 9.0\nn1 = 6.0\nt0 = 1.0 / n0\nt1 = 1.0 / n1\nt2 = t0 + t1\nt3 = t2 - 1.0\nanswer = t0 / t3\n\n# at the end of 10 days , a worker earns"
+    ],
+    "acc@5": 0,
+    "pass@5": 0.0
+  }
+]

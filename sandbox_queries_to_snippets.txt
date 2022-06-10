@@ -1,0 +1,1159 @@
+-------- 0 --------
+SELECT count(*) FROM head WHERE age  >  56;
+
+# Tables
+symbol_1 = head
+
+# Query
+symbol_0 = pd.Series(symbol_1[symbol_1['age'] > 56].shape[0])
+
+
+-------- 1 --------
+SELECT name ,  born_state ,  age FROM head ORDER BY age;
+
+# Tables
+symbol_1 = head
+
+# Query
+symbol_0 = symbol_1[['name', 'born_state', 'age']].sort_values('age', ascending = True)
+
+
+-------- 2 --------
+SELECT creation ,  name ,  budget_in_billions FROM department;
+
+# Tables
+symbol_1 = department;
+
+# Query
+symbol_0 = symbol_1[['creation', 'name', 'budget_in_billions']]
+
+
+-------- 3 --------
+SELECT max(budget_in_billions) ,  min(budget_in_billions) FROM department;
+
+# Tables
+symbol_1 = department;
+
+# Query
+symbol_0 = symbol_1.agg({'budget_in_billions': ['max', 'min']})
+
+
+-------- 4 --------
+SELECT avg(num_employees) FROM department WHERE ranking BETWEEN 10 AND 15;
+
+# Tables
+symbol_1 = department
+
+# Query
+symbol_0 = pd.Series(symbol_1[(symbol_1['ranking'] >= 10) & (symbol_1['ranking'] <= 15)]['num_employees'].mean())
+
+
+-------- 5 --------
+SELECT name FROM head WHERE born_state != 'California';
+
+# Tables
+symbol_1 = head
+
+# Query
+symbol_0 = symbol_1[symbol_1['born_state'] != 'California']['name']
+
+
+-------- 6 --------
+SELECT DISTINCT T1.creation FROM department AS T1 JOIN management AS T2 ON T1.department_id  =  T2.department_id JOIN head AS T3 ON T2.head_id  =  T3.head_id WHERE T3.born_state  =  'Alabama';
+
+# Tables
+T1 = department
+T2 = management
+T3 = head
+symbol_2 = pd.merge(T1, T2, left_on=['department_id'], right_on=['department_id'])
+symbol_3 = pd.merge(symbol_2, T3, left_on=['head_id'], right_on=['head_id'])
+symbol_1 = symbol_3
+
+# Query
+symbol_0 = symbol_1[symbol_1['T3.born_state'] == 'Alabama']['t1.creation'].drop_duplicates().reset_index(drop=True)
+
+
+-------- 7 --------
+SELECT born_state FROM head GROUP BY born_state HAVING count(*)  >=  3;
+
+# Tables
+symbol_1 = head
+
+# Query
+symbol_0 = symbol_1.groupby('born_state').filter(lambda group: len(group) >= 3).groupby('born_state').agg({})
+
+
+-------- 8 --------
+SELECT creation FROM department GROUP BY creation ORDER BY count(*) DESC LIMIT 1;
+
+# Tables
+symbol_1 = department
+
+# Query
+symbol_0 = symbol_1.groupby('creation').agg({}).sort_values('count(*)', ascending = False).head(1)
+
+
+-------- 9 --------
+SELECT T1.name ,  T1.num_employees FROM department AS T1 JOIN management AS T2 ON T1.department_id  =  T2.department_id WHERE T2.temporary_acting  =  'Yes';
+
+# Tables
+T1 = department
+T2 = management
+symbol_2 = pd.merge(T1, T2, left_on=['department_id'], right_on=['department_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1[symbol_1['T2.temporary_acting'] == 'Yes'][['t1.name', 't1.num_employees']]
+
+
+-------- 10 --------
+SELECT count(DISTINCT temporary_acting) FROM management;
+
+# Tables
+symbol_1 = management;
+
+# Query
+symbol_0 = pd.Series(symbol_1['temporary_acting'].drop_duplicates().size)
+
+
+-------- 11 --------
+SELECT count(*) FROM department WHERE department_id NOT IN (SELECT department_id FROM management);
+
+# Tables
+symbol_4 = management;
+symbol_3 = department
+
+# Query
+symbol_2 = symbol_4['department_id']
+symbol_1 = pd.Series(symbol_3[~symbol_3['symbol_3_id'].isin([symbol_2])].shape[0])
+symbol_0 = symbol_1
+
+
+-------- 12 --------
+SELECT DISTINCT T1.age FROM management AS T2 JOIN head AS T1 ON T1.head_id  =  T2.head_id WHERE T2.temporary_acting  =  'Yes';
+
+# Tables
+T2 = management
+T1 = head
+symbol_2 = pd.merge(T2, T1, left_on=['head_id'], right_on=['head_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1[symbol_1['T2.temporary_acting'] == 'Yes']['t1.age'].drop_duplicates().reset_index(drop=True)
+
+
+-------- 13 --------
+SELECT T3.born_state FROM department AS T1 JOIN management AS T2 ON T1.department_id  =  T2.department_id JOIN head AS T3 ON T2.head_id  =  T3.head_id WHERE T1.name  =  'Treasury' INTERSECT SELECT T3.born_state FROM department AS T1 JOIN management AS T2 ON T1.department_id  =  T2.department_id JOIN head AS T3 ON T2.head_id  =  T3.head_id WHERE T1.name  =  'Homeland Security';
+
+# Tables
+T1 = department
+T2 = management
+T3 = head
+symbol_7 = pd.merge(T1, T2, left_on=['department_id'], right_on=['department_id'])
+symbol_8 = pd.merge(symbol_7, T3, left_on=['head_id'], right_on=['head_id'])
+symbol_6 = symbol_8
+symbol_4 = pd.merge(T1, T2, left_on=['department_id'], right_on=['department_id'])
+symbol_5 = pd.merge(symbol_4, T3, left_on=['head_id'], right_on=['head_id'])
+symbol_3 = symbol_5
+
+# Query
+symbol_2 = [sql2pandas.py] Error: SQL syntax incorrect or not supported
+symbol_1 = symbol_3[symbol_3['T1.name'] == 'Treasury']['t3.born_state']
+symbol_0 = symbol_1 INTERSECT symbol_2
+
+
+-------- 14 --------
+SELECT T1.department_id ,  T1.name ,  count(*) FROM management AS T2 JOIN department AS T1 ON T1.department_id  =  T2.department_id GROUP BY T1.department_id HAVING count(*)  >  1;
+
+# Tables
+T2 = management
+T1 = department
+symbol_2 = pd.merge(T2, T1, left_on=['department_id'], right_on=['department_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1.groupby('T1.department_id').filter(lambda group: len(group) > 1).groupby('T1.department_id').size()
+
+
+-------- 15 --------
+SELECT head_id ,  name FROM head WHERE name LIKE '%Ha%';
+
+# Tables
+symbol_1 = head
+
+# Query
+symbol_0 = symbol_1[symbol_1['name'].str.contains('Ha')][['symbol_1_id', 'name']]
+
+
+-------- 16 --------
+SELECT count(*) FROM farm;
+
+# Tables
+symbol_1 = farm;
+
+# Query
+symbol_0 = pd.Series(symbol_1.shape[0])
+
+
+-------- 17 --------
+SELECT count(*) FROM farm;
+
+# Tables
+symbol_1 = farm;
+
+# Query
+symbol_0 = pd.Series(symbol_1.shape[0])
+
+
+-------- 18 --------
+SELECT Total_Horses FROM farm ORDER BY Total_Horses ASC;
+
+# Tables
+symbol_1 = farm
+
+# Query
+symbol_0 = symbol_1['total_horses'].sort_values('Total_Horses', ascending = True)
+
+
+-------- 19 --------
+SELECT Total_Horses FROM farm ORDER BY Total_Horses ASC;
+
+# Tables
+symbol_1 = farm
+
+# Query
+symbol_0 = symbol_1['total_horses'].sort_values('Total_Horses', ascending = True)
+
+
+-------- 20 --------
+SELECT Hosts FROM farm_competition WHERE Theme !=  'Aliens';
+
+# Tables
+symbol_1 = farm_competition
+
+# Query
+symbol_0 = symbol_1[symbol_1['Theme'] != 'Aliens']['hosts']
+
+
+-------- 21 --------
+SELECT Hosts FROM farm_competition WHERE Theme !=  'Aliens';
+
+# Tables
+symbol_1 = farm_competition
+
+# Query
+symbol_0 = symbol_1[symbol_1['Theme'] != 'Aliens']['hosts']
+
+
+-------- 22 --------
+SELECT Theme FROM farm_competition ORDER BY YEAR ASC;
+
+# Tables
+symbol_1 = farm_competition
+
+# Query
+symbol_0 = symbol_1['theme'].sort_values('YEAR', ascending = True)
+
+
+-------- 23 --------
+SELECT Theme FROM farm_competition ORDER BY YEAR ASC;
+
+# Tables
+symbol_1 = farm_competition
+
+# Query
+symbol_0 = symbol_1['theme'].sort_values('YEAR', ascending = True)
+
+
+-------- 24 --------
+SELECT avg(Working_Horses) FROM farm WHERE Total_Horses  >  5000;
+
+# Tables
+symbol_1 = farm
+
+# Query
+symbol_0 = pd.Series(symbol_1[symbol_1['Total_Horses'] > 5000]['working_horses'].mean())
+
+
+-------- 25 --------
+SELECT avg(Working_Horses) FROM farm WHERE Total_Horses  >  5000;
+
+# Tables
+symbol_1 = farm
+
+# Query
+symbol_0 = pd.Series(symbol_1[symbol_1['Total_Horses'] > 5000]['working_horses'].mean())
+
+
+-------- 26 --------
+SELECT max(Cows) ,  min(Cows) FROM farm;
+
+# Tables
+symbol_1 = farm;
+
+# Query
+symbol_0 = symbol_1.agg({'cows': ['max', 'min']})
+
+
+-------- 27 --------
+SELECT max(Cows) ,  min(Cows) FROM farm;
+
+# Tables
+symbol_1 = farm;
+
+# Query
+symbol_0 = symbol_1.agg({'cows': ['max', 'min']})
+
+
+-------- 28 --------
+SELECT count(DISTINCT Status) FROM city;
+
+# Tables
+symbol_1 = city;
+
+# Query
+symbol_0 = pd.Series(symbol_1['status'].drop_duplicates().size)
+
+
+-------- 29 --------
+SELECT count(DISTINCT Status) FROM city;
+
+# Tables
+symbol_1 = city;
+
+# Query
+symbol_0 = pd.Series(symbol_1['status'].drop_duplicates().size)
+
+
+-------- 30 --------
+SELECT Official_Name FROM city ORDER BY Population DESC;
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1['official_name'].sort_values('Population', ascending = False)
+
+
+-------- 31 --------
+SELECT Official_Name FROM city ORDER BY Population DESC;
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1['official_name'].sort_values('Population', ascending = False)
+
+
+-------- 32 --------
+SELECT Official_Name ,  Status FROM city ORDER BY Population DESC LIMIT 1;
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1[['official_name', 'status']].sort_values('Population', ascending = False).head(1)
+
+
+-------- 33 --------
+SELECT Official_Name ,  Status FROM city ORDER BY Population DESC LIMIT 1;
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1[['official_name', 'status']].sort_values('Population', ascending = False).head(1)
+
+
+-------- 34 --------
+SELECT T2.Year ,  T1.Official_Name FROM city AS T1 JOIN farm_competition AS T2 ON T1.City_ID  =  T2.Host_city_ID;
+
+# Tables
+T1 = city
+T2 = farm_competition
+symbol_2 = pd.merge(T1, T2, left_on=['City_ID'], right_on=['Host_city_ID;'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1[['t2.year', 't1.official_name']]
+
+
+-------- 35 --------
+SELECT T2.Year ,  T1.Official_Name FROM city AS T1 JOIN farm_competition AS T2 ON T1.City_ID  =  T2.Host_city_ID;
+
+# Tables
+T1 = city
+T2 = farm_competition
+symbol_2 = pd.merge(T1, T2, left_on=['City_ID'], right_on=['Host_city_ID;'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1[['t2.year', 't1.official_name']]
+
+
+-------- 36 --------
+SELECT T1.Official_Name FROM city AS T1 JOIN farm_competition AS T2 ON T1.City_ID  =  T2.Host_city_ID GROUP BY T2.Host_city_ID HAVING COUNT(*)  >  1;
+
+# Tables
+T1 = city
+T2 = farm_competition
+symbol_2 = pd.merge(T1, T2, left_on=['City_ID'], right_on=['Host_city_ID'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1.groupby('T2.Host_city_ID').filter(lambda group: len(group) > 1).groupby('T2.Host_city_ID').agg({})
+
+
+-------- 37 --------
+SELECT T1.Official_Name FROM city AS T1 JOIN farm_competition AS T2 ON T1.City_ID  =  T2.Host_city_ID GROUP BY T2.Host_city_ID HAVING COUNT(*)  >  1;
+
+# Tables
+T1 = city
+T2 = farm_competition
+symbol_2 = pd.merge(T1, T2, left_on=['City_ID'], right_on=['Host_city_ID'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1.groupby('T2.Host_city_ID').filter(lambda group: len(group) > 1).groupby('T2.Host_city_ID').agg({})
+
+
+-------- 38 --------
+SELECT T1.Status FROM city AS T1 JOIN farm_competition AS T2 ON T1.City_ID  =  T2.Host_city_ID GROUP BY T2.Host_city_ID ORDER BY COUNT(*) DESC LIMIT 1;
+
+# Tables
+T1 = city
+T2 = farm_competition
+symbol_2 = pd.merge(T1, T2, left_on=['City_ID'], right_on=['Host_city_ID'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1.groupby('T2.Host_city_ID').agg({}).sort_values('COUNT(*)', ascending = False).head(1)
+
+
+-------- 39 --------
+SELECT T1.Status FROM city AS T1 JOIN farm_competition AS T2 ON T1.City_ID  =  T2.Host_city_ID GROUP BY T2.Host_city_ID ORDER BY COUNT(*) DESC LIMIT 1;
+
+# Tables
+T1 = city
+T2 = farm_competition
+symbol_2 = pd.merge(T1, T2, left_on=['City_ID'], right_on=['Host_city_ID'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1.groupby('T2.Host_city_ID').agg({}).sort_values('COUNT(*)', ascending = False).head(1)
+
+
+-------- 40 --------
+SELECT T2.Theme FROM city AS T1 JOIN farm_competition AS T2 ON T1.City_ID  =  T2.Host_city_ID WHERE T1.Population  >  1000;
+
+# Tables
+T1 = city
+T2 = farm_competition
+symbol_2 = pd.merge(T1, T2, left_on=['City_ID'], right_on=['Host_city_ID'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1[symbol_1['T1.Population'] > 1000]['t2.theme']
+
+
+-------- 41 --------
+SELECT T2.Theme FROM city AS T1 JOIN farm_competition AS T2 ON T1.City_ID  =  T2.Host_city_ID WHERE T1.Population  >  1000;
+
+# Tables
+T1 = city
+T2 = farm_competition
+symbol_2 = pd.merge(T1, T2, left_on=['City_ID'], right_on=['Host_city_ID'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1[symbol_1['T1.Population'] > 1000]['t2.theme']
+
+
+-------- 42 --------
+SELECT Status ,  avg(Population) FROM city GROUP BY Status;
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1.groupby('Status')['population'].mean()
+
+
+-------- 43 --------
+SELECT Status ,  avg(Population) FROM city GROUP BY Status;
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1.groupby('Status')['population'].mean()
+
+
+-------- 44 --------
+SELECT Status FROM city GROUP BY Status ORDER BY COUNT(*) ASC;
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1.groupby('Status').agg({}).sort_values('COUNT(*)', ascending = True)
+
+
+-------- 45 --------
+SELECT Status FROM city GROUP BY Status ORDER BY COUNT(*) ASC;
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1.groupby('Status').agg({}).sort_values('COUNT(*)', ascending = True)
+
+
+-------- 46 --------
+SELECT Status FROM city GROUP BY Status ORDER BY COUNT(*) DESC LIMIT 1;
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1.groupby('Status').agg({}).sort_values('COUNT(*)', ascending = False).head(1)
+
+
+-------- 47 --------
+SELECT Status FROM city GROUP BY Status ORDER BY COUNT(*) DESC LIMIT 1;
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1.groupby('Status').agg({}).sort_values('COUNT(*)', ascending = False).head(1)
+
+
+-------- 48 --------
+SELECT Official_Name FROM city WHERE City_ID NOT IN (SELECT Host_city_ID FROM farm_competition);
+
+# Tables
+symbol_4 = farm_competition;
+symbol_3 = city
+
+# Query
+symbol_2 = symbol_4['host_city_id']
+symbol_1 = symbol_3[~symbol_3['City_ID'].isin([symbol_2])]['official_name']
+symbol_0 = symbol_1
+
+
+-------- 49 --------
+SELECT Official_Name FROM city WHERE City_ID NOT IN (SELECT Host_city_ID FROM farm_competition);
+
+# Tables
+symbol_4 = farm_competition;
+symbol_3 = city
+
+# Query
+symbol_2 = symbol_4['host_city_id']
+symbol_1 = symbol_3[~symbol_3['City_ID'].isin([symbol_2])]['official_name']
+symbol_0 = symbol_1
+
+
+-------- 50 --------
+SELECT Status FROM city WHERE Population  >  1500 INTERSECT SELECT Status FROM city WHERE Population  <  500;
+
+# Tables
+symbol_4 = city
+symbol_3 = city
+
+# Query
+symbol_2 = symbol_4[symbol_4['Population'] < 500]['status']
+symbol_1 = symbol_3[symbol_3['Population'] > 1500]['status']
+symbol_0 = symbol_1 INTERSECT symbol_2
+
+
+-------- 51 --------
+SELECT Status FROM city WHERE Population  >  1500 INTERSECT SELECT Status FROM city WHERE Population  <  500;
+
+# Tables
+symbol_4 = city
+symbol_3 = city
+
+# Query
+symbol_2 = symbol_4[symbol_4['Population'] < 500]['status']
+symbol_1 = symbol_3[symbol_3['Population'] > 1500]['status']
+symbol_0 = symbol_1 INTERSECT symbol_2
+
+
+-------- 52 --------
+SELECT Official_Name FROM city WHERE Population  >  1500 OR Population  <  500;
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1[(symbol_1['Population'] > 1500) | (symbol_1['Population'] < 500)]['official_name']
+
+
+-------- 53 --------
+SELECT Official_Name FROM city WHERE Population  >  1500 OR Population  <  500;
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1[(symbol_1['Population'] > 1500) | (symbol_1['Population'] < 500)]['official_name']
+
+
+-------- 54 --------
+SELECT Census_Ranking FROM city WHERE Status !=  'Village';
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1[symbol_1['Status'] != 'Village']['census_ranking']
+
+
+-------- 55 --------
+SELECT Census_Ranking FROM city WHERE Status !=  'Village';
+
+# Tables
+symbol_1 = city
+
+# Query
+symbol_0 = symbol_1[symbol_1['Status'] != 'Village']['census_ranking']
+
+
+-------- 56 --------
+SELECT T1.course_name FROM courses AS T1 JOIN student_course_registrations AS T2 ON T1.course_id = T2.course_Id GROUP BY T1.course_id ORDER BY count(*) DESC LIMIT 1;
+
+# Tables
+T1 = courses
+T2 = student_course_registrations
+symbol_2 = pd.merge(T1, T2, left_on=['course_id'], right_on=['course_Id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1.groupby('T1.course_id').agg({}).sort_values('count(*)', ascending = False).head(1)
+
+
+-------- 57 --------
+SELECT T1.course_name FROM courses AS T1 JOIN student_course_registrations AS T2 ON T1.course_id = T2.course_Id GROUP BY T1.course_id ORDER BY count(*) DESC LIMIT 1;
+
+# Tables
+T1 = courses
+T2 = student_course_registrations
+symbol_2 = pd.merge(T1, T2, left_on=['course_id'], right_on=['course_Id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1.groupby('T1.course_id').agg({}).sort_values('count(*)', ascending = False).head(1)
+
+
+-------- 58 --------
+SELECT student_id FROM student_course_registrations GROUP BY student_id ORDER BY count(*) LIMIT 1;
+
+# Tables
+symbol_1 = student_course_registrations
+
+# Query
+symbol_0 = symbol_1.groupby('student_id').agg({}).sort_values('count(*)', ascending = True).head(1)
+
+
+-------- 59 --------
+SELECT student_id FROM student_course_registrations GROUP BY student_id ORDER BY count(*) LIMIT 1;
+
+# Tables
+symbol_1 = student_course_registrations
+
+# Query
+symbol_0 = symbol_1.groupby('student_id').agg({}).sort_values('count(*)', ascending = True).head(1)
+
+
+-------- 60 --------
+SELECT T2.first_name ,  T2.last_name FROM candidates AS T1 JOIN people AS T2 ON T1.candidate_id = T2.person_id;
+
+# Tables
+T1 = candidates
+T2 = people
+symbol_2 = pd.merge(T1, T2, left_on=['candidate_id'], right_on=['person_id;'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1[['t2.first_name', 't2.last_name']]
+
+
+-------- 61 --------
+SELECT T2.first_name ,  T2.last_name FROM candidates AS T1 JOIN people AS T2 ON T1.candidate_id = T2.person_id;
+
+# Tables
+T1 = candidates
+T2 = people
+symbol_2 = pd.merge(T1, T2, left_on=['candidate_id'], right_on=['person_id;'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1[['t2.first_name', 't2.last_name']]
+
+
+-------- 62 --------
+SELECT student_id FROM students WHERE student_id NOT IN (SELECT student_id FROM student_course_attendance);
+
+# Tables
+symbol_4 = student_course_attendance;
+symbol_3 = students
+
+# Query
+symbol_2 = symbol_4['student_id']
+symbol_1 = symbol_3[~symbol_3['student_id'].isin([symbol_2])]['student_id']
+symbol_0 = symbol_1
+
+
+-------- 63 --------
+SELECT student_id FROM students WHERE student_id NOT IN (SELECT student_id FROM student_course_attendance);
+
+# Tables
+symbol_4 = student_course_attendance;
+symbol_3 = students
+
+# Query
+symbol_2 = symbol_4['student_id']
+symbol_1 = symbol_3[~symbol_3['student_id'].isin([symbol_2])]['student_id']
+symbol_0 = symbol_1
+
+
+-------- 64 --------
+SELECT student_id FROM student_course_attendance;
+
+# Tables
+symbol_1 = student_course_attendance;
+
+# Query
+symbol_0 = symbol_1['student_id']
+
+
+-------- 65 --------
+SELECT student_id FROM student_course_attendance;
+
+# Tables
+symbol_1 = student_course_attendance;
+
+# Query
+symbol_0 = symbol_1['student_id']
+
+
+-------- 66 --------
+SELECT T1.student_id ,  T2.course_name FROM student_course_registrations AS T1 JOIN courses AS T2 ON T1.course_id = T2.course_id;
+
+# Tables
+T1 = student_course_registrations
+T2 = courses
+symbol_2 = pd.merge(T1, T2, left_on=['course_id'], right_on=['course_id;'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1[['t1.student_id', 't2.course_name']]
+
+
+-------- 67 --------
+SELECT T2.student_details FROM student_course_registrations AS T1 JOIN students AS T2 ON T1.student_id = T2.student_id ORDER BY T1.registration_date DESC LIMIT 1;
+
+# Tables
+T1 = student_course_registrations
+T2 = students
+symbol_2 = pd.merge(T1, T2, left_on=['student_id'], right_on=['student_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1['t2.student_details'].sort_values('T1.registration_date', ascending = False).head(1)
+
+
+-------- 68 --------
+SELECT T2.student_details FROM student_course_registrations AS T1 JOIN students AS T2 ON T1.student_id = T2.student_id ORDER BY T1.registration_date DESC LIMIT 1;
+
+# Tables
+T1 = student_course_registrations
+T2 = students
+symbol_2 = pd.merge(T1, T2, left_on=['student_id'], right_on=['student_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1['t2.student_details'].sort_values('T1.registration_date', ascending = False).head(1)
+
+
+-------- 69 --------
+SELECT count(*) FROM courses AS T1 JOIN student_course_attendance AS T2 ON T1.course_id = T2.course_id WHERE T1.course_name = 'English';
+
+# Tables
+T1 = courses
+T2 = student_course_attendance
+symbol_2 = pd.merge(T1, T2, left_on=['course_id'], right_on=['course_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = pd.Series(symbol_1[symbol_1['T1.course_name'] == 'English'].shape[0])
+
+
+-------- 70 --------
+SELECT count(*) FROM courses AS T1 JOIN student_course_attendance AS T2 ON T1.course_id = T2.course_id WHERE T1.course_name = 'English';
+
+# Tables
+T1 = courses
+T2 = student_course_attendance
+symbol_2 = pd.merge(T1, T2, left_on=['course_id'], right_on=['course_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = pd.Series(symbol_1[symbol_1['T1.course_name'] == 'English'].shape[0])
+
+
+-------- 71 --------
+SELECT count(*) FROM courses AS T1 JOIN student_course_attendance AS T2 ON T1.course_id = T2.course_id WHERE T2.student_id = 171;
+
+# Tables
+T1 = courses
+T2 = student_course_attendance
+symbol_2 = pd.merge(T1, T2, left_on=['course_id'], right_on=['course_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = pd.Series(symbol_1[symbol_1['T2.student_id'] == 171].shape[0])
+
+
+-------- 72 --------
+SELECT count(*) FROM courses AS T1 JOIN student_course_attendance AS T2 ON T1.course_id = T2.course_id WHERE T2.student_id = 171;
+
+# Tables
+T1 = courses
+T2 = student_course_attendance
+symbol_2 = pd.merge(T1, T2, left_on=['course_id'], right_on=['course_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = pd.Series(symbol_1[symbol_1['T2.student_id'] == 171].shape[0])
+
+
+-------- 73 --------
+SELECT T2.candidate_id FROM people AS T1 JOIN candidates AS T2 ON T1.person_id = T2.candidate_id WHERE T1.email_address = 'stanley.monahan@example.org';
+
+# Tables
+T1 = people
+T2 = candidates
+symbol_2 = pd.merge(T1, T2, left_on=['person_id'], right_on=['candidate_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1[symbol_1['T1.email_address'] == 'stanley.monahan@example.org']['t2.candidate_id']
+
+
+-------- 74 --------
+SELECT T2.candidate_id FROM people AS T1 JOIN candidates AS T2 ON T1.person_id = T2.candidate_id WHERE T1.email_address = 'stanley.monahan@example.org';
+
+# Tables
+T1 = people
+T2 = candidates
+symbol_2 = pd.merge(T1, T2, left_on=['person_id'], right_on=['candidate_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1[symbol_1['T1.email_address'] == 'stanley.monahan@example.org']['t2.candidate_id']
+
+
+-------- 75 --------
+SELECT candidate_id FROM candidate_assessments ORDER BY assessment_date DESC LIMIT 1;
+
+# Tables
+symbol_1 = candidate_assessments
+
+# Query
+symbol_0 = symbol_1['candidate_id'].sort_values('assessment_date', ascending = False).head(1)
+
+
+-------- 76 --------
+SELECT candidate_id FROM candidate_assessments ORDER BY assessment_date DESC LIMIT 1;
+
+# Tables
+symbol_1 = candidate_assessments
+
+# Query
+symbol_0 = symbol_1['candidate_id'].sort_values('assessment_date', ascending = False).head(1)
+
+
+-------- 77 --------
+SELECT T1.student_details FROM students AS T1 JOIN student_course_registrations AS T2 ON T1.student_id = T2.student_id GROUP BY T1.student_id ORDER BY count(*) DESC LIMIT 1;
+
+# Tables
+T1 = students
+T2 = student_course_registrations
+symbol_2 = pd.merge(T1, T2, left_on=['student_id'], right_on=['student_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1.groupby('T1.student_id').agg({}).sort_values('count(*)', ascending = False).head(1)
+
+
+-------- 78 --------
+SELECT T1.student_details FROM students AS T1 JOIN student_course_registrations AS T2 ON T1.student_id = T2.student_id GROUP BY T1.student_id ORDER BY count(*) DESC LIMIT 1;
+
+# Tables
+T1 = students
+T2 = student_course_registrations
+symbol_2 = pd.merge(T1, T2, left_on=['student_id'], right_on=['student_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1.groupby('T1.student_id').agg({}).sort_values('count(*)', ascending = False).head(1)
+
+
+-------- 79 --------
+SELECT T1.student_id ,  count(*) FROM students AS T1 JOIN student_course_registrations AS T2 ON T1.student_id = T2.student_id GROUP BY T1.student_id;
+
+# Tables
+T1 = students
+T2 = student_course_registrations
+symbol_2 = pd.merge(T1, T2, left_on=['student_id'], right_on=['student_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1.groupby('T1.student_id').size()
+
+
+-------- 80 --------
+SELECT T1.student_id ,  count(*) FROM students AS T1 JOIN student_course_registrations AS T2 ON T1.student_id = T2.student_id GROUP BY T1.student_id;
+
+# Tables
+T1 = students
+T2 = student_course_registrations
+symbol_2 = pd.merge(T1, T2, left_on=['student_id'], right_on=['student_id'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1.groupby('T1.student_id').size()
+
+
+-------- 81 --------
+SELECT T3.course_name ,  count(*) FROM students AS T1 JOIN student_course_registrations AS T2 ON T1.student_id = T2.student_id JOIN courses AS T3 ON T2.course_id = T3.course_id GROUP BY T2.course_id;
+
+# Tables
+T1 = students
+T2 = student_course_registrations
+T3 = courses
+symbol_2 = pd.merge(T1, T2, left_on=['student_id'], right_on=['student_id'])
+symbol_3 = pd.merge(symbol_2, T3, left_on=['course_id'], right_on=['course_id'])
+symbol_1 = symbol_3
+
+# Query
+symbol_0 = symbol_1.groupby('T2.course_id').size()
+
+
+-------- 82 --------
+SELECT T3.course_name ,  count(*) FROM students AS T1 JOIN student_course_registrations AS T2 ON T1.student_id = T2.student_id JOIN courses AS T3 ON T2.course_id = T3.course_id GROUP BY T2.course_id;
+
+# Tables
+T1 = students
+T2 = student_course_registrations
+T3 = courses
+symbol_2 = pd.merge(T1, T2, left_on=['student_id'], right_on=['student_id'])
+symbol_3 = pd.merge(symbol_2, T3, left_on=['course_id'], right_on=['course_id'])
+symbol_1 = symbol_3
+
+# Query
+symbol_0 = symbol_1.groupby('T2.course_id').size()
+
+
+-------- 83 --------
+SELECT candidate_id FROM candidate_assessments WHERE asessment_outcome_code = 'Pass';
+
+# Tables
+symbol_1 = candidate_assessments
+
+# Query
+symbol_0 = symbol_1[symbol_1['asessment_outcome_code'] == 'Pass']['candidate_id']
+
+
+-------- 84 --------
+SELECT candidate_id FROM candidate_assessments WHERE asessment_outcome_code = 'Pass';
+
+# Tables
+symbol_1 = candidate_assessments
+
+# Query
+symbol_0 = symbol_1[symbol_1['asessment_outcome_code'] == 'Pass']['candidate_id']
+
+
+-------- 85 --------
+SELECT T3.cell_mobile_number FROM candidates AS T1 JOIN candidate_assessments AS T2 ON T1.candidate_id = T2.candidate_id JOIN people AS T3 ON T1.candidate_id = T3.person_id WHERE T2.asessment_outcome_code = 'Fail';
+
+# Tables
+T1 = candidates
+T2 = candidate_assessments
+T3 = people
+symbol_2 = pd.merge(T1, T2, left_on=['candidate_id'], right_on=['candidate_id'])
+symbol_3 = pd.merge(symbol_2, T3, left_on=['candidate_id'], right_on=['person_id'])
+symbol_1 = symbol_3
+
+# Query
+symbol_0 = symbol_1[symbol_1['T2.asessment_outcome_code'] == 'Fail']['t3.cell_mobile_number']
+
+
+-------- 86 --------
+SELECT T3.cell_mobile_number FROM candidates AS T1 JOIN candidate_assessments AS T2 ON T1.candidate_id = T2.candidate_id JOIN people AS T3 ON T1.candidate_id = T3.person_id WHERE T2.asessment_outcome_code = 'Fail';
+
+# Tables
+T1 = candidates
+T2 = candidate_assessments
+T3 = people
+symbol_2 = pd.merge(T1, T2, left_on=['candidate_id'], right_on=['candidate_id'])
+symbol_3 = pd.merge(symbol_2, T3, left_on=['candidate_id'], right_on=['person_id'])
+symbol_1 = symbol_3
+
+# Query
+symbol_0 = symbol_1[symbol_1['T2.asessment_outcome_code'] == 'Fail']['t3.cell_mobile_number']
+
+
+-------- 87 --------
+SELECT student_id FROM student_course_attendance WHERE course_id  =  301;
+
+# Tables
+symbol_1 = student_course_attendance
+
+# Query
+symbol_0 = symbol_1[symbol_1['course_id'] == 301]['student_id']
+
+
+-------- 88 --------
+SELECT student_id FROM student_course_attendance WHERE course_id  =  301;
+
+# Tables
+symbol_1 = student_course_attendance
+
+# Query
+symbol_0 = symbol_1[symbol_1['course_id'] == 301]['student_id']
+
+
+-------- 89 --------
+SELECT student_id FROM student_course_attendance WHERE course_id = 301 ORDER BY date_of_attendance DESC LIMIT 1;
+
+# Tables
+symbol_1 = student_course_attendance
+
+# Query
+symbol_0 = symbol_1[symbol_1['course_id'] == 301]['student_id'].sort_values('date_of_attendance', ascending = False).head(1)
+
+
+-------- 90 --------
+SELECT student_id FROM student_course_attendance WHERE course_id = 301 ORDER BY date_of_attendance DESC LIMIT 1;
+
+# Tables
+symbol_1 = student_course_attendance
+
+# Query
+symbol_0 = symbol_1[symbol_1['course_id'] == 301]['student_id'].sort_values('date_of_attendance', ascending = False).head(1)
+
+
+-------- 91 --------
+SELECT DISTINCT T1.city FROM addresses AS T1 JOIN people_addresses AS T2 ON T1.address_id = T2.address_id;
+
+# Tables
+T1 = addresses
+T2 = people_addresses
+symbol_2 = pd.merge(T1, T2, left_on=['address_id'], right_on=['address_id;'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1['t1.city'].drop_duplicates().reset_index(drop=True)
+
+
+-------- 92 --------
+SELECT DISTINCT T1.city FROM addresses AS T1 JOIN people_addresses AS T2 ON T1.address_id = T2.address_id;
+
+# Tables
+T1 = addresses
+T2 = people_addresses
+symbol_2 = pd.merge(T1, T2, left_on=['address_id'], right_on=['address_id;'])
+symbol_1 = symbol_2
+
+# Query
+symbol_0 = symbol_1['t1.city'].drop_duplicates().reset_index(drop=True)
+
+
+-------- 93 --------
+SELECT DISTINCT T1.city FROM addresses AS T1 JOIN people_addresses AS T2 ON T1.address_id = T2.address_id JOIN students AS T3 ON T2.person_id = T3.student_id;
+
+# Tables
+T1 = addresses
+T2 = people_addresses
+T3 = students
+symbol_2 = pd.merge(T1, T2, left_on=['address_id'], right_on=['address_id'])
+symbol_3 = pd.merge(symbol_2, T3, left_on=['person_id'], right_on=['student_id;'])
+symbol_1 = symbol_3
+
+# Query
+symbol_0 = symbol_1['t1.city'].drop_duplicates().reset_index(drop=True)
+
+
+-------- 94 --------
+SELECT DISTINCT T1.city FROM addresses AS T1 JOIN people_addresses AS T2 ON T1.address_id = T2.address_id JOIN students AS T3 ON T2.person_id = T3.student_id;
+
+# Tables
+T1 = addresses
+T2 = people_addresses
+T3 = students
+symbol_2 = pd.merge(T1, T2, left_on=['address_id'], right_on=['address_id'])
+symbol_3 = pd.merge(symbol_2, T3, left_on=['person_id'], right_on=['student_id;'])
+symbol_1 = symbol_3
+
+# Query
+symbol_0 = symbol_1['t1.city'].drop_duplicates().reset_index(drop=True)
+
+
+-------- 95 --------
+SELECT course_name FROM courses ORDER BY course_name;
+
+# Tables
+symbol_1 = courses
+
+# Query
+symbol_0 = symbol_1['course_name'].sort_values('course_name', ascending = True)
+
+
+-------- 96 --------
+SELECT course_name FROM courses ORDER BY course_name;
+
+# Tables
+symbol_1 = courses
+
+# Query
+symbol_0 = symbol_1['course_name'].sort_values('course_name', ascending = True)
+
+
+-------- 97 --------
+SELECT first_name FROM people ORDER BY first_name;
+
+# Tables
+symbol_1 = people
+
+# Query
+symbol_0 = symbol_1['first_name'].sort_values('first_name', ascending = True)
+
+
+-------- 98 --------
+SELECT first_name FROM people ORDER BY first_name;
+
+# Tables
+symbol_1 = people
+
+# Query
+symbol_0 = symbol_1['first_name'].sort_values('first_name', ascending = True)
+
+
+-------- 99 --------
+SELECT student_id FROM student_course_registrations UNION SELECT student_id FROM student_course_attendance;
+
+# Tables
+symbol_4 = student_course_attendance;
+symbol_3 = student_course_registrations;
+
+# Query
+symbol_2 = symbol_4['student_id']
+symbol_1 = symbol_3['student_id']
+symbol_0 = pd.concat([symbol_1, symbol_2]).drop_duplicates()
+
+

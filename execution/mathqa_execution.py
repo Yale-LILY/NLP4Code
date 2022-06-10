@@ -32,3 +32,21 @@ def mathqa_execution(program: str) -> Any:
         executed_answer = None
 
     return executed_answer
+
+def mathqa_unsafe_execution(program: str) -> Any:
+    """
+    for mathqa-python, we should be getting the answers from the "answer" variable in the local() variables
+    """
+
+    ls = {}
+    gs = {}
+    try:
+        exec(program, gs, ls)
+        if "answer" in ls:
+            executed_answer = ls["answer"]
+        else:
+            executed_answer = -10000
+    except Exception as e:
+        executed_answer = None
+
+    return executed_answer
