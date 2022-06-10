@@ -4,6 +4,7 @@ import ast
 from typing import List, Dict, Tuple, Any
 from concurrent.futures import ProcessPoolExecutor as Pool
 from execution.safe_execution_util import execute
+from itertools import chain
 
 def batch_exec_programs(programs: List[str], exec_func: callable, n_processes: int = 20) -> List[Any]:
     # build a dict to optimize for potential same programs
@@ -36,6 +37,13 @@ def batch_exec_programs(programs: List[str], exec_func: callable, n_processes: i
     executed_answers = [unique_executed_answers[program_dict[program]] for program in programs]
 
     return executed_answers, len(unique_programs)
+
+
+def batch_eval_at_k(programs: List[List[str]], exec_func: callable, answers: List[str], eval_at_k: int, 
+                    answer_eq_func: callable) -> Tuple[float, float]:
+    flatten_programs = list(chain(*programs))
+    return batch_execution_acc(flatten_programs, exec_func, answers, len(programs), eval_at_k, answer_eq_func)
+
 
 def batch_execution_acc(programs: List[str], exec_func: callable, answers: List[str], 
                         n_examples: int, eval_at_k: int, answer_eq_func: callable, 
