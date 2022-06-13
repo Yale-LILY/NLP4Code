@@ -202,10 +202,9 @@ class Seq2SeqModel(LightningModule):
             print("evaluating pass at k...")
 
             all_generated_k_programs = [p["generated_k_programs"] for p in self.predictions]
-            all_generated_k_programs_faltten = [item for sublist in all_generated_k_programs for item in sublist]
             gold_answers = [p["metadata"]["answer"] for p in self.predictions]
 
-            result_list = batch_execution_acc(all_generated_k_programs_faltten, self.exec_func, gold_answers, 
+            result_list = batch_execution_acc(all_generated_k_programs, self.exec_func, gold_answers, 
                                            len(self.predictions), self.pass_at_k, self.answer_eq_func)
             
             for acc_at_k, pass_at_k in result_list:
