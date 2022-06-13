@@ -128,6 +128,18 @@ def codex(input: List[str], engine: str="code-davinci-001", max_tokens: int=1024
 def gpt3(input: List[str], engine: str="text-davinci-001", max_tokens: int=1024, **kwargs) -> List[List[str]]:
     return openai_call(input, engine, max_tokens, **kwargs)
 
+def get_few_shot_annotated_examples(examples: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    few_shot_example_queries = []
+    few_shot_examples = []
+
+    for i, example in enumerate(examples):
+        if example["query"] in manually_annotated_sql_to_py and example["query"] not in few_shot_example_queries:
+            example["pandas_converted"] = manually_annotated_sql_to_py[example["query"]]
+            few_shot_example_queries.append(example["query"])
+            few_shot_examples.append(example)
+    
+    return few_shot_examples
+
 def select_few_shot_examples(examples: List[Dict[str, Any]], n: int) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:   
     few_shot_example_queries = []
     few_shot_example_idx = []
