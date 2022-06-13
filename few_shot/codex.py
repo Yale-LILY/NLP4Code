@@ -120,7 +120,8 @@ def codex_evaluate_pass_at_k(
         example_prompt = common_prompt + promptify_func(example, False)
         batched_prompts.append(example_prompt)
 
-        if len(batched_prompts) == batch_prompts:
+        if len(batched_prompts) == batch_prompts or \
+            len(batched_prompts) + len(generated_programs_list) == len(input_dataset): # last batch
             generated_programs: List[List[str]] = openai_call(prompts=batched_prompts, **openai_kwargs)
             batched_prompts = []
             # FIXME: this only works with programs that never has an empty line
@@ -134,9 +135,9 @@ def codex_evaluate_pass_at_k(
     else:
         extra_exec_args = {}
 
-    grouped_raw_eval_results = batch_eval_at_k(generated_programs_list, exec_func, answers, eval_at_k, 
-                                               answer_eq_func, extra_exec_args=extra_exec_args)
-    grouped_eval_results = [int(eval_at_k * result[0]) for result in grouped_raw_eval_results]
+    grouped_raw_eval_results: List[List[bool]] = batch_eval_at_k(generated_programs_list, exec_func, answers, eval_at_k, 
+                                                answer_eq_func, extra_exec_args=extra_exec_args)
+    grouped_eval_results = [sum(result) for result in grouped_raw_eval_results]
 
     # get pass at k and for various ks
     pass_at_k_dict = {}
@@ -165,7 +166,7 @@ def codex_evaluate_pass_at_k(
                 save_dicts.append(save_dict)
             f.write(json.dumps(save_dicts, indent=2))
     
-    return generated_programs_list, [np.mean(pass_at_k_dict[f"pass@{k}"]) for k in eval_at_ks]
+    return generated_programs_list, grouped_raw_eval_results
 
 if __name__ == "__main__":
     result = openai_call(["# write an addition function\ndef ", "# write a logsumexp function\ndef"], "code-davinci-002", 

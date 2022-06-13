@@ -34,6 +34,10 @@ def db_to_df_dict(conn: sqlite3.Connection) -> Dict[str, pd.DataFrame]:
     return df_dict
 
 def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame], return_error_msg: bool = False) -> Any:
+    # copy the dataframes to avoid functional side effects
+    copied_df_dict = dict([(k, v.copy(deep=True)) for k, v in df_dict.items()])
+    df_dict = copied_df_dict
+
     local_vars = {"df_dict": df_dict}
 
     # use the tables as part of the code context
@@ -71,34 +75,40 @@ def flatten_list_of_list(l: List[List[Any]]) -> List[Any]:
 def spider_answer_eq(prediction: Union[pd.DataFrame, pd.Series, List[Tuple[Any]]], 
                      gold_answer: Union[List[Tuple[Any]], int]) -> bool:
 
-    if isinstance(prediction, int) or isinstance(prediction, float):
-        prediction = [prediction]
-    
-    if isinstance(prediction, list) or isinstance(prediction, np.ndarray):
-        if isinstance(gold_answer, list):
-            gold_flattened = flatten_list_of_list(gold_answer)
-            pred_flattened = flatten_list_of_list(prediction)
-            result = pred_flattened == gold_flattened
+    try:
+        if isinstance(prediction, int) or isinstance(prediction, float):
+            prediction = [prediction]
+        
+        if isinstance(prediction, list) or isinstance(prediction, np.ndarray):
+            if isinstance(gold_answer, list):
+                gold_flattened = flatten_list_of_list(gold_answer)
+                pred_flattened = flatten_list_of_list(prediction)
+                result = pred_flattened == gold_flattened
+            else:
+                result = False
+        elif isinstance(prediction, pd.DataFrame):
+            if isinstance(gold_answer, list):
+                # convert the dataframe to a list of tuples and check
+                pred_list = flatten_list_of_list(list(prediction.itertuples(index=False, name=None)))
+                gold_list = flatten_list_of_list(gold_answer)
+                result = pred_list == gold_list
+            else:
+                result = False
+        elif isinstance(prediction, pd.Series):
+            if isinstance(gold_answer, list):
+                # convert the series to a list of tuples and check
+                pred_list = flatten_list_of_list(prediction.tolist())
+                gold_list = flatten_list_of_list(gold_answer)
+                result = pred_list == gold_list 
+            else:
+                result = False
         else:
+            # raise ValueError("prediction must be a pandas dataframe or series, but is a {}".format(type(prediction)))
             result = False
-    elif isinstance(prediction, pd.DataFrame):
-        if isinstance(gold_answer, list):
-            # convert the dataframe to a list of tuples and check
-            pred_list = flatten_list_of_list(list(prediction.itertuples(index=False, name=None)))
-            gold_list = flatten_list_of_list(gold_answer)
-            result = pred_list == gold_list
-        else:
-            result = False
-    elif isinstance(prediction, pd.Series):
-        if isinstance(gold_answer, list):
-            # convert the series to a list of tuples and check
-            pred_list = flatten_list_of_list(prediction.tolist())
-            gold_list = flatten_list_of_list(gold_answer)
-            result = pred_list == gold_list 
-        else:
-            result = False
-    else:
-        # raise ValueError("prediction must be a pandas dataframe or series, but is a {}".format(type(prediction)))
-        result = False
 
-    return result
+        return result
+    except Exception as e:
+        print("##############################")
+        print(f"Error in spider_answer_eq: {repr(e)}")
+        print("##############################")
+        return False

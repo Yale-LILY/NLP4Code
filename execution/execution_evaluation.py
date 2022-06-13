@@ -60,47 +60,53 @@ def batch_exec_programs(programs: List[str], exec_func: callable, n_processes: i
 
 
 def batch_eval_at_k(programs: List[List[str]], exec_func: callable, answers: List[str], eval_at_k: int, 
-                    answer_eq_func: callable, extra_exec_args: Dict[str, List[Any]]={}) -> Tuple[float, float]:
-    flatten_programs = list(chain(*programs))
-    return batch_execution_acc(flatten_programs, exec_func, answers, len(programs), eval_at_k, answer_eq_func, 
-                               extra_exec_args=extra_exec_args)
-
-
-def batch_execution_acc(programs: List[str], exec_func: callable, answers: List[str], 
-                        n_examples: int, eval_at_k: int, answer_eq_func: callable, 
-                        n_processes: int = 20, extra_exec_args: Dict[str, List[Any]]={}) -> List[Tuple[float, float]]:
-    """
-    This function evaluates execution accuracy for a batch of programs using multiprocessing.
-
-    Returns: execution accuracy, execution rate
-    """
-    assert len(programs) == len(answers) * eval_at_k
+                    answer_eq_func: callable, extra_exec_args: Dict[str, List[Any]]={}, n_processes: int = 20,
+                    ) -> List[List[bool]]:
+    # make sure all the numbers match
+    assert len(programs) == len(answers)
     assert all([len(v) == len(answers) for v in extra_exec_args.values()])
-    assert n_examples * eval_at_k == len(programs)
+
+    # flatten everything
+    flatten_programs = list(chain(*programs))
+    n_examples = len(flatten_programs)
 
     # since the extra_exec_args is per task/prompt (i.e., as answers) and not per completion, we need to clone them k times
     for k in extra_exec_args.keys():
         extra_exec_args[k] = list(chain(*[[item] * eval_at_k for item in extra_exec_args[k]]))
 
-    executed_answers, n_unique_programs = batch_exec_programs(programs, exec_func, n_processes, extra_exec_args=extra_exec_args)
-    print(f"Evaluating {len(programs)} generated programs for {n_examples} tasks, " + \
+    executed_answers, n_unique_programs = batch_exec_programs(flatten_programs, exec_func, n_processes, extra_exec_args=extra_exec_args)
+    print(f"Evaluating {len(flatten_programs)} generated programs for {n_examples} tasks, " + \
            f"but only {n_unique_programs} unique programs")
 
     # separate the results for each task
     grouped_executed_answers = [executed_answers[i*eval_at_k:(i+1)*eval_at_k] for i in range(0, n_examples)]
-    grouped_execution_evals = []
+    grouped_execution_evals: List[List[bool]] = []
     for predicted_answers, gold_answer in zip(grouped_executed_answers, answers):
-        correct_count = 0.0
+        exec_match_list = []
         for predicted_answer in predicted_answers:
             if answer_eq_func(predicted_answer, gold_answer):
-                correct_count += 1
-
-        accuracy_at_k = correct_count / eval_at_k
-        pass_at_k = correct_count > 0.0
-
-        grouped_execution_evals.append((accuracy_at_k, pass_at_k))
+                exec_match_list.append(True)
+            else:
+                exec_match_list.append(False)
+        grouped_execution_evals.append(exec_match_list)
 
     return grouped_execution_evals
+
+
+def batch_execution_acc(programs: List[List[str]], exec_func: callable, answers: List[str], 
+                        eval_at_k: int, answer_eq_func: callable, 
+                        n_processes: int = 20, extra_exec_args: Dict[str, List[Any]]={}) -> List[Tuple[float, float]]:
+    """
+    This function evaluates execution accuracy for a batch of programs using multiprocessing.
+
+    Returns: acc@k, pass@k
+    """
+    grouped_execution_evals: List[List[bool]] = batch_eval_at_k(programs, exec_func, answers, eval_at_k, 
+                                                                answer_eq_func, extra_exec_args, n_processes)
+    pass_acc_at_k_list = [(float(sum(exec_match_list)) / len(exec_match_list), float(sum(exec_match_list) > 0)) 
+                        for exec_match_list in grouped_execution_evals]
+
+    return pass_acc_at_k_list
 
 def execution_acc(program: str, exec_func: callable, answer: str, answer_eq_func: callable) -> Tuple[float, float]:
     """
