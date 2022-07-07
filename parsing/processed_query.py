@@ -10,6 +10,7 @@ class ProcessedSQLQueryNodeType(Enum):
     INTERSECT = "INTERSECT "
     UNION = "UNION "
     EXCEPT = "EXCEPT "
+    SUBTRACT = " - "
 
 
 def dump_dict(dict_obj, indent=4):

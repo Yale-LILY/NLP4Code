@@ -1,5 +1,5 @@
 from typing import Dict, List, Union
-from helpers import find_closing_parenthesis, is_next_token_select
+from helpers import find_closing_parenthesis, is_next_token_select, get_second_last_token, subtract_sql_to_pandas
 from clean_query import basic_clean_query
 from node_to_pandas_snippet import extract_pandas_code_snippet_from_node
 from process_table_expr import extract_table_expr_from_query, substitute_symbol_for_table_expr
@@ -34,7 +34,7 @@ def extract_select_subquery(sql_query: str, query_type: ProcessedSQLQueryNodeTyp
 
     start_idx += 1 if query_type == ProcessedSQLQueryNodeType.NESTED_SELECT else len(
         query_type_token)
-    if not is_next_token_select(sql_query[start_idx:]):
+    if not is_next_token_select(sql_query[start_idx:]) and query_type != ProcessedSQLQueryNodeType.SUBTRACT:
         return None
 
     # TODO: better finishing idx
@@ -73,8 +73,11 @@ def convert_query_to_tree_node(sql_query: str, internal_symbol: str, tree_header
             break
 
     # Base case: LEAF node
+    print("A: ", sql_query)
     if query_type == None or subquery == None:
+        print("leaf", sql_query)
         table_expr_str = extract_table_expr_from_query(sql_query)
+        print("a", table_expr_str)
         table_expr_symbol_key = tree_header.get_symbol_key()
         table_expr = ProcessedSQLTableExpr(
             orig_table_expr=table_expr_str, table_expr_symbol_key=table_expr_symbol_key, get_symbol=tree_header.get_symbol_key)
@@ -109,6 +112,9 @@ def convert_query_to_tree_node(sql_query: str, internal_symbol: str, tree_header
         left_query = sql_query[0:idx] + \
             right_symbol_key + sql_query[idx+len(subquery):]
 
+        print("left", left_query)
+        print("sub", subquery)
+
         left_node = convert_query_to_tree_node(
             left_query, left_symbol_key, tree_header)
         left_node.set_external_symbol(right_symbol_key)
@@ -129,6 +135,48 @@ def convert_query_to_tree_node(sql_query: str, internal_symbol: str, tree_header
         tree_header.add_key_value_to_symbol_table(
             internal_symbol, sql_query, root_node)
         return root_node
+
+    # Handle subtraction case separately because there exists no table (i.e. no "FROM")
+    if query_type == ProcessedSQLQueryNodeType.SUBTRACT:
+        print("OG left:",sql_query[0:idx-len(query_type.value)])
+        left_query = sql_query[0:idx] + \
+            right_symbol_key + sql_query[idx+len(subquery):]
+
+        print("MOD left", left_query)
+        print("sub", subquery)
+        left_query = sql_query[0:idx-len(query_type.value)]
+
+        second_last_token = get_second_last_token(left_query)
+        if second_last_token == "SELECT":
+            leaf_node = ProcessedSQLQueryNode(
+                node_type=ProcessedSQLQueryNodeType.SUBTRACT,
+                internal_symbol=internal_symbol,
+                sql_query=subquery,
+                sql_query_table_expr=None,
+                pandas_query=subtract_sql_to_pandas(subquery, simple=True),
+                left_node=None,
+                right_node=None
+            )
+
+            tree_header.add_key_value_to_symbol_table(
+                internal_symbol, sql_query, leaf_node)
+            return leaf_node
+        else:
+            root_node = ProcessedSQLQueryNode(
+                node_type=query_type,
+                internal_symbol=internal_symbol,
+                sql_query=None,
+                sql_query_table_expr=None,
+                pandas_query=None,
+                left_node=left_node,
+                right_node=None
+            )
+
+            tree_header.add_key_value_to_symbol_table(
+                internal_symbol, sql_query, root_node)
+        return root_node
+
+        
 
     left_query = sql_query[0:idx-len(query_type.value)]
     left_node = convert_query_to_tree_node(

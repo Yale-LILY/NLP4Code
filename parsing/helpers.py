@@ -91,6 +91,21 @@ def get_prev_token(sql_query: str, idx: int):
 
     return sql_query[start_idx:finish_idx]
 
+def get_second_last_token(sql_query: str):
+    length = len(sql_query)
+    if length < 2:
+        print("[get_second_last_token] no second last token")
+        return None
+
+    finish_idx = length - 1
+    while finish_idx > 0 and sql_query[finish_idx] != " ":
+        finish_idx -= 1
+
+    start_idx = finish_idx - 1
+    while start_idx > 0 and sql_query[start_idx] != " ":
+        start_idx -= 1
+
+    return sql_query[start_idx:finish_idx].strip()
 
 def get_cur_token(sql_query: str, idx: int):
     if not is_idx_at_token_start(sql_query, idx):
@@ -161,3 +176,15 @@ def get_first_token(s: str) -> str:
     if idx < 0:
         idx = len(s)
     return s[:idx]
+
+def subtract_sql_to_pandas(sql: str, simple: bool) -> str:
+    """If simple subtract, removes the SELECT and parenthesis and ; from the sql for a subtract sql 
+    Otherwise, replaces subtraction with pandas and returns the new sql with subtraction replaced
+
+    TODO fill args
+    """
+    if simple:
+        ret = sql.replace("SELECT ", "").replace(";", "").replace("(", "").replace(")", "")
+    else:
+        ret = None
+    return ret

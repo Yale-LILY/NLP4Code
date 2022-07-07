@@ -1,0 +1,5 @@
+"t1 = pd.merge(campuses, faculty, left_on='Id', right_on='Campus')\nt2 = t1[(t1['Year_y'] == 2002) & (t1['County'] == 'Orange')]\nt3 = t1[(t1['Year_y'] == 2002) & (t1['Faculty'] > t2['Faculty'].max())]\nanswer = t3['Campus_x']"
+"t1 = pd.merge(characteristics, product_characteristics, left_on='characteristic_id', right_on='characteristic_id', sort=True)\nanswer = characteristics[~characteristics['characteristic_id'].isin(t1['characteristic_id'])][['characteristic_name', 'other_characteristic_details', 'characteristic_data_type']]\nanswer = answer.sort_values(by=['characteristic_name', 'other_characteristic_details', 'characteristic_data_type'])"
+"t1 = pd.merge(instructor, department, left_on='dept_name', right_on='dept_name')\nt2 = t1.sort_values(by='budget', ascending=False)\nanswer = [t2['salary'].mean(), t2.shape[0]]"
+"t1 = hotels.replace('', None).sort_values('price_range')\nanswer = t1.head(3)[['other_hotel_details', 'star_rating_code']]"
+"weather = weather.replace('', None)\nanswer = weather[weather['max_temperature_f'] > 85]['date']"
