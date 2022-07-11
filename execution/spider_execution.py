@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import re
 import keyword
+import math
 
 from typing import List, Dict, Any, Union, Tuple
 
@@ -75,7 +76,7 @@ def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame], return_erro
         else:
             return None
 
-def flatten_list_of_list(l: List[List[Any]]) -> List[Any]:
+def flatten_list_of_list(l: List[List[Any]], sort: bool = False) -> List[Any]:
     result = []
     for sublist in l:
         if isinstance(sublist, list) or isinstance(sublist, tuple):
@@ -83,7 +84,10 @@ def flatten_list_of_list(l: List[List[Any]]) -> List[Any]:
         else:
             result.append(sublist)
 
-    return result
+    if sort:
+        return sorted(result)
+    else:
+        return result
 
 def list_to_lower_case(l: List[Any]):
     result = []
@@ -94,8 +98,23 @@ def list_to_lower_case(l: List[Any]):
             result.append(object)
     return result
 
+def compare_lists(l1: List[Any], l2: List[Any]) -> bool:
+    if len(l1) != len(l2):
+        return False
+    else:
+        for i in range(len(l1)):
+            if type(l1[i]) == float:
+                if not math.isclose(l1[i], l2[i]):
+                    return False
+                else:
+                    continue
+            elif l1[i] != l2[i]:
+                return False
+        return True
+
 def spider_answer_eq(prediction: Union[pd.DataFrame, pd.Series, List[Tuple[Any]]],
-                     gold_answer: Union[List[Tuple[Any]], int]) -> bool:
+                     gold_answer: Union[List[Tuple[Any]], int],
+                     sort: bool = False) -> bool:
 
     if isinstance(prediction, int) or isinstance(prediction, float):
         prediction = [prediction]
@@ -103,18 +122,18 @@ def spider_answer_eq(prediction: Union[pd.DataFrame, pd.Series, List[Tuple[Any]]
     if isinstance(prediction, list) or isinstance(prediction, np.ndarray):
         if isinstance(gold_answer, list):
             gold_flattened = list_to_lower_case(
-                flatten_list_of_list(gold_answer))
-            pred_flattened = flatten_list_of_list(prediction)
-            result = pred_flattened == gold_flattened
+                flatten_list_of_list(gold_answer, sort))
+            pred_flattened = flatten_list_of_list(prediction, sort)
+            result = compare_lists(pred_flattened, gold_flattened)
         else:
             result = False
     elif isinstance(prediction, pd.DataFrame):
         if isinstance(gold_answer, list):
             # we include the index only when it exists
             pred_list = flatten_list_of_list(list(prediction.itertuples(
-                index=bool(prediction.index.name), name=None)))
-            gold_list = list_to_lower_case(flatten_list_of_list(gold_answer))
-            result = pred_list == gold_list
+                index=bool(prediction.index.name), name=None)), sort)
+            gold_list = list_to_lower_case(flatten_list_of_list(gold_answer, sort))
+            result = compare_lists(pred_list, gold_list)
         else:
             result = False
     elif isinstance(prediction, pd.Series):
@@ -122,11 +141,11 @@ def spider_answer_eq(prediction: Union[pd.DataFrame, pd.Series, List[Tuple[Any]]
             # convert the series to a list of tuples and check
             # we include the index only when it exists
             if prediction.index.name:
-                pred_list = flatten_list_of_list(list(prediction.items()))
+                pred_list = flatten_list_of_list(list(prediction.items()), sort)
             else:
-                pred_list = flatten_list_of_list(prediction.tolist())
-            gold_list = list_to_lower_case(flatten_list_of_list(gold_answer))
-            result = pred_list == gold_list
+                pred_list = flatten_list_of_list(prediction.tolist(), sort)
+            gold_list = list_to_lower_case(flatten_list_of_list(gold_answer, sort))
+            result = compare_lists(pred_list, gold_list)
         else:
             result = False
     else:
