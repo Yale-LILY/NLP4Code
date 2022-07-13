@@ -1,30 +1,36 @@
 import sqlite3
 import pandas as pd
 import numpy as np
-
+import os
 from typing import List, Dict, Any, Union, Tuple
 
 # from .safe_execution_util import execute
+DB_DIR = "data/spider/database"
+
 
 def connect_databse(db_path: str) -> sqlite3.Connection:
     # connect the database with read-only access
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     return conn
 
-def spider_execution_sql(sql: str, conn: sqlite3.Connection, return_error_msg: bool = False) -> Any:
+def spider_execution_sql(sql: str, db_id: str, return_error_msg: bool = False) -> Any:
+    
+    db_path = os.path.join(DB_DIR, db_id, db_id + ".sqlite")
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     cursor = conn.cursor()
 
     try:
         cursor.execute(sql)
-
         return cursor.fetchall()
-    except sqlite3.OperationalError as e:
-        error_msg = f"ERROR: {str(e)}"
-        print(f"Error {str(e)} in execution sql query {sql}")
-        if return_error_msg:
-            return error_msg
-        else:
-            return None
+    # except sqlite3.OperationalError as e:
+    #     error_msg = f"ERROR: {str(e)}"
+    #     print(f"Error {str(e)} in execution sql query {sql}")
+    #     if return_error_msg:
+    #         return error_msg
+    #     else:
+    #         return None
+    except:
+        return None
 
 def db_to_df_dict(conn: sqlite3.Connection) -> Dict[str, pd.DataFrame]:
     df_dict = {}

@@ -52,7 +52,7 @@ class SpiderDataset(Dataset):
     def get_train_instance(self, example: Dict[str, Any]) -> Dict[str, Any]:
         example_dict = {"metadata": example}
 
-        tokenizer_outputs = self.tokenizer("\n".join([example["question"], example["query"]]))
+        tokenizer_outputs = self.tokenizer("\n".join([example["text"], example["code"]]))
 
 
         example_dict["input_ids"] = tokenizer_outputs["input_ids"] + [self.tokenizer.eos_token_id]
@@ -124,7 +124,7 @@ class SpiderDataset(Dataset):
     def extend(self, instances):
         self.instances.extend(instances)
 
-class MathQAMmlDataset(MathQADataset):
+class Text2SqlMmlDataset(SpiderDataset):
 
     def __init__(
         self, 
@@ -172,7 +172,7 @@ def customized_collate_fn(examples: List[Dict[str, Any]]) -> Dict[str, Any]:
 
     return result_dict
 
-class MathQADataModule(LightningDataModule):
+class Text2SqlDataModule(LightningDataModule):
     def __init__(self, 
                 transformer_model_name: str,
                 batch_size: int = 1, 
@@ -203,13 +203,13 @@ class MathQADataModule(LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         assert stage in ["fit", "validate", "test"]
 
-        train_data = MathQADataset(file_path=self.train_file_path,
+        train_data = SpiderDataset(file_path=self.train_file_path,
                                    transformer_model_name=self.transformer_model_name,
                                    max_instances=self.train_max_instances, 
                                    mode="train", few_shot_n=self.few_shot_n)
         self.train_data = train_data
 
-        val_data = MathQADataset(file_path=self.val_file_path,
+        val_data = SpiderDataset(file_path=self.val_file_path,
                                  transformer_model_name=self.transformer_model_name,
                                  max_instances=self.val_max_instances, 
                                  mode="test", few_shot_n=self.few_shot_n)
@@ -234,7 +234,7 @@ class MathQADataModule(LightningDataModule):
     def test_dataloader(self):
         raise NotImplementedError
 
-class MathQAMmlDataModule(MathQADataModule):
+class Text2SqlMmlDataModule(Text2SqlDataModule):
     def __init__(self, transformer_model_name: str, **kwargs):
         super().__init__(transformer_model_name=transformer_model_name, **kwargs)
 
@@ -242,13 +242,13 @@ class MathQAMmlDataModule(MathQADataModule):
     def setup(self, stage: Optional[str] = None):
         assert stage in ["fit", "validate", "test"]
 
-        train_data = MathQAMmlDataset(file_path=self.train_file_path,
+        train_data = Text2SqlMmlDataset(file_path=self.train_file_path,
                                    transformer_model_name=self.transformer_model_name,
                                    max_instances=self.train_max_instances, 
                                    mode="train", few_shot_n=self.few_shot_n)
         self.train_data = train_data
 
-        val_data = MathQAMmlDataset(file_path=self.val_file_path,
+        val_data = Text2SqlMmlDataset(file_path=self.val_file_path,
                                  transformer_model_name=self.transformer_model_name,
                                  max_instances=self.val_max_instances, 
                                  mode="test", few_shot_n=self.few_shot_n)
