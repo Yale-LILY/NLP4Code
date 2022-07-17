@@ -112,7 +112,16 @@ def get_model(model_name: str,
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
     elif model_name.startswith("Salesforce/codegen-"):
-        token
+        tokenizer = CodeGenTokenizer.from_pretrained(model_name,
+                                                    additional_special_tokens=additional_special_tokens)
+
+        if not tokenizer_only:
+            model = CodeGenForCausalLM.from_pretrained(model_name, 
+                                                    pad_token_id=tokenizer.eos_token_id,
+                                                    gradient_checkpointing=gradient_ckpt, 
+                                                    use_cache=not gradient_ckpt)
+            if len(additional_special_tokens) > 0:
+                model.resize_token_embeddings(len(tokenizer))
     elif model_name.startswith("bigscience/bloom-"):
         tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                     additional_special_tokens=additional_special_tokens)
