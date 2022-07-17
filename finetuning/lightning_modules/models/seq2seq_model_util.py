@@ -7,7 +7,9 @@ from typing import Tuple, Optional, List, Union
 from transformers import GPTNeoForCausalLM, GPT2Tokenizer
 from transformers import PreTrainedModel, PreTrainedTokenizer, GPT2LMHeadModel
 from transformers import GPT2Tokenizer, GPTJForCausalLM
+from transformers import AutoTokenizer, BloomForCausalLM
 from transformers import RobertaTokenizer, T5ForConditionalGeneration
+from transformers import CodeGenTokenizer, CodeGenForCausalLM
 from transformers.generation_utils import GenerationMixin
 
 # from https://stackoverflow.com/questions/1769332/script-to-remove-python-comments-docstrings
@@ -107,6 +109,19 @@ def get_model(model_name: str,
                                                     pad_token_id=tokenizer.eos_token_id,
                                                     gradient_checkpointing=gradient_ckpt, 
                                                     use_cache=not gradient_ckpt)
+            if len(additional_special_tokens) > 0:
+                model.resize_token_embeddings(len(tokenizer))
+    elif model_name.startswith("Salesforce/codegen-"):
+        token
+    elif model_name.startswith("bigscience/bloom-"):
+        tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                                    additional_special_tokens=additional_special_tokens)
+        if not tokenizer_only:
+            model = BloomForCausalLM.from_pretrained(model_name,
+                                                    pad_token_id=tokenizer.eos_token_id,
+                                                    use_cache=not gradient_ckpt)
+            if gradient_ckpt:
+                model._set_gradient_checkpointing(gradient_ckpt)
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
     else:
