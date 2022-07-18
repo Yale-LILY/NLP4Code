@@ -1,6 +1,6 @@
 seed_everything: 333
 trainer:
-  gpus: 1
+  gpus: "1"
   gradient_clip_val: 1.0
   default_root_dir: &exp_name results/gsmath-bloom-2b5-multi-finetuning-bs-16
   # default_root_dir: &exp_name results/debug-tmp
@@ -39,11 +39,11 @@ trainer:
   # devices: 1
   # replace_sampler_ddp: False
   # https://github.com/PyTorchLightning/pytorch-lightning/issues/8262
-  strategy: deepspeed_stage_2
+  strategy: deepspeed_stage_2_offload
   # strategy: ddp_sharded
   # strategy: ddp_find_unused_parameters_false
   precision: 16
-  accumulate_grad_batches: 16
+  accumulate_grad_batches: 2
 
   # plugins: 
   #   - class_path: pytorch_lightning.plugins.DeepSpeedPlugin
@@ -84,7 +84,7 @@ data:
   class_path: lightning_modules.datasets.mathqa_reader.MathQADataModule
   init_args:
     transformer_model_name: *transformer
-    batch_size: 1
+    batch_size: 8
     val_batch_size: 2
     train_file_path: data/gsmath/gsmath_train_annotated.jsonl
     val_file_path: data/gsmath/gsmath_val.jsonl

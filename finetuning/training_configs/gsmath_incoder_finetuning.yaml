@@ -2,7 +2,7 @@ seed_everything: 333
 trainer:
   gpus: "1"
   gradient_clip_val: 1.0
-  default_root_dir: &exp_name results/gsmath-codegen-2B-multi-finetuning-bs-16
+  default_root_dir: &exp_name results/gsmath-incoder-bs-16
   # default_root_dir: &exp_name results/debug-tmp
   val_check_interval: 1.0
   max_steps: &max_steps 50000
@@ -39,11 +39,11 @@ trainer:
   # devices: 1
   # replace_sampler_ddp: False
   # https://github.com/PyTorchLightning/pytorch-lightning/issues/8262
-  strategy: deepspeed_stage_2_offload
+  # strategy: deepspeed_stage_2_offload
   # strategy: ddp_sharded
-  # strategy: ddp_find_unused_parameters_false
+  strategy: ddp_find_unused_parameters_false
   precision: 16
-  accumulate_grad_batches: 4
+  accumulate_grad_batches: 16
 
   # plugins: 
   #   - class_path: pytorch_lightning.plugins.DeepSpeedPlugin
@@ -54,7 +54,7 @@ trainer:
 model:
   class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
-    transformer_model_name: &transformer Salesforce/codegen-2B-multi
+    transformer_model_name: &transformer facebook/incoder-1B
     exec_func: execution.mathqa_execution.mathqa_execution
     answer_eq_func: execution.mathqa_execution.mathqa_answer_eq
     max_gen_len: 256
@@ -84,7 +84,7 @@ data:
   class_path: lightning_modules.datasets.mathqa_reader.MathQADataModule
   init_args:
     transformer_model_name: *transformer
-    batch_size: 4
+    batch_size: 1
     val_batch_size: 2
     train_file_path: data/gsmath/gsmath_train_annotated.jsonl
     val_file_path: data/gsmath/gsmath_val.jsonl

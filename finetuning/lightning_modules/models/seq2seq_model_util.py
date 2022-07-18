@@ -7,9 +7,12 @@ from typing import Tuple, Optional, List, Union
 from transformers import GPTNeoForCausalLM, GPT2Tokenizer
 from transformers import PreTrainedModel, PreTrainedTokenizer, GPT2LMHeadModel
 from transformers import GPT2Tokenizer, GPTJForCausalLM
-from transformers import AutoTokenizer, BloomForCausalLM
+from transformers import BloomForCausalLM
 from transformers import RobertaTokenizer, T5ForConditionalGeneration
 from transformers import CodeGenTokenizer, CodeGenForCausalLM
+
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
 from transformers.generation_utils import GenerationMixin
 
 # from https://stackoverflow.com/questions/1769332/script-to-remove-python-comments-docstrings
@@ -104,6 +107,8 @@ def get_model(model_name: str,
     elif model_name.startswith("Salesforce/codet5-"):
         tokenizer = RobertaTokenizer.from_pretrained(model_name, 
                                                  additional_special_tokens=additional_special_tokens)
+        tokenizer.pad_token = tokenizer.eos_token
+
         if not tokenizer_only:
             model = T5ForConditionalGeneration.from_pretrained(model_name, 
                                                     pad_token_id=tokenizer.eos_token_id,
@@ -114,6 +119,7 @@ def get_model(model_name: str,
     elif model_name.startswith("Salesforce/codegen-"):
         tokenizer = CodeGenTokenizer.from_pretrained(model_name,
                                                     additional_special_tokens=additional_special_tokens)
+        tokenizer.pad_token = tokenizer.eos_token
 
         if not tokenizer_only:
             model = CodeGenForCausalLM.from_pretrained(model_name, 
@@ -125,12 +131,25 @@ def get_model(model_name: str,
     elif model_name.startswith("bigscience/bloom-"):
         tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                     additional_special_tokens=additional_special_tokens)
+        tokenizer.pad_token = tokenizer.eos_token
+
         if not tokenizer_only:
             model = BloomForCausalLM.from_pretrained(model_name,
                                                     pad_token_id=tokenizer.eos_token_id,
                                                     use_cache=not gradient_ckpt)
             if gradient_ckpt:
                 model._set_gradient_checkpointing(gradient_ckpt)
+            if len(additional_special_tokens) > 0:
+                model.resize_token_embeddings(len(tokenizer))
+    elif model_name.startswith("facebook/incoder"):
+        tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                                    additional_special_tokens=additional_special_tokens)
+        tokenizer.bos_token_id = 0
+        tokenizer.pad_token_id = 1
+        tokenizer.eos_token_id = 2
+
+        if not tokenizer_only:
+            model = AutoModelForCausalLM.from_pretrained(model_name, use_cache=not gradient_ckpt)
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
     else:
@@ -149,7 +168,9 @@ def left_pad_sequences(sequences: List[torch.Tensor], batch_first: bool = True, 
 
     padded_seqs = []
     for seq in sequences:
-        padded_seqs.append(torch.cat((torch.full((max_len - seq.shape[0],), padding_value, dtype=torch.long).to(device), seq)))
+        # print(padding_value)
+        new = torch.full((max_len - seq.shape[0],), padding_value, dtype=torch.long).to(device)
+        padded_seqs.append(torch.cat((new, seq)))
     return torch.stack(padded_seqs)
 
 def sanity_check(test_str: str, model, tokenizer):
