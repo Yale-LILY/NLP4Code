@@ -47,9 +47,9 @@ def verify_py(example: Dict[str, Any], py_code: str) -> bool:
     return py_exec_result
 
 def iterative_codex_few_shot_conversion(examples: List[Dict[str, Any]], 
-                                        ks_list: List[int] = [50, 100],
+                                        ks_list: List[int] = [1, 5],
                                         max_samples_per_request: int = 100,
-                                        temps_list = [0.8, 1.0]):
+                                        temps_list = [0.2, 0.4]):
     # use some examples in the training data with converted pandas code as the few shot examples
     few_shot_instances = get_few_shot_annotated_examples(examples)
     print(f"{len(few_shot_instances)} few shot instances are used")
