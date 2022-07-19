@@ -144,9 +144,11 @@ def get_model(model_name: str,
     elif model_name.startswith("facebook/incoder"):
         tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                     additional_special_tokens=additional_special_tokens)
+        # refer to https://huggingface.co/facebook/incoder-6B/blob/main/config.json for the correct special token indices
         tokenizer.bos_token_id = 0
         tokenizer.pad_token_id = 1
         tokenizer.eos_token_id = 2
+        tokenizer.decoder_start_token_id = 2
 
         if not tokenizer_only:
             model = AutoModelForCausalLM.from_pretrained(model_name, use_cache=not gradient_ckpt)

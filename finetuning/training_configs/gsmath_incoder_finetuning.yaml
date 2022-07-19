@@ -2,7 +2,7 @@ seed_everything: 333
 trainer:
   gpus: "1"
   gradient_clip_val: 1.0
-  default_root_dir: &exp_name results/gsmath-incoder-bs-16
+  default_root_dir: &exp_name results/gsmath-incoder-6b-bs-16
   # default_root_dir: &exp_name results/debug-tmp
   val_check_interval: 1.0
   max_steps: &max_steps 50000
@@ -42,20 +42,20 @@ trainer:
   # https://github.com/PyTorchLightning/pytorch-lightning/issues/8262
   # strategy: deepspeed_stage_2_offload
   # strategy: ddp_sharded
-  strategy: ddp_find_unused_parameters_false
+  # strategy: ddp_find_unused_parameters_false
   precision: 16
   accumulate_grad_batches: 16
 
-  # plugins: 
-  #   - class_path: pytorch_lightning.plugins.DeepSpeedPlugin
-  #     init_args:
-  #       stage: 3
-  #       offload: true
+  plugins: deepspeed
+  #   class_path: "pytorch_lightning.plugins.DeepSpeedPlugin"
+  #   # init_args:
+  #   #   stage: 2
+  #   #   offload_optimizer: true
 
 model:
   class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
-    transformer_model_name: &transformer facebook/incoder-1B
+    transformer_model_name: &transformer facebook/incoder-6B
     exec_func: execution.mathqa_execution.mathqa_execution
     answer_eq_func: execution.mathqa_execution.mathqa_answer_eq
     max_gen_len: 256
