@@ -13,8 +13,9 @@ def connect_databse(db_path: str) -> sqlite3.Connection:
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     return conn
 
-def spider_execution_sql(sql: str, db_id: str, return_error_msg: bool = False) -> Any:
+def spider_execution_sql(sql: str, example: Dict[str, Any], return_error_msg: bool = False) -> Any:
     
+    db_id = example["db_id"]
     db_path = os.path.join(DB_DIR, db_id, db_id + ".sqlite")
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     cursor = conn.cursor()

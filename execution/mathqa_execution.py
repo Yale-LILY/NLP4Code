@@ -15,7 +15,7 @@ def mathqa_answer_eq(prediction: Any, gold_answer: Any) -> bool:
     except ValueError:
         return False
 
-def mathqa_execution(program: str) -> Any:
+def mathqa_execution(program: str, example: Dict[str, Any]) -> Any:
     """
     for mathqa-python, we should be getting the answers from the "answer" variable in the local() variables
     """

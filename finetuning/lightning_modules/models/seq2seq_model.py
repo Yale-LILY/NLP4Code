@@ -8,7 +8,7 @@ import io, tokenize, re
 import ast, astunparse
 
 from types import ModuleType
-from typing import Optional, Dict, Any, Tuple, List
+from typing import Optional, Dict, Any, Tuple, List, Callable
 from transformers.optimization import AdamW, get_constant_schedule_with_warmup, get_linear_schedule_with_warmup
 from transformers.optimization import get_cosine_schedule_with_warmup
 
@@ -17,16 +17,23 @@ from torchmetrics import Metric, MeanMetric, MetricCollection
 from pytorch_lightning import LightningModule
 
 from .seq2seq_model_util import get_model, post_process_code
-from execution.spider_execution_evaluation import execution_acc
-from execution.spider_execution_evaluation import execution_eval_at_k, batch_execution_acc
+from execution.execution_evaluation import execution_acc
+from execution.execution_evaluation import execution_eval_at_k, batch_execution_acc
 
-import execution # this is for eval() of the execution funcs
+# those are for eval() of the execution funcs, see line 59
+import execution 
+import finetuning.lightning_modules.models
+import finetuning.lightning_modules.datasets
 
 class Seq2SeqModel(LightningModule):
     def __init__(self, 
                  transformer_model_name: str,
                  exec_func: str,
                  answer_eq_func: str,
+                 get_gold_prog_func: str,
+                 get_gold_answer_func: str,
+                 program_len_func: str,
+                 mask_context_loss: bool = False,
                  max_gen_len: int = 100,
                  sampling_temp: float = 0.2,
                  sampling_temp_at_k: float = 0.8,
@@ -51,6 +58,7 @@ class Seq2SeqModel(LightningModule):
         self.pass_at_k = pass_at_k
         self.eval_pass_at_k_every_n_epochs = eval_pass_at_k_every_n_epochs
         self.max_generation_batches = max_generation_batches
+        self.mask_context_loss = mask_context_loss
 
         # We only instantiate this when we need it.
         self.model, self.tokenizer = get_model(transformer_model_name, gradient_ckpt=gradient_ckpt)
@@ -59,6 +67,9 @@ class Seq2SeqModel(LightningModule):
         # NOTE: since lightning cli do not allow callable, we have to make them func pointer from str
         self.exec_func = eval(exec_func)
         self.answer_eq_func = eval(answer_eq_func)
+        self.get_gold_prog_func = eval(get_gold_prog_func)
+        self.get_gold_answer_func = eval(get_gold_answer_func)
+        self.program_len_func = eval(program_len_func)
 
         # save the prediction results for every valiation epoch
         self.predictions: List[Dict[str, Any]] = []
@@ -103,10 +114,11 @@ class Seq2SeqModel(LightningModule):
         generated_token_ids = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=True, 
                                                 max_length=input_ids.shape[1]+self.max_gen_len, 
                                                 temperature=self.sampling_temp)
+
         generated_token_ids = generated_token_ids[:, input_ids.shape[1]:]
-        
 
         generated_strs = self.tokenizer.batch_decode(generated_token_ids)
+
         # truncate after the first '#' to be consistent with the codex prompting experiments
         generated_programs = [s.split(self.tokenizer.eos_token)[0] for s in generated_strs]
 
@@ -141,11 +153,13 @@ class Seq2SeqModel(LightningModule):
 
     def training_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
         input_ids = batch["input_ids"]
-        whole_strs = self.tokenizer.batch_decode(input_ids)
-        print(whole_strs[0])
         attention_mask = batch["attention_mask"]
-        print(whole_strs[0])
-        labels = batch["labels"] if "labels" in batch else input_ids
+
+        if self.mask_context_loss:
+            context_mask = batch["context_mask"]
+            labels = input_ids * context_mask + (1 - context_mask) * -100
+        else:
+            labels = input_ids
 
         model_result = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
 
@@ -156,7 +170,7 @@ class Seq2SeqModel(LightningModule):
         # save the code using wandb
         if self.logger: 
             # if logger is initialized, save the code
-            self.logger.log_code()
+            self.logger[0].log_code()
         else:
             print("logger is not initialized, code will not be saved")  
 
@@ -169,15 +183,10 @@ class Seq2SeqModel(LightningModule):
     def validation_step_end(self, outputs: List[Dict[str, Any]]) -> None:
         # update the evaluation metrics
         for output_dict in outputs:
-            db_id = output_dict["metadata"]["db_id"]
-            exec_acc = execution_acc(output_dict["generated_program"], self.exec_func, 
-                                     output_dict["metadata"]["answer"], self.answer_eq_func, db_id)
-            program_len = len(list(filter(lambda x: not x.startswith("#") and not len(x.strip()) == 0, 
-                                                output_dict["generated_program"].split())))
-            gold_program_len = len(list(filter(lambda x: not x.startswith("#") and not len(x.strip()) == 0, 
-                                                output_dict["metadata"]["code"].split())))
+            exec_acc = execution_acc(output_dict["generated_program"], output_dict["metadata"], self.exec_func, 
+                                     self.get_gold_answer_func(output_dict), self.answer_eq_func)
 
-            program_len_diff = program_len - gold_program_len
+            program_len_diff = self.program_len_func(output_dict["generated_program"]) - self.program_len_func(self.get_gold_prog_func(output_dict))
 
             self.metrics_dict["exec_acc"](exec_acc[0])
             self.metrics_dict["exec_rate"](exec_acc[1])
@@ -204,13 +213,12 @@ class Seq2SeqModel(LightningModule):
         if self.current_epoch % self.eval_pass_at_k_every_n_epochs == 0 and self.pass_at_k > 1:
             print("evaluating pass at k...")
 
-            db_ids = p["metadata"]["db_id"]
             all_generated_k_programs = [p["generated_k_programs"] for p in self.predictions]
             all_generated_k_programs_faltten = [item for sublist in all_generated_k_programs for item in sublist]
-            gold_answers = [p["metadata"]["answer"] for p in self.predictions]
+            gold_answers = [self.get_gold_answer_func(p) for p in self.predictions]
 
             result_list = batch_execution_acc(all_generated_k_programs_faltten, self.exec_func, gold_answers, 
-                                           len(self.predictions), self.pass_at_k, self.answer_eq_func, db_ids)
+                                           len(self.predictions), self.pass_at_k, self.answer_eq_func)
             
             for acc_at_k, pass_at_k in result_list:
                 self.metrics_dict[f"acc@{self.pass_at_k}"](acc_at_k)
@@ -234,12 +242,11 @@ class Seq2SeqModel(LightningModule):
             self.metrics_dict[k].reset()
 
         # save the predictions
-        # print(self.trainer.log_dir, self.trainer.global_step, self.trainer.global_rank)
-        save_pred_file_path = os.path.join("results",
+        save_pred_file_path = os.path.join(self.trainer.log_dir,
                                 f'predictions_step_{self.trainer.global_step}_rank_{self.trainer.global_rank}.jsonl')
         with open(save_pred_file_path, 'w+') as f:
             for prediction in self.predictions:
-                f.write(json.dumps(prediction, indent = 4)+'\n')
+                f.write(json.dumps(prediction)+'\n')
         print(f"{len(self.predictions)} predictions saved to {save_pred_file_path}")
 
         # reset the predictions

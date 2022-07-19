@@ -1,6 +1,6 @@
 seed_everything: 333
 trainer:
-  gpus: 3, 4
+  gpus: 0, 1
   gradient_clip_val: 1.0
   default_root_dir: &exp_name results/gsmath-gpt_neo_125M-finetuning
   # default_root_dir: &exp_name results/debug-tmp
@@ -16,7 +16,7 @@ trainer:
         name: *exp_name
         log_model: False
         save_code: True
-        offline: False
+        offline: True
   callbacks:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
       init_args:
@@ -49,6 +49,9 @@ model:
     transformer_model_name: &transformer EleutherAI/gpt-neo-125M
     exec_func: execution.mathqa_execution.mathqa_execution
     answer_eq_func: execution.mathqa_execution.mathqa_answer_eq
+    get_gold_prog_func: finetuning.lightning_modules.datasets.mathqa_reader.get_gold_program_func
+    get_gold_answer_func: finetuning.lightning_modules.datasets.mathqa_reader.get_gold_answer_func
+    program_len_func: finetuning.lightning_modules.models.seq2seq_model_util.python_program_len
     max_gen_len: 256
     sampling_temp: 0.2
     # sampling_temp_at_k: 0.8

@@ -10,6 +10,14 @@ from transformers import GPT2Tokenizer, GPTJForCausalLM
 from transformers import RobertaTokenizer, T5ForConditionalGeneration
 from transformers.generation_utils import GenerationMixin
 
+def sql_program_len(code: str) -> int:
+    """ return the length of the sql query """
+    return len(list(filter(lambda x: not len(x.strip()) == 0, code.split())))
+
+def python_program_len(code: str) -> int:
+    """ return the length of the python program """
+    return len(list(filter(lambda x: not x.startswith("#") and not len(x.strip()) == 0, code.split("\n"))))
+
 # from https://stackoverflow.com/questions/1769332/script-to-remove-python-comments-docstrings
 def remove_comments_and_docstrings(source):
     io_obj = io.StringIO(source)
