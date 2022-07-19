@@ -18,10 +18,5 @@
         "stage3_max_live_parameters": 1e12,
         "stage3_max_reuse_distance": 1e12,
         "stage3_gather_16bit_weights_on_model_save": true
-    },
-
-    "gradient_accumulation_steps": "auto",
-    "gradient_clipping": "auto",
-    "train_batch_size": "auto",
-    "train_micro_batch_size_per_gpu": "auto"
+    }
 }
