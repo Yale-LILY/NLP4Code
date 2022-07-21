@@ -68,13 +68,13 @@ def batch_execution_acc(programs: List[str], exec_func: callable, answers: List[
 
     return grouped_execution_evals
 
-def execution_acc(program: str, exec_func: callable, answer: str, answer_eq_func: callable) -> Tuple[float, float]:
+def execution_acc(program: str, example: Dict[str, Any], exec_func: callable, answer: str, answer_eq_func: callable) -> Tuple[float, float]:
     """
     This function is used to evaluate the accuracy of the execution of the program.
 
     Returns: execution accuracy, execution rate
     """
-    executed_answer = exec_func(program)
+    executed_answer = exec_func(program, example)
     if executed_answer is not None and answer_eq_func(executed_answer, answer):
         return 1.0, 1.0
     elif executed_answer is not None:
