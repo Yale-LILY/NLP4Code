@@ -16,8 +16,8 @@ class SpiderDataset(NL2CodeDataset):
     @overrides
     def get_test_instance(self, example: Dict[str, Any]) -> Dict[str, Any]:
         context = example_to_demonstration_sql(example, train=False) # we only need the context
-        code = example["query"]
-        return self.get_example_dict(example, context, code, train_mode=False)
+        context += "SELECT"
+        return self.get_example_dict(example, context, train_mode=False)
 
 class Text2SqlDataModule(NL2CodeDataModule):
 

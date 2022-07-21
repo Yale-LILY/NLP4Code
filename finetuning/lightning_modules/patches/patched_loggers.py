@@ -20,11 +20,13 @@ class PatchedNeptuneLogger(NeptuneLogger):
         super().__init__(*args, **kwargs)
 
 class PatchedWandbLogger(WandbLogger):
-    def __init__(self, entity: str, project: str, name: str, log_model: bool, save_code: bool, 
+    def __init__(self, entity: str, project: str, name: str, log_model: bool, save_code: bool, save_dir: str,
                  tags: List[str] = None, *args, **kwargs):
 
         kwargs['entity'] = entity 
         kwargs['save_code'] = save_code
+        kwargs['save_dir'] = save_dir
+        kwargs['dir'] = save_dir # fix a bug for wandb logger
 
         # remove the preceeding folder name
         processed_name = name.split('/')[-1]
@@ -33,10 +35,16 @@ class PatchedWandbLogger(WandbLogger):
         else:
             kwargs['tags'] = tags
 
+        # create the save_dir if it doesn't exist
+        print(f"ready to create save_dir: {save_dir}", flush=True)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
         super().__init__(name=processed_name, project=project, log_model=log_model, *args, **kwargs)
 
     @rank_zero_only
     def log_code(self):
+
         # log the yaml and py files
         root = "."
         print(f"saving all files in {os.path.abspath(root)}")

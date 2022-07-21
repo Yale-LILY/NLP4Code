@@ -60,9 +60,15 @@ class NL2CodeDataset(Dataset):
             example_dict["context_mask"] = [0] * context_len + [1] * (len(tokenizer_outputs["input_ids"]) - context_len)
         else:
             tokenizer_outputs = self.tokenizer(context)
-    
-        example_dict["input_ids"] = tokenizer_outputs["input_ids"] + [self.tokenizer.eos_token_id]
-        example_dict["attention_mask"] = tokenizer_outputs["attention_mask"] + [1]
+
+        example_dict["input_ids"] = tokenizer_outputs["input_ids"]
+        example_dict["attention_mask"] = tokenizer_outputs["attention_mask"]
+
+        if train_mode:
+            example_dict["input_ids"] += [self.tokenizer.eos_token_id]
+            example_dict["attention_mask"] += [1]
+            example_dict["context_mask"] += [1]
+
         example_dict["metadata"]["pad_token_id"] = self.tokenizer.pad_token_id
 
         return example_dict

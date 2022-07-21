@@ -120,7 +120,8 @@ class Seq2SeqModel(LightningModule):
         generated_strs = self.tokenizer.batch_decode(generated_token_ids)
 
         # truncate after the first '#' to be consistent with the codex prompting experiments
-        generated_programs = [s.split(self.tokenizer.eos_token)[0] for s in generated_strs]
+        # generated_programs = [s.split(self.tokenizer.eos_token)[0] for s in generated_strs]
+        generated_programs = [s.split(self.tokenizer.eos_token)[0].split("\n\n")[0].split(";")[0] for s in generated_strs]
 
         output_dicts = [{"generated_program": generated_programs[i], "metadata": metadata[i]} \
                         for i in range(len(generated_programs))]
@@ -170,7 +171,7 @@ class Seq2SeqModel(LightningModule):
         # save the code using wandb
         if self.logger: 
             # if logger is initialized, save the code
-            self.logger[0].log_code()
+            self.logger.log_code()
         else:
             print("logger is not initialized, code will not be saved")  
 
