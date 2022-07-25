@@ -23,12 +23,14 @@ class MathQADataModule(NL2CodeDataModule):
         train_data = MathQADataset(file_path=self.train_file_path,
                                    transformer_model_name=self.transformer_model_name,
                                    max_instances=self.train_max_instances, 
+                                   mask_context_loss=self.mask_context_loss,
                                    mode="train", few_shot_n=self.few_shot_n)
         self.train_data = train_data
 
         val_data = MathQADataset(file_path=self.val_file_path,
                                  transformer_model_name=self.transformer_model_name,
                                  max_instances=self.val_max_instances, 
+                                 mask_context_loss=self.mask_context_loss,
                                  mode="test", few_shot_n=self.few_shot_n)
         self.val_data = val_data 
 

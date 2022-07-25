@@ -16,7 +16,7 @@ from transformers.optimization import get_cosine_schedule_with_warmup
 from torchmetrics import Metric, MeanMetric, MetricCollection
 from pytorch_lightning import LightningModule
 
-from .seq2seq_model_util import get_model, post_process_code
+from .seq2seq_model_util import get_model, post_process_code, is_model_gpt_style
 from execution.execution_evaluation import execution_acc
 from execution.execution_evaluation import execution_eval_at_k, batch_execution_acc
 
@@ -33,7 +33,6 @@ class Seq2SeqModel(LightningModule):
                  get_gold_prog_func: str,
                  get_gold_answer_func: str,
                  program_len_func: str,
-                 mask_context_loss: bool = False,
                  max_gen_len: int = 100,
                  sampling_temp: float = 0.2,
                  sampling_temp_at_k: float = 0.8,
@@ -58,9 +57,9 @@ class Seq2SeqModel(LightningModule):
         self.pass_at_k = pass_at_k
         self.eval_pass_at_k_every_n_epochs = eval_pass_at_k_every_n_epochs
         self.max_generation_batches = max_generation_batches
-        self.mask_context_loss = mask_context_loss
 
         # We only instantiate this when we need it.
+        self.transformer_model_name = transformer_model_name
         self.model, self.tokenizer = get_model(transformer_model_name, gradient_ckpt=gradient_ckpt)
 
         # set the correct execution engine
@@ -115,9 +114,10 @@ class Seq2SeqModel(LightningModule):
                                                 max_length=input_ids.shape[1]+self.max_gen_len, 
                                                 temperature=self.sampling_temp)
 
-        generated_token_ids = generated_token_ids[:, input_ids.shape[1]:]
+        if is_model_gpt_style(self.transformer_model_name):
+            generated_token_ids = generated_token_ids[:, input_ids.shape[1]:]
 
-        generated_strs = self.tokenizer.batch_decode(generated_token_ids)
+        generated_strs = self.tokenizer.batch_decode(generated_token_ids, skip_special_tokens=True)
 
         # truncate after the first '#' to be consistent with the codex prompting experiments
         # generated_programs = [s.split(self.tokenizer.eos_token)[0] for s in generated_strs]
@@ -155,12 +155,7 @@ class Seq2SeqModel(LightningModule):
     def training_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
         input_ids = batch["input_ids"]
         attention_mask = batch["attention_mask"]
-
-        if self.mask_context_loss:
-            context_mask = batch["context_mask"]
-            labels = input_ids * context_mask + (1 - context_mask) * -100
-        else:
-            labels = input_ids
+        labels = batch["labels"]
 
         model_result = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
 

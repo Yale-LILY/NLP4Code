@@ -9,6 +9,7 @@ from typing import Dict, Iterable, List, Any, Optional, Union
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import Dataset
 
+from finetuning.lightning_modules.models.seq2seq_model_util import is_model_gpt_style, right_pad_sequences
 from finetuning.lightning_modules.models.seq2seq_model_util import get_model, left_pad_sequences
 from execution.program_tracing import get_state_repr, is_trivial_state
 
@@ -33,13 +34,19 @@ class NL2CodeDataset(Dataset):
         few_shot_n: int = 0,
         mode: str = "train", 
         multi_example_instance: bool = False,
+        mask_context_loss: bool = False,
         **kwargs):
         super().__init__(**kwargs)
 
         # mode is one of ["train", "test", "test_few_shot"]
         assert mode in ["train", "test", "test_few_shot"]
 
+        self.transformer_model_name = transformer_model_name
         _, self.tokenizer = get_model(transformer_model_name, tokenizer_only=True)
+
+        self.mask_context_loss = mask_context_loss
+        assert not self.mask_context_loss or is_model_gpt_style(self.transformer_model_name), \
+            "mask_context_loss is only supported for GPT-style models"
 
         self.max_instances = max_instances
         self.mode = mode
@@ -49,15 +56,18 @@ class NL2CodeDataset(Dataset):
         self.few_shot_n = few_shot_n
 
         self.instances = self.read(file_path)
-    
-    def get_example_dict(self, example: Dict[str, Any], context: str, code: str = "", 
+
+    def get_example_dict_gpt(self, example: Dict[str, Any], context: str, code: str = "", 
                          train_mode: bool = True) -> Dict[str, Any]:
         example_dict = {"metadata": example}
 
         if train_mode:
             tokenizer_outputs = self.tokenizer("\n".join([context, code]))
             context_len = len(self.tokenizer.tokenize(context))
-            example_dict["context_mask"] = [0] * context_len + [1] * (len(tokenizer_outputs["input_ids"]) - context_len)
+            if self.mask_context_loss:
+                example_dict["labels"] = [-100] * context_len + tokenizer_outputs["input_ids"][context_len:]
+            else:
+                example_dict["labels"] = tokenizer_outputs["input_ids"]
         else:
             tokenizer_outputs = self.tokenizer(context)
 
@@ -66,12 +76,35 @@ class NL2CodeDataset(Dataset):
 
         if train_mode:
             example_dict["input_ids"] += [self.tokenizer.eos_token_id]
+            example_dict["labels"] += [self.tokenizer.eos_token_id]
             example_dict["attention_mask"] += [1]
-            example_dict["context_mask"] += [1]
 
         example_dict["metadata"]["pad_token_id"] = self.tokenizer.pad_token_id
 
         return example_dict
+    
+    def get_example_dict_enc_dec(self, example: Dict[str, Any], context: str, code: str = "", 
+                         train_mode: bool = True) -> Dict[str, Any]:
+        example_dict = {"metadata": example}
+
+        context_tokenizer_outputs = self.tokenizer(context)
+        example_dict["input_ids"] = context_tokenizer_outputs["input_ids"]
+        example_dict["attention_mask"] = context_tokenizer_outputs["attention_mask"]
+
+        if train_mode:
+            code_tokenizer_outputs = self.tokenizer(code)
+            example_dict["labels"] = code_tokenizer_outputs["input_ids"]
+
+        example_dict["metadata"]["pad_token_id"] = self.tokenizer.pad_token_id
+
+        return example_dict
+    
+    def get_example_dict(self, example: Dict[str, Any], context: str, code: str = "", 
+                         train_mode: bool = True) -> Dict[str, Any]:
+        if not is_model_gpt_style(self.transformer_model_name):
+            return self.get_example_dict_enc_dec(example, context, code, train_mode)
+        else:
+            return self.get_example_dict_gpt(example, context, code, train_mode)
 
     def get_train_instance(self, example: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError("the base class should not be used directly")
@@ -122,29 +155,31 @@ class NL2CodeDataset(Dataset):
     def extend(self, instances):
         self.instances.extend(instances)
 
-def customized_collate_fn(examples: List[Dict[str, Any]]) -> Dict[str, Any]:
+def customized_collate_fn_gpt(examples: List[Dict[str, Any]]) -> Dict[str, Any]:
+    return customized_collate_fn(examples, is_left_pad=True)
+
+def customized_collate_fn_enc_dec(examples: List[Dict[str, Any]]) -> Dict[str, Any]:
+    return customized_collate_fn(examples, is_left_pad=False)
+
+def customized_collate_fn(examples: List[Dict[str, Any]], is_left_pad: bool = True) -> Dict[str, Any]:
     result_dict = {}
 
     pad_token_id = examples[0]["metadata"]["pad_token_id"]
+
+    pad_func = left_pad_sequences if is_left_pad else right_pad_sequences
 
     for k in examples[0].keys():
         if k == "metadata":
             result_dict[k] = [ex[k] for ex in examples]
         elif k == "input_ids":
-            result_dict[k] = left_pad_sequences([torch.tensor(ex[k]) for ex in examples], 
+            result_dict[k] = pad_func([torch.tensor(ex[k]) for ex in examples], 
                                 batch_first=True, padding_value=pad_token_id)
         elif k == "attention_mask":
-            result_dict[k] = left_pad_sequences([torch.tensor(ex[k]) for ex in examples], 
-                                batch_first=True, padding_value=0)
-        elif k == "state_mask":
-            result_dict[k] = left_pad_sequences([torch.tensor(ex[k]) for ex in examples], 
-                                batch_first=True, padding_value=0)
-        elif k == "context_mask":
-            result_dict[k] = left_pad_sequences([torch.tensor(ex[k]) for ex in examples], 
+            result_dict[k] = pad_func([torch.tensor(ex[k]) for ex in examples], 
                                 batch_first=True, padding_value=0)
         elif k == "labels":
-            result_dict[k] = left_pad_sequences([torch.tensor(ex[k]) for ex in examples], 
-                                batch_first=True, padding_value=pad_token_id)
+            result_dict[k] = pad_func([torch.tensor(ex[k]) for ex in examples], 
+                                batch_first=True, padding_value=-100)
         else:
             raise ValueError(f"Unknown key {k} in example instance")
 
@@ -159,6 +194,7 @@ class NL2CodeDataModule(LightningDataModule):
                 train_file_path: str = None,
                 val_file_path: str = None,
                 test_file_path: str = None,
+                mask_context_loss: bool = False,
                 train_max_instances: int = sys.maxsize,
                 val_max_instances: int = sys.maxsize):
         super().__init__()
@@ -170,6 +206,7 @@ class NL2CodeDataModule(LightningDataModule):
         self.train_file_path = train_file_path
         self.val_file_path = val_file_path
         self.test_file_path = test_file_path
+        self.mask_context_loss = mask_context_loss
 
         self.train_max_instances = train_max_instances
         self.val_max_instances = val_max_instances
@@ -184,17 +221,23 @@ class NL2CodeDataModule(LightningDataModule):
     def train_dataloader(self):
         if self.train_data is None:
             self.setup(stage="fit")
+        
+        collate_fn = customized_collate_fn_gpt if is_model_gpt_style(self.transformer_model_name) \
+                                                else customized_collate_fn_enc_dec
 
         dtloader = DataLoader(self.train_data, batch_size=self.batch_size, 
-                               shuffle=True, drop_last=True, collate_fn=customized_collate_fn)
+                               shuffle=True, drop_last=True, collate_fn=collate_fn)
         return dtloader
 
     def val_dataloader(self):
         if self.val_data is None:
             self.setup(stage="validate")
 
+        collate_fn = customized_collate_fn_gpt if is_model_gpt_style(self.transformer_model_name) \
+                                                else customized_collate_fn_enc_dec
+
         dtloader = DataLoader(self.val_data, batch_size=self.val_batch_size, 
-                               shuffle=False, drop_last=True, collate_fn=customized_collate_fn)
+                               shuffle=False, drop_last=True, collate_fn=collate_fn)
         return dtloader
 
     def test_dataloader(self):

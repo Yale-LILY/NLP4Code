@@ -28,13 +28,45 @@ manually_annotated_sql_to_py = {
         "t1 = pd.merge(city, farm_competition, left_on='city_id', right_on='host_city_id')\nanswer = t1[['year', 'official_name']]",
 }
 
-def example_to_demonstration_sql(example: Dict, train: bool = True) -> Text:
+def example_to_demonstration_sql_3(example: Dict, train: bool = True) -> Text:
+    text = f"{example['question']} | {example['db_id']} |"
+    
+    for table_name, columns in example['db_table_headers'].items():
+        column_representation = ' , '.join(columns)
+        text += f' {table_name} : {column_representation} |'
+
+    if train:
+        text += f' {example["query"]}'
+    else:
+        text += ' '
+
+    return text
+
+def example_to_demonstration_sql_2(example: Dict, train: bool = True) -> Text:
+    text = f"| {example['db_id']} |"
+    for table_name, columns in example['db_table_headers'].items():
+        column_representation = ' , '.join(columns)
+        text += f' {table_name} : {column_representation} |'
+    
+    text += f' {example["question"]} |'
+
+    if train:
+        text += f' {example["query"]}'
+    else:
+        text += ' '
+
+    return text
+
+def example_to_demonstration_sql(example: Dict, train: bool = True, lower_case_schema: bool = False) -> Text:
     text = f'-- Database {example["db_id"]}:\n'
     for table_name, columns in example['db_table_headers'].items():
         column_representation = ', '.join(columns)
         text += f'--  Table {table_name}: {column_representation}\n'
     
-    text += f'-- Question: {example["question"]}\n'
+    if lower_case_schema:
+        text = text.lower() + f'-- question: {example["question"]}\n'
+    else:
+        text += f'-- Question: {example["question"]}\n'
 
     if train:
         text += f'-- SQL:\n{example["query"]}'
