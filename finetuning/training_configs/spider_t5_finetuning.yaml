@@ -2,10 +2,10 @@ seed_everything: 333
 trainer:
   gpus: 0, 1
   gradient_clip_val: 1.0
-  default_root_dir: &exp_name results/spider-gpt_neo_125M-finetuning-fp32-multiline_table_head
+  default_root_dir: &exp_name results/spider-t5_base-finetuning-fp32-multiline_table_head-official_eval-25k_steps-lower_schema_n_sql
   # default_root_dir: &exp_name results/debug-tmp
   val_check_interval: 1.0
-  max_steps: &max_steps 50000
+  max_steps: &max_steps 25000
   # progress_bar_refresh_rate: 1
   log_every_n_steps: 1
   logger+:
@@ -18,6 +18,7 @@ trainer:
         log_model: False
         save_code: True
         offline: False
+        # offline: True
   callbacks+:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
       init_args:
@@ -40,7 +41,7 @@ trainer:
   accelerator: gpu
   # replace_sampler_ddp: False
   # https://github.com/PyTorchLightning/pytorch-lightning/issues/8262
-  # strategy: deepspeed_stage_3
+  # strategy: deepspeed_stage_2
   strategy: ddp_find_unused_parameters_false
   # precision: 16
   accumulate_grad_batches: 8
@@ -48,9 +49,9 @@ trainer:
 model:
   class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
-    transformer_model_name: &transformer EleutherAI/gpt-neo-125M
-    exec_func: execution.spider_execution.spider_execution_sql
-    answer_eq_func: execution.spider_execution.spider_answer_eq
+    transformer_model_name: &transformer t5-base
+    exec_func: execution.spider_execution.spider_official_execution_sql
+    answer_eq_func: execution.spider_execution.spider_official_answer_eq
     get_gold_prog_func: finetuning.lightning_modules.datasets.spider_reader.get_gold_program_func
     get_gold_answer_func: finetuning.lightning_modules.datasets.spider_reader.get_gold_answer_func
     program_len_func: finetuning.lightning_modules.models.seq2seq_model_util.sql_program_len
@@ -81,7 +82,6 @@ data:
   class_path: lightning_modules.datasets.spider_reader.Text2SqlDataModule
   init_args:
     transformer_model_name: *transformer
-    mask_context_loss: true
     batch_size: 2
     val_batch_size: 4
     train_file_path: data/spider/train_spider_processed_v2.jsonl

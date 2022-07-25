@@ -1,11 +1,12 @@
 seed_everything: 333
 trainer:
-  gpus: 0, 1
+  gpus: 0, 1, 2, 3, 4, 5, 6, 7
   gradient_clip_val: 1.0
-  default_root_dir: &exp_name results/spider-gpt_neo_125M-finetuning-fp32-multiline_table_head
+  default_root_dir: &exp_name results/spider-codegen_16B-zero_shot
   # default_root_dir: &exp_name results/debug-tmp
   val_check_interval: 1.0
   max_steps: &max_steps 50000
+  max_epochs: 1
   # progress_bar_refresh_rate: 1
   log_every_n_steps: 1
   logger+:
@@ -17,7 +18,7 @@ trainer:
         name: *exp_name
         log_model: False
         save_code: True
-        offline: False
+        offline: True
   callbacks+:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
       init_args:
@@ -40,22 +41,23 @@ trainer:
   accelerator: gpu
   # replace_sampler_ddp: False
   # https://github.com/PyTorchLightning/pytorch-lightning/issues/8262
-  # strategy: deepspeed_stage_3
-  strategy: ddp_find_unused_parameters_false
-  # precision: 16
+  strategy: deepspeed_stage_2_offload
+  # strategy: ddp_find_unused_parameters_false
+  precision: 16
   accumulate_grad_batches: 8
 
 model:
   class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
-    transformer_model_name: &transformer EleutherAI/gpt-neo-125M
+    transformer_model_name: &transformer Salesforce/codegen-16B-multi
     exec_func: execution.spider_execution.spider_execution_sql
     answer_eq_func: execution.spider_execution.spider_answer_eq
     get_gold_prog_func: finetuning.lightning_modules.datasets.spider_reader.get_gold_program_func
     get_gold_answer_func: finetuning.lightning_modules.datasets.spider_reader.get_gold_answer_func
     program_len_func: finetuning.lightning_modules.models.seq2seq_model_util.sql_program_len
     max_gen_len: 128
-    sampling_temp: 0.001
+    sampling_temp: 0.2
+    mask_context_loss: true
     # sampling_temp_at_k: 0.8
     # pass_at_k: 80
     # eval_pass_at_k_every_n_epochs: 1
@@ -64,8 +66,8 @@ model:
     # eval_greedy_search: true
     optimizer:
       init_args: 
-        lr: 5.0e-5
-        # lr: 0.0
+        # lr: 1.0e-4
+        lr: 0.0
         betas: 
           - 0.9
           - 0.999
@@ -81,10 +83,9 @@ data:
   class_path: lightning_modules.datasets.spider_reader.Text2SqlDataModule
   init_args:
     transformer_model_name: *transformer
-    mask_context_loss: true
-    batch_size: 2
-    val_batch_size: 4
+    batch_size: 1
+    val_batch_size: 1
     train_file_path: data/spider/train_spider_processed_v2.jsonl
     val_file_path: data/spider/dev_processed.jsonl
-    # train_max_instances: 20
-    # val_max_instances: 1000
+    train_max_instances: 20
+    # val_max_instances: 40
