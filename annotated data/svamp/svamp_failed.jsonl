@@ -1,0 +1,1 @@
+{"text": "Rachel's tree had 4 apples. She picked 2 apples from her tree. Thereafter 3 new apples grew on the tree. How many apples are there on the tree now?", "task_id": "chal_679", "answer": 1.0, "code": "n0=4.0\nn1=2.0\nn2=3.0\nanswer=((n0-n1)+n2)"}
