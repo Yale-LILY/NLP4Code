@@ -12,8 +12,8 @@ PY_LANGUAGE = Language(language_build_path, 'python')
 parser = Parser()
 parser.set_language(PY_LANGUAGE)
 
-input_file = "./data/svamp/svamp.json"
-dev_file = "./annotated data/svamp/svamp_indexed.jsonl"
+input_file = "./annotated data/svamp/svamp_indexed.jsonl"
+dev_file = "./annotated data/svamp/svamp_failed.jsonl"
 
 def verify_code(code: str, gold_answer: str) -> bool:
     try:
@@ -117,43 +117,22 @@ def get_code_from_answer_str(answer_str: str, equation_str: str) -> str:
 
     return "\n".join(init_lines + t_lines)
 
-def process_svamp(instances: List[Dict[str, str]]) -> List[Dict[str, Any]]:
-    for i, instance in enumerate(instances):
-        # put it in the mathqa style: text, code, answer, task_id
-        body = instance["Body"]
-        question = instance["Question"]
-        instance["text"] = f"{body} {question}"
-        instance.pop("Question")
-        instance.pop("Body")
-
-        instance["task_id"] = f"chal_{i}"
-        instance.pop("ID")
-
-        instance["answer"] = instance["Answer"]
-        instance.pop("Answer")
-
-        instance["code"] = get_code_from_answer_str(instance["answer"], instance["Equation"])
-        instance.pop("Equation")
-
-        instance.pop("Type")
-
+def verify_svamp(instances: List[Dict[str, str]]) -> List[Dict[str, Any]]:
     # verify the validity of the code
     failed_code_execution_indices = []
-    for i, instance in enumerate(instances):
+    for instance in instances:
         if not verify_code(instance["code"], instance["answer"]):
-            failed_code_execution_indices.append(i)
+            failed_code_execution_indices.append(instance)
 
-    for failed_instance in failed_code_execution_indices:
-        print(failed_instance)
-
-    return instances
+    return failed_code_execution_indices
 
 if __name__ == "__main__":
     # load the dev data
-    with open(input_file) as in_file:
-        lines = json.load(in_file)
+    with open(input_file) as f:
+        lines = f.readlines()
+        data = [json.loads(line) for line in lines]
  
-    processed_data = process_svamp(lines)
+    processed_data = verify_svamp(data)
 
     # write processed data to file
     with open(dev_file, "w") as f:
