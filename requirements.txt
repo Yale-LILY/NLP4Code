@@ -12,3 +12,5 @@ astunparse
 scipy
 numpy
 wandb
+
+pandas==1.4.2

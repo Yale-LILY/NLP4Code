@@ -128,9 +128,16 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# sandboxes
+**sandbox.py
+parsing/sandbox*
+
 # defined by Ansong
 .venv
 data/
 debug-tmp/
 wandb/
 results/
+
+# defined by Troy
+.DS_Store
