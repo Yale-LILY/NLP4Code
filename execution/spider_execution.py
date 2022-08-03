@@ -48,7 +48,9 @@ def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame], return_erro
         # table names may be reserved words like "class"
         if table_name in keyword.kwlist:
             table_vars_code += f"_{table_name} = df_dict['{table_name}']\n"
-            code = code.replace(table_name, f"_{table_name}")
+            # but we have to make sure that table columns are not changed
+            # code = code.replace(table_name, f"_{table_name}")
+            code = re.sub("((?<!_)class(?!_))", "_class", code)
         else:
             table_vars_code += f"{table_name} = df_dict['{table_name}']\n"
 
@@ -85,7 +87,8 @@ def flatten_list_of_list(l: List[List[Any]], sort: bool = False) -> List[Any]:
             result.append(sublist)
 
     if sort:
-        return sorted(result)
+        result.sort(key = str)
+        return result
     else:
         return result
 
@@ -113,10 +116,10 @@ def compare_lists(l1: List[Any], l2: List[Any]) -> bool:
         return True
 
 def spider_answer_eq(prediction: Union[pd.DataFrame, pd.Series, List[Tuple[Any]]],
-                     gold_answer: Union[List[Tuple[Any]], int],
+                     gold_answer: Union[List    [Tuple[Any]], int],
                      sort: bool = False) -> bool:
 
-    if isinstance(prediction, int) or isinstance(prediction, float):
+    if isinstance(prediction, int) or isinstance(prediction, float) or (not isinstance(prediction, list) and not isinstance(prediction, pd.DataFrame) and not isinstance(prediction, np.ndarray) and not isinstance(prediction, tuple) and np.issubdtype(prediction, np.integer)):
         prediction = [prediction]
 
     if isinstance(prediction, list) or isinstance(prediction, np.ndarray):
