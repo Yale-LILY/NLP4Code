@@ -2,8 +2,8 @@ seed_everything: 333
 trainer:
   gpus: 0, 1
   gradient_clip_val: 1.0
-  default_root_dir: &exp_name results/spider-gpt_neo_125M-finetuning-fp32-multiline_table_head
-  # default_root_dir: &exp_name results/debug-tmp
+  # default_root_dir: &exp_name results/spider-gpt_neo_125M-finetuning-fp32-multiline_table_head
+  default_root_dir: &exp_name results/debug-tmp
   val_check_interval: 1.0
   max_steps: &max_steps 50000
   # progress_bar_refresh_rate: 1
@@ -17,7 +17,7 @@ trainer:
         name: *exp_name
         log_model: False
         save_code: True
-        offline: False
+        offline: True
   callbacks+:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
       init_args:

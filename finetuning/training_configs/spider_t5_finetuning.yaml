@@ -2,8 +2,8 @@ seed_everything: 333
 trainer:
   gpus: 0, 1
   gradient_clip_val: 1.0
-  default_root_dir: &exp_name results/spider-t5_base-finetuning-fp32-multiline_table_head-official_eval-25k_steps-lower_schema_n_sql
-  # default_root_dir: &exp_name results/debug-tmp
+  # default_root_dir: &exp_name results/spider-t5_base-finetuning-fp32-multiline_table_head-official_eval-25k_steps-lower_schema_n_sql
+  default_root_dir: &exp_name results/debug-tmp
   val_check_interval: 1.0
   max_steps: &max_steps 25000
   # progress_bar_refresh_rate: 1

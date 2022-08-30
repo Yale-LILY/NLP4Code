@@ -14,3 +14,7 @@ overrides
 astunparse
 scipy
 numpy
+pandas
+sqlparse
+openai
+sentencepiece
