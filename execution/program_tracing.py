@@ -9,7 +9,7 @@ from scipy import special
 
 from typing import List, Dict, Any
 from tqdm import tqdm
-from lightning_modules.datasets.reader_utils import get_statements_from_code, byte_idx_to_char_idx
+from finetuning.lightning_modules.datasets.reader_utils import get_statements_from_code, byte_idx_to_char_idx
 from execution.safe_execution_util import execute, canonicalize_var_dict
 from tree_sitter import Language, Parser
 

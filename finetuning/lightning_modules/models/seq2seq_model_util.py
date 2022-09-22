@@ -15,6 +15,20 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from transformers.generation_utils import GenerationMixin
 
+def is_model_gpt_style(name: str) -> bool:
+    if "t5" in name:
+        return False
+    else:
+        return True
+
+def sql_program_len(code: str) -> int:
+    """ return the length of the sql query """
+    return len(list(filter(lambda x: not len(x.strip()) == 0, code.split())))
+
+def python_program_len(code: str) -> int:
+    """ return the length of the python program """
+    return len(list(filter(lambda x: not x.startswith("#") and not len(x.strip()) == 0, code.split("\n"))))
+
 # from https://stackoverflow.com/questions/1769332/script-to-remove-python-comments-docstrings
 def remove_comments_and_docstrings(source):
     io_obj = io.StringIO(source)
@@ -154,6 +168,14 @@ def get_model(model_name: str,
             model = AutoModelForCausalLM.from_pretrained(model_name, use_cache=not gradient_ckpt)
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
+    elif model_name.startswith("t5-"):
+        tokenizer = T5Tokenizer.from_pretrained(model_name)
+
+        if not tokenizer_only:
+            model = T5ForConditionalGeneration.from_pretrained(model_name)
+                                                    
+            if len(additional_special_tokens) > 0:
+                model.resize_token_embeddings(len(tokenizer))
     else:
         raise NotImplementedError
 
@@ -161,6 +183,19 @@ def get_model(model_name: str,
         return None, tokenizer
     else:
         return model, tokenizer
+
+def right_pad_sequences(sequences: List[torch.Tensor], batch_first: bool = True, padding_value: Union[int, bool] = 0, 
+                       max_len: int = -1, device: torch.device = None) -> torch.Tensor:
+    assert all([len(seq.shape) == 1 for seq in sequences])
+    max_len = max_len if max_len > 0 else max(len(s) for s in sequences)
+    device = device if device is not None else sequences[0].device
+
+    padded_seqs = []
+    for seq in sequences:
+        # print(padding_value)
+        new = torch.full((max_len - seq.shape[0],), padding_value, dtype=torch.long).to(device)
+        padded_seqs.append(torch.cat((seq, new)))
+    return torch.stack(padded_seqs)
 
 def left_pad_sequences(sequences: List[torch.Tensor], batch_first: bool = True, padding_value: Union[int, bool] = 0, 
                        max_len: int = -1, device: torch.device = None) -> torch.Tensor:
