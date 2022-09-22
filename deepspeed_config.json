@@ -1,0 +1,14 @@
+{  
+    "zero_allow_untested_optimizer": true,
+    "zero_optimization": {
+        "stage": 2,
+        "offload_optimizer": {
+            "device": "cpu",
+            "pin_memory": true
+        },
+        "contiguous_gradients": true,
+        "overlap_comm": true,
+        "allgather_bucket_size": 1e10,
+        "reduce_bucket_size": 1e10 
+    }
+}

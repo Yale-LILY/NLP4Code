@@ -3,7 +3,13 @@ Repository for the NLP4Code project at the LILY lab.
 
 ## Installation
 [Optional] Create a virtualenv or conda enviroment  
-Then, install the dependencies:
+
+Next, install the repository as a python package by running the following in the NLP4Code folder:
+```
+pip install -e .
+```
+
+Then, install the rest of the dependencies:
 ```
 pip install -r requirements.txt
 ```
@@ -40,7 +46,7 @@ of this in one place.
 (Read the previous sections first if you are ready to run experiments)
 For fine-tuning, in the main directory, do:
 ```
-export PYTHONPATH=`pwd`; python finetuning/trainer.py fit --config finetuning/training_configs/*.yaml
+python finetuning/trainer.py fit --config finetuning/training_configs/*.yaml
 ```
 
 ## Preprocessing APPS

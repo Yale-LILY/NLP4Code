@@ -1,9 +1,9 @@
 seed_everything: 333
 trainer:
-  gpus: 0, 1,
+  gpus: "1"
   gradient_clip_val: 1.0
-  # default_root_dir: &exp_name results/gsmath-gpt_neo_125M-finetuning
-  default_root_dir: &exp_name results/debug-tmp
+  default_root_dir: &exp_name results/gsmath-incoder-6b-bs-16
+  # default_root_dir: &exp_name results/debug-tmp
   val_check_interval: 1.0
   max_steps: &max_steps 50000
   # progress_bar_refresh_rate: 1
@@ -14,10 +14,9 @@ trainer:
         entity: yale-lily
         project: unified-codegen
         name: *exp_name
-        log_model: False
+        log_model: True
         save_code: True
-        save_dir: *exp_name
-        offline: True
+        offline: False
   callbacks:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
       init_args:
@@ -38,26 +37,27 @@ trainer:
     #     gpu_utilization: true
         
   accelerator: gpu
+  # devices: 1
   # replace_sampler_ddp: False
   # https://github.com/PyTorchLightning/pytorch-lightning/issues/8262
-  # strategy: deepspeed_stage_2
-  strategy: ddp_find_unused_parameters_false
-  # strategy:
-  #   class_path: pytorch_lightning.strategies.DeepSpeedStrategy
-  #   init_args:
-  #     config: /path/to/deepspeed_config.json
+  # strategy: deepspeed_stage_2_offload
+  # strategy: ddp_sharded
+  # strategy: ddp_find_unused_parameters_false
   precision: 16
-  # accumulate_grad_batches: 4
+  accumulate_grad_batches: 16
+
+  plugins: deepspeed
+  #   class_path: "pytorch_lightning.plugins.DeepSpeedPlugin"
+  #   # init_args:
+  #   #   stage: 2
+  #   #   offload_optimizer: true
 
 model:
   class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
-    transformer_model_name: &transformer EleutherAI/gpt-neo-125M
+    transformer_model_name: &transformer facebook/incoder-6B
     exec_func: execution.mathqa_execution.mathqa_execution
     answer_eq_func: execution.mathqa_execution.mathqa_answer_eq
-    get_gold_prog_func: finetuning.lightning_modules.datasets.mathqa_reader.get_gold_program_func
-    get_gold_answer_func: finetuning.lightning_modules.datasets.mathqa_reader.get_gold_answer_func
-    program_len_func: finetuning.lightning_modules.models.seq2seq_model_util.python_program_len
     max_gen_len: 256
     sampling_temp: 0.2
     # sampling_temp_at_k: 0.8
@@ -89,5 +89,6 @@ data:
     val_batch_size: 2
     train_file_path: data/gsmath/gsmath_train_annotated.jsonl
     val_file_path: data/gsmath/gsmath_val.jsonl
+    # num_workers: 32
     # train_max_instances: 20
     # val_max_instances: 40

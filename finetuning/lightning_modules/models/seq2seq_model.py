@@ -12,6 +12,7 @@ from typing import Optional, Dict, Any, Tuple, List, Callable
 from transformers.optimization import AdamW, get_constant_schedule_with_warmup, get_linear_schedule_with_warmup
 from transformers.optimization import get_cosine_schedule_with_warmup
 
+import torch
 
 from torchmetrics import Metric, MeanMetric, MetricCollection
 from pytorch_lightning import LightningModule
