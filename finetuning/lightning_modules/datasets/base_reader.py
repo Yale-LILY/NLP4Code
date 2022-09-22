@@ -5,13 +5,14 @@ import os
 import torch
 
 from typing import Dict, Iterable, List, Any, Optional, Union
+from itertools import chain
+from tqdm import tqdm
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import Dataset
 
 from finetuning.lightning_modules.models.seq2seq_model_util import is_model_gpt_style, right_pad_sequences
 from finetuning.lightning_modules.models.seq2seq_model_util import get_model, left_pad_sequences
-from execution.program_tracing import get_state_repr, is_trivial_state
 
 from torch.utils.data import DataLoader
 
@@ -21,20 +22,18 @@ os.environ['TOKENIZERS_PARALLELISM']='0'
 
 logger = logging.getLogger(__name__)
 
-FEW_SHOT_RESERVED = 10
-
-
 class NL2CodeDataset(Dataset):
 
     def __init__(
         self, 
         file_path: str,
         transformer_model_name: str, 
-        max_instances: int,
-        few_shot_n: int = 0,
+        max_instances: int = sys.maxsize,
         mode: str = "train", 
-        multi_example_instance: bool = False,
         mask_context_loss: bool = False,
+        multi_instance_example: bool = False,
+        enable_tqdm: bool = False,
+        stats_keys: List[str] = ["total_instances"],
         **kwargs):
         super().__init__(**kwargs)
 
@@ -50,26 +49,29 @@ class NL2CodeDataset(Dataset):
 
         self.max_instances = max_instances
         self.mode = mode
-        self.multi_example_instance = multi_example_instance
+        self.multi_instance_example = multi_instance_example
+        self.enable_tqdm = enable_tqdm
 
-        assert few_shot_n <= FEW_SHOT_RESERVED, f"few_shot_n should be smaller than {FEW_SHOT_RESERVED}"
-        self.few_shot_n = few_shot_n
+        # use to report dataset statistics
+        self.stats = dict()
+        for key in stats_keys:
+            self.stats[key] = 0
 
         self.instances = self.read(file_path)
 
     def get_example_dict_gpt(self, example: Dict[str, Any], context: str, code: str = "", 
-                         train_mode: bool = True) -> Dict[str, Any]:
+                         train_mode: bool = True, length_cutoff: bool = True) -> Dict[str, Any]:
         example_dict = {"metadata": example}
 
         if train_mode:
             tokenizer_outputs = self.tokenizer("\n".join([context, code]))
-            context_len = len(self.tokenizer.tokenize(context))
+            context_len = len(self.tokenizer(context + "\n")["input_ids"])
             if self.mask_context_loss:
                 example_dict["labels"] = [-100] * context_len + tokenizer_outputs["input_ids"][context_len:]
             else:
-                example_dict["labels"] = tokenizer_outputs["input_ids"]
+                example_dict["labels"] = tokenizer_outputs["input_ids"].copy()
         else:
-            tokenizer_outputs = self.tokenizer(context)
+            tokenizer_outputs = self.tokenizer(context + "\n")
 
         example_dict["input_ids"] = tokenizer_outputs["input_ids"]
         example_dict["attention_mask"] = tokenizer_outputs["attention_mask"]
@@ -84,15 +86,15 @@ class NL2CodeDataset(Dataset):
         return example_dict
     
     def get_example_dict_enc_dec(self, example: Dict[str, Any], context: str, code: str = "", 
-                         train_mode: bool = True) -> Dict[str, Any]:
+                         train_mode: bool = True, length_cutoff: bool = True) -> Dict[str, Any]:
         example_dict = {"metadata": example}
 
-        context_tokenizer_outputs = self.tokenizer(context)
+        context_tokenizer_outputs = self.tokenizer(context, truncation=length_cutoff)
         example_dict["input_ids"] = context_tokenizer_outputs["input_ids"]
         example_dict["attention_mask"] = context_tokenizer_outputs["attention_mask"]
 
         if train_mode:
-            code_tokenizer_outputs = self.tokenizer(code)
+            code_tokenizer_outputs = self.tokenizer(code, truncation=length_cutoff)
             example_dict["labels"] = code_tokenizer_outputs["input_ids"]
 
         example_dict["metadata"]["pad_token_id"] = self.tokenizer.pad_token_id
@@ -100,16 +102,16 @@ class NL2CodeDataset(Dataset):
         return example_dict
     
     def get_example_dict(self, example: Dict[str, Any], context: str, code: str = "", 
-                         train_mode: bool = True) -> Dict[str, Any]:
+                         train_mode: bool = True, length_cutoff: bool = True) -> Dict[str, Any]:
         if not is_model_gpt_style(self.transformer_model_name):
-            return self.get_example_dict_enc_dec(example, context, code, train_mode)
+            return self.get_example_dict_enc_dec(example, context, code, train_mode, length_cutoff=length_cutoff)
         else:
-            return self.get_example_dict_gpt(example, context, code, train_mode)
+            return self.get_example_dict_gpt(example, context, code, train_mode, length_cutoff=length_cutoff)
 
-    def get_train_instance(self, example: Dict[str, Any]) -> Dict[str, Any]:
+    def get_train_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:
         raise NotImplementedError("the base class should not be used directly")
 
-    def get_test_instance(self, example: Dict[str, Any]) -> Dict[str, Any]:
+    def get_test_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:
         raise NotImplementedError("the base class should not be used directly")
 
     def read(self, file_path: str) -> Iterable[Dict[str, Any]]:
@@ -127,7 +129,8 @@ class NL2CodeDataset(Dataset):
             for line in lines:
                 mathqa_json_examples.append(json.loads(line))
 
-        for exp in mathqa_json_examples:
+        iters = tqdm(mathqa_json_examples) if self.enable_tqdm else mathqa_json_examples
+        for exp in iters:
             if self.mode == "train":
                 example_dict = self.get_train_instance(exp)
             elif self.mode == "test":
@@ -135,11 +138,26 @@ class NL2CodeDataset(Dataset):
             else:
                 raise ValueError(f"Unknown mode: {self.mode}")
 
-            all_yield_instances.append(example_dict)
+            # note that the returned example_dict might be a list of dicts
+            all_yield_instances.extend(example_dict)
 
         logger.info(f"loaded {len(all_yield_instances)} instances")
 
+        self.stats["total_instances"] = len(all_yield_instances)
+        self.report_statistics()
+
         return all_yield_instances
+    
+    def report_statistics(self):
+        total = self.stats["total_instances"]
+
+        dataset_stats = "-" * 30 + "\nDataset statistics:\n"
+        for key, value in self.stats.items():
+            if key == "total_instances":
+                continue
+            dataset_stats += f"{key}: {value/total:.1%} \n"  
+        dataset_stats += "-" * 30
+        print(dataset_stats)
 
     def __getitem__(self, idx: int):
         return self.instances[idx]
@@ -168,18 +186,22 @@ def customized_collate_fn(examples: List[Dict[str, Any]], is_left_pad: bool = Tr
 
     pad_func = left_pad_sequences if is_left_pad else right_pad_sequences
 
+
     for k in examples[0].keys():
         if k == "metadata":
             result_dict[k] = [ex[k] for ex in examples]
         elif k == "input_ids":
-            result_dict[k] = pad_func([torch.tensor(ex[k]) for ex in examples], 
-                                batch_first=True, padding_value=pad_token_id)
+            lists_to_pad = list(chain(*[[torch.tensor(t) for t in ex[k]] for ex in examples])) \
+                if isinstance(examples[0][k][0], list) else [torch.tensor(ex[k]) for ex in examples]
+            result_dict[k] = pad_func(lists_to_pad, batch_first=True, padding_value=pad_token_id)
         elif k == "attention_mask":
-            result_dict[k] = pad_func([torch.tensor(ex[k]) for ex in examples], 
-                                batch_first=True, padding_value=0)
+            lists_to_pad = list(chain(*[[torch.tensor(t) for t in ex[k]] for ex in examples])) \
+                if isinstance(examples[0][k][0], list) else [torch.tensor(ex[k]) for ex in examples]
+            result_dict[k] = pad_func(lists_to_pad, batch_first=True, padding_value=0)
         elif k == "labels":
-            result_dict[k] = pad_func([torch.tensor(ex[k]) for ex in examples], 
-                                batch_first=True, padding_value=-100)
+            lists_to_pad = list(chain(*[[torch.tensor(t) for t in ex[k]] for ex in examples])) \
+                if isinstance(examples[0][k][0], list) else [torch.tensor(ex[k]) for ex in examples]
+            result_dict[k] = pad_func(lists_to_pad, batch_first=True, padding_value=-100)
         else:
             raise ValueError(f"Unknown key {k} in example instance")
 
@@ -190,26 +212,27 @@ class NL2CodeDataModule(LightningDataModule):
                 transformer_model_name: str,
                 batch_size: int = 1, 
                 val_batch_size: int = 1,
-                few_shot_n: int = 0,
-                train_file_path: str = None,
-                val_file_path: str = None,
-                test_file_path: str = None,
-                mask_context_loss: bool = False,
-                train_max_instances: int = sys.maxsize,
-                val_max_instances: int = sys.maxsize):
+                train_set_init_args: Dict[str, Any] = {},
+                val_set_init_args: Dict[str, Any] = {},
+                set_common_init_args: Dict[str, Any] = {},
+                train_max_instances: int = None,
+                val_max_instances: int = None,
+                ):
         super().__init__()
         self.transformer_model_name = transformer_model_name
         self.batch_size = batch_size
         self.val_batch_size = val_batch_size
-        self.few_shot_n = few_shot_n
 
-        self.train_file_path = train_file_path
-        self.val_file_path = val_file_path
-        self.test_file_path = test_file_path
-        self.mask_context_loss = mask_context_loss
+        # delegate the initialization of the train and val datasets to the dataset classes
+        self.train_set_init_args = train_set_init_args
+        self.train_set_init_args.update(set_common_init_args)
+        self.val_set_init_args = val_set_init_args
+        self.val_set_init_args.update(set_common_init_args) 
 
-        self.train_max_instances = train_max_instances
-        self.val_max_instances = val_max_instances
+        if train_max_instances is not None:
+            self.train_set_init_args["max_instances"] = train_max_instances
+        if val_max_instances is not None:
+            self.val_set_init_args["max_instances"] = val_max_instances
 
         self.train_data = None
         self.val_data = None

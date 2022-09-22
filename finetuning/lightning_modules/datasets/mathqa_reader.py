@@ -6,12 +6,12 @@ from finetuning.lightning_modules.datasets.base_reader import NL2CodeDataset, NL
 class MathQADataset(NL2CodeDataset):
 
     @overrides
-    def get_train_instance(self, example: Dict[str, Any]) -> Dict[str, Any]:
-        return self.get_example_dict(example, example["text"], example["code"], train_mode=True)
+    def get_train_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:
+        return [self.get_example_dict(example, example["text"], example["code"], train_mode=True)]
 
     @overrides
-    def get_test_instance(self, example: Dict[str, Any]) -> Dict[str, Any]:
-        return self.get_example_dict(example, example["text"], example["code"], train_mode=False)
+    def get_test_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:
+        return [self.get_example_dict(example, example["text"], example["code"], train_mode=False)]
 
 class MathQADataModule(NL2CodeDataModule):
 
@@ -33,9 +33,3 @@ class MathQADataModule(NL2CodeDataModule):
                                  mask_context_loss=self.mask_context_loss,
                                  mode="test", few_shot_n=self.few_shot_n)
         self.val_data = val_data 
-
-def get_gold_program_func(example_dict: Dict[str, Any]):
-    return example_dict["metadata"]["code"]
-
-def get_gold_answer_func(example_dict: Dict[str, Any]):
-    return example_dict["metadata"]["answer"]

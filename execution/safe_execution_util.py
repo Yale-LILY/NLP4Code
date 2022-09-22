@@ -11,19 +11,33 @@ import platform
 import signal
 import tempfile
 
-from copy import deepcopy
-from types import ModuleType
+def simple_canonicalize_var_dict(var_dict):
+    copied_var_dict = {}
+    for key, value in var_dict.items():
+        if key in ["canonicalize_var_dict", "tracing_local_list", "deepcopy", "record_state", "ModuleType"]:
+            continue
+
+        copied_var_dict[key] = {"type": str(type(value)), "str_value": str(value)}
+    return copied_var_dict
+
 def canonicalize_var_dict(var_dict):
+    import re
+    from copy import deepcopy
+    from types import ModuleType
+
     copied_var_dict = {}
     for key, value in var_dict.items():
         if key in ["canonicalize_var_dict", "tracing_local_list", "deepcopy", "record_state", "ModuleType"]:
             continue
 
         if isinstance(value, ModuleType):
-            assert key in ["math", "scipy"]
-            copied_var_dict[key] = "module: " + str(value)
+            copied_var_dict[key] = str(value)
+        elif isinstance(value, (re.Match, list, dict, map)):
+            copied_var_dict[key] = str(value)
         elif str(type(value)) == "<class 'numpy.int64'>":
             copied_var_dict[key] = int(value)
+        elif callable(value):
+            copied_var_dict[key] = str(value)
         else:
             copied_var_dict[key] = deepcopy(value)
     return copied_var_dict
@@ -35,11 +49,12 @@ def execute(code: str,
             sol_id: Optional[str] = "tmp",
             timeout: Optional[int] = 2,
             stdi_str: Optional[str] = None,
-            use_tracing: bool = False) -> None:
+            use_tracing: bool = False,
+            output_locals: bool = False) -> None:
     manager = multiprocessing.Manager()
     result = manager.dict()
 
-    p = multiprocessing.Process(target=unsafe_execute, args=(code, globals, locals, timeout, result, stdi_str, use_tracing))
+    p = multiprocessing.Process(target=unsafe_execute, args=(code, globals, locals, timeout, result, stdi_str, use_tracing, output_locals))
     p.start()
     p.join(timeout=timeout + 1)
     if p.is_alive():
@@ -57,7 +72,9 @@ def unsafe_execute(check_program: str,
                    timeout: float, 
                    result: Dict[str, Any], 
                    stdi_str: Optional[str],
-                   use_tracing: bool = False) -> None:
+                   use_tracing: bool = False,
+                   output_locals: bool = False,
+                   canonicalize_func: callable = simple_canonicalize_var_dict) -> None:
 
     with create_tempdir():
 
@@ -84,12 +101,18 @@ def unsafe_execute(check_program: str,
 # information on how OpenAI sandboxes its code, see the accompanying paper.
 # Once you have read this disclaimer and taken appropriate precautions, 
 # uncomment the following line and proceed at your own risk:
-                    exec(check_program, globals_, locals_)
+                    if output_locals:
+                        exec(check_program, globals_, locals_)
+                    else:
+                        exec(check_program, globals_)
                 # result["globals"] = globals_
-                result["locals"] = canonicalize_var_dict(locals_)
+                if output_locals:
+                    result["locals"] = canonicalize_func(locals_)
             result["result"] = "passed"
             if use_tracing:
                 result["tracing_local_list"] = globals_["tracing_local_list"]
+        except AssertionError:
+            result["result"] = "failed: assertion error"
         except TimeoutException:
             result["result"] = "timed out"
         except BaseException as e:
@@ -295,7 +318,7 @@ def reliability_guard(maximum_memory_bytes: Optional[int] = None):
     sys.modules['tkinter'] = None
 
 
-if __name__ == '__main__':
+def test1():
     import sys
     istream = io.StringIO('hello\nworld\n')
 
@@ -313,3 +336,33 @@ print(f'b is {b}')
         outputs.append(ostream.getvalue())
 
     print(outputs)
+
+def test2():
+    code = """
+def count_element_freq(test_tup):
+    res = {}
+    for i in test_tup:
+        if type(i) == tuple:
+            for j in i:
+                if j in res:
+                    res[j] += 1
+                else:
+                    res[j] = 1
+        else:
+            if i in res:
+                res[i] += 1
+            else:
+                res[i] = 1
+    return res
+
+
+assert count_element_freq((5, 6, (5, 6), 7, (8, 9), 9) ) == {5: 2, 6: 2, 7: 1, 8: 1, 9: 2}
+assert count_element_freq((6, 7, (6, 7), 8, (9, 10), 10) ) == {6: 2, 7: 2, 8: 1, 9: 1, 10: 2}
+assert count_element_freq((7, 8, (7, 8), 9, (10, 11), 11) ) == {7: 2, 8: 2, 9: 1, 10: 1, 11: 2}
+"""
+    exec_result = execute(code, timeout=1000)
+
+    print()
+
+if __name__ == "__main__":
+    test2()

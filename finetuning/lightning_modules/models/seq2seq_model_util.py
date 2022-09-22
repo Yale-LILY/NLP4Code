@@ -2,21 +2,24 @@ import torch
 import io, tokenize, re
 import ast, astunparse
 
-from typing import Tuple, Optional, List, Union
+from typing import Tuple, Optional, List, Union, Dict, Any
 
 from transformers import GPTNeoForCausalLM, GPT2Tokenizer
 from transformers import PreTrainedModel, PreTrainedTokenizer, GPT2LMHeadModel
-from transformers import GPT2Tokenizer, GPTJForCausalLM
-from transformers import BloomForCausalLM
+from transformers import GPT2Tokenizer, GPT2TokenizerFast, GPTJForCausalLM
+from transformers import RobertaTokenizer, RobertaModel, RobertaForSequenceClassification
+from transformers import BloomForCausalLM, BartForSequenceClassification
 from transformers import RobertaTokenizer, T5ForConditionalGeneration
-from transformers import CodeGenTokenizer, CodeGenForCausalLM
+from transformers import CodeGenTokenizer, CodeGenForCausalLM, T5Tokenizer
 
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedTokenizerFast
 
 from transformers.generation_utils import GenerationMixin
 
+from finetuning.lightning_modules.models.codex_model import CodexModel
+
 def is_model_gpt_style(name: str) -> bool:
-    if "t5" in name:
+    if "t5" in name or "bert" in name or "tapex" in name or "codex" in name:
         return False
     else:
         return True
@@ -86,10 +89,12 @@ def post_process_code(code, remove_comments=True, remove_extra_lines=False, ast_
 def get_model(model_name: str, 
             tokenizer_only: bool = False,
             gradient_ckpt: bool = False,
-            additional_special_tokens: Optional[List[str]] = None) \
+            additional_special_tokens: Optional[List[str]] = None,
+            additional_init_args: Dict[str, Any] = {}) \
         -> Tuple[GenerationMixin, PreTrainedTokenizer]:
     if additional_special_tokens is None:
         additional_special_tokens = []
+    assert len(additional_special_tokens) == 0, f"support for additional tokens has been removed"
 
     if not tokenizer_only:
         print(f"using pretrained model: {model_name}, gradient_ckpt: {gradient_ckpt}")
@@ -119,17 +124,13 @@ def get_model(model_name: str,
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
     elif model_name.startswith("Salesforce/codet5-"):
-        tokenizer = RobertaTokenizer.from_pretrained(model_name, 
+        tokenizer = AutoTokenizer.from_pretrained(model_name, 
                                                  additional_special_tokens=additional_special_tokens)
-        tokenizer.pad_token = tokenizer.eos_token
 
         if not tokenizer_only:
             model = T5ForConditionalGeneration.from_pretrained(model_name, 
-                                                    pad_token_id=tokenizer.eos_token_id,
                                                     gradient_checkpointing=gradient_ckpt, 
                                                     use_cache=not gradient_ckpt)
-            if len(additional_special_tokens) > 0:
-                model.resize_token_embeddings(len(tokenizer))
     elif model_name.startswith("Salesforce/codegen-"):
         tokenizer = CodeGenTokenizer.from_pretrained(model_name,
                                                     additional_special_tokens=additional_special_tokens)
@@ -145,7 +146,6 @@ def get_model(model_name: str,
     elif model_name.startswith("bigscience/bloom-"):
         tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                     additional_special_tokens=additional_special_tokens)
-        tokenizer.pad_token = tokenizer.eos_token
 
         if not tokenizer_only:
             model = BloomForCausalLM.from_pretrained(model_name,
@@ -166,9 +166,7 @@ def get_model(model_name: str,
 
         if not tokenizer_only:
             model = AutoModelForCausalLM.from_pretrained(model_name, use_cache=not gradient_ckpt)
-            if len(additional_special_tokens) > 0:
-                model.resize_token_embeddings(len(tokenizer))
-    elif model_name.startswith("t5-"):
+    elif model_name.startswith("t5-") or model_name.startswith("google/t5-"):
         tokenizer = T5Tokenizer.from_pretrained(model_name)
 
         if not tokenizer_only:
@@ -176,7 +174,25 @@ def get_model(model_name: str,
                                                     
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
+    elif model_name.startswith("codex-"):
+        engine_name_mapping = {"codex-davinci": "code-davinci-002", 
+                               "codex-davinci-001": "code-davinci-001", 
+                               "codex-cushman": "code-cushman-001"}
+
+        tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+        tokenizer.pad_token = tokenizer.eos_token
+
+        # to accomandate the length of codex and the prompt
+        tokenizer.model_max_length = 4096
+        tokenizer.max_len_single_sentence = 4096
+        tokenizer.max_len_sentences_pair = 4096
+        tokenizer.truncation_side = "left"
+
+        if not tokenizer_only: 
+            engine = engine_name_mapping[model_name]
+            model = CodexModel(engine=engine, tokenizer=tokenizer, **additional_init_args)
     else:
+        print(f"unknown model: {model_name}")
         raise NotImplementedError
 
     if tokenizer_only:
@@ -235,3 +251,10 @@ def sanity_check(test_str: str, model, tokenizer):
     output_str = tokenizer.decode(output_ids[0], skip_special_tokens=False, clean_up_tokenization_spaces=False)
 
     print(f"new output str is: ###############{output_str}###############")
+
+if __name__ == "__main__":
+    # a special test to reveal some of the issues for the incoder tokenizer
+    _, tokenizer = get_model("facebook/incoder-1B", tokenizer_only=True)
+    a = tokenizer.decode([0, 1, 2, 56], skip_special_tokens=True)
+
+    print()
