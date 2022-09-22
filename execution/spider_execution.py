@@ -1,30 +1,56 @@
 import sqlite3
 import pandas as pd
 import numpy as np
-
+import os
 from typing import List, Dict, Any, Union, Tuple
 
+from .exec_eval import eval_exec_match
+
 # from .safe_execution_util import execute
+DB_DIR = "data/spider/database"
+
 
 def connect_databse(db_path: str) -> sqlite3.Connection:
     # connect the database with read-only access
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     return conn
 
-def spider_execution_sql(sql: str, conn: sqlite3.Connection, return_error_msg: bool = False) -> Any:
+def spider_official_execution_sql(sql: str, example: Dict[str, Any], return_error_msg: bool = False) -> bool:
+    db_id = example["db_id"]
+    db_path = os.path.join(DB_DIR, db_id, db_id + ".sqlite")
+
+    # to evaluate executability
+    exec_result = spider_execution_sql(sql, example)
+    if exec_result is not None:
+        # sql = "SELECT " + sql
+        return bool(eval_exec_match(db_path, sql, example["query"], plug_value=False, keep_distinct=False, progress_bar_for_each_datapoint=False))
+    else:
+        return None
+
+def spider_official_answer_eq(prediction: Union[pd.DataFrame, pd.Series, List[Tuple[Any]]], 
+                     gold_answer: Union[List[Tuple[Any]], int]) -> bool:
+    return prediction
+
+def spider_execution_sql(sql: str, example: Dict[str, Any], return_error_msg: bool = False) -> Any:
+    # sql = "SELECT " + sql
+    
+    db_id = example["db_id"]
+    db_path = os.path.join(DB_DIR, db_id, db_id + ".sqlite")
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     cursor = conn.cursor()
 
     try:
         cursor.execute(sql)
-
         return cursor.fetchall()
-    except sqlite3.OperationalError as e:
-        error_msg = f"ERROR: {str(e)}"
-        print(f"Error {str(e)} in execution sql query {sql}")
-        if return_error_msg:
-            return error_msg
-        else:
-            return None
+    # except sqlite3.OperationalError as e:
+    #     error_msg = f"ERROR: {str(e)}"
+    #     print(f"Error {str(e)} in execution sql query {sql}")
+    #     if return_error_msg:
+    #         return error_msg
+    #     else:
+    #         return None
+    except:
+        return None
 
 def db_to_df_dict(conn: sqlite3.Connection) -> Dict[str, pd.DataFrame]:
     df_dict = {}

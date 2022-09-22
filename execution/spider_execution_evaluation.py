@@ -5,40 +5,18 @@ from typing import List, Dict, Tuple, Any
 from concurrent.futures import ProcessPoolExecutor as Pool
 from execution.safe_execution_util import execute
 
-def batch_exec_programs(programs: List[str], exec_func: callable, n_processes: int = 20) -> List[Any]:
-    # build a dict to optimize for potential same programs
-    program_dict = {}
-    for program in programs:
-        if program not in program_dict:
-            program_dict[program] = None
-    unique_programs = list(program_dict.keys())
+DB_DIR = "data/spider/database"
 
-    idx = 0
-    parsable_unique_programs = []
-    for program in unique_programs:
-        try:
-            ast.parse(program, mode="exec")
-            parsable_unique_programs.append(program)
-            program_dict[program] = idx
-            idx += 1
-        except SyntaxError:
-            program_dict[program] = -1
-        except MemoryError:
-            print(f"MemoryError when parsing {program}")
-            program_dict[program] = -1
+def batch_exec_programs(programs: List[str], exec_func: callable, n_processes: int = 20, db_ids: str = None) -> List[Any]:
+    # build a dict to optimize for potential same programs
 
     with Pool(n_processes) as p:
-        unique_executed_answers = p.map(exec_func, parsable_unique_programs)
-    unique_executed_answers = list(unique_executed_answers)
-    unique_executed_answers.append(None) # all syntax error will be assigned to None
-
-    # build the original programs answer list
-    executed_answers = [unique_executed_answers[program_dict[program]] for program in programs]
-
-    return executed_answers, len(unique_programs)
+        executed_answers = p.starmap(exec_func, zip(programs, db_ids))
+    executed_answers = list(executed_answers)
+    return executed_answers, len(programs)
 
 def batch_execution_acc(programs: List[str], exec_func: callable, answers: List[str], 
-                        n_examples: int, eval_at_k: int, answer_eq_func: callable, 
+                        n_examples: int, eval_at_k: int, answer_eq_func: callable, db_ids: str,
                         n_processes: int = 20) -> List[Tuple[float, float]]:
     """
     This function evaluates execution accuracy for a batch of programs using multiprocessing.
@@ -47,15 +25,15 @@ def batch_execution_acc(programs: List[str], exec_func: callable, answers: List[
     """
     assert len(programs) == len(answers) * eval_at_k
     assert n_examples * eval_at_k == len(programs)
+    
+    executed_answers, n_programs = batch_exec_programs(programs, exec_func, n_processes, db_ids)
 
-    executed_answers, n_unique_programs = batch_exec_programs(programs, exec_func, n_processes)
-    print(f"Evaluating {len(programs)} generated programs for {n_examples} tasks, " + \
-           f"but only {n_unique_programs} unique programs")
+    print(f"Evaluating {len(programs)} generated programs for {n_examples} tasks")
 
     # separate the results for each task
     grouped_executed_answers = [executed_answers[i*eval_at_k:(i+1)*eval_at_k] for i in range(0, n_examples)]
     grouped_execution_evals = []
-    for predicted_answers, gold_answer in zip(grouped_executed_answers, answers):
+    for predicted_answers, gold_answer in zip(answers, executed_golden_answers):
         correct_count = 0.0
         for predicted_answer in predicted_answers:
             if answer_eq_func(predicted_answer, gold_answer):
@@ -68,13 +46,15 @@ def batch_execution_acc(programs: List[str], exec_func: callable, answers: List[
 
     return grouped_execution_evals
 
-def execution_acc(program: str, example: Dict[str, Any], exec_func: callable, answer: str, answer_eq_func: callable) -> Tuple[float, float]:
+def execution_acc(program: str, exec_func: callable, answer: str, answer_eq_func: callable, db_id: str = "") -> Tuple[float, float]:
     """
     This function is used to evaluate the accuracy of the execution of the program.
 
     Returns: execution accuracy, execution rate
     """
-    executed_answer = exec_func(program, example)
+
+    executed_answer = exec_func(program, db_id)
+
     if executed_answer is not None and answer_eq_func(executed_answer, answer):
         return 1.0, 1.0
     elif executed_answer is not None:
@@ -101,3 +81,4 @@ def execution_eval_at_k(programs: List[str], exec_func: callable, answer_eq_func
     pass_at_k = correct_count > 0.0
 
     return accuracy_at_k, pass_at_k
+ 

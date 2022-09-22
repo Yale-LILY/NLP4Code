@@ -1,30 +1,32 @@
 seed_everything: 333
 trainer:
-  gpus: 0, 1,
+  gpus: 0, 1, 2, 3, 4, 5, 6, 7
   gradient_clip_val: 1.0
-  # default_root_dir: &exp_name results/gsmath-gpt_neo_125M-finetuning
-  default_root_dir: &exp_name results/debug-tmp
+  default_root_dir: &exp_name results/spider-codegen_16B-zero_shot
+  # default_root_dir: &exp_name results/debug-tmp
   val_check_interval: 1.0
   max_steps: &max_steps 50000
+  max_epochs: 1
   # progress_bar_refresh_rate: 1
   log_every_n_steps: 1
-  logger:
+  logger+:
     - class_path: finetuning.lightning_modules.patches.patched_loggers.PatchedWandbLogger
       init_args:
-        entity: yale-lily
-        project: unified-codegen
+        entity: niansong1996
+        project: cot-codegen
+        save_dir: *exp_name
         name: *exp_name
         log_model: False
         save_code: True
-        save_dir: *exp_name
         offline: True
-  callbacks:
+  callbacks+:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
       init_args:
         monitor: exec_acc
         mode: max
         filename: '{step}-{exec_acc:.4f}-{exec_rate:.4f}'
-        save_top_k: 5
+        save_top_k: 3
+        save_last: True
     - class_path: pytorch_lightning.callbacks.LearningRateMonitor
       init_args:
         logging_interval: step
@@ -39,22 +41,23 @@ trainer:
   accelerator: gpu
   # replace_sampler_ddp: False
   # https://github.com/PyTorchLightning/pytorch-lightning/issues/8262
-  # strategy: deepspeed_stage_2
-  strategy: ddp_find_unused_parameters_false
+  strategy: deepspeed_stage_2_offload
+  # strategy: ddp_find_unused_parameters_false
   precision: 16
-  # accumulate_grad_batches: 4
+  accumulate_grad_batches: 8
 
 model:
   class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
-    transformer_model_name: &transformer EleutherAI/gpt-neo-125M
-    exec_func: execution.mathqa_execution.mathqa_execution
-    answer_eq_func: execution.mathqa_execution.mathqa_answer_eq
-    get_gold_prog_func: finetuning.lightning_modules.datasets.mathqa_reader.get_gold_program_func
-    get_gold_answer_func: finetuning.lightning_modules.datasets.mathqa_reader.get_gold_answer_func
-    program_len_func: finetuning.lightning_modules.models.seq2seq_model_util.python_program_len
-    max_gen_len: 256
+    transformer_model_name: &transformer Salesforce/codegen-16B-multi
+    exec_func: execution.spider_execution.spider_execution_sql
+    answer_eq_func: execution.spider_execution.spider_answer_eq
+    get_gold_prog_func: finetuning.lightning_modules.datasets.spider_reader.get_gold_program_func
+    get_gold_answer_func: finetuning.lightning_modules.datasets.spider_reader.get_gold_answer_func
+    program_len_func: finetuning.lightning_modules.models.seq2seq_model_util.sql_program_len
+    max_gen_len: 128
     sampling_temp: 0.2
+    mask_context_loss: true
     # sampling_temp_at_k: 0.8
     # pass_at_k: 80
     # eval_pass_at_k_every_n_epochs: 1
@@ -63,8 +66,8 @@ model:
     # eval_greedy_search: true
     optimizer:
       init_args: 
-        lr: 1.0e-4
-        # lr: 0.0
+        # lr: 1.0e-4
+        lr: 0.0
         betas: 
           - 0.9
           - 0.999
@@ -77,12 +80,12 @@ model:
         num_training_steps: *max_steps
 
 data:
-  class_path: lightning_modules.datasets.mathqa_reader.MathQADataModule
+  class_path: lightning_modules.datasets.spider_reader.Text2SqlDataModule
   init_args:
     transformer_model_name: *transformer
     batch_size: 1
-    val_batch_size: 2
-    train_file_path: data/gsmath/gsmath_train_annotated.jsonl
-    val_file_path: data/gsmath/gsmath_val.jsonl
-    # train_max_instances: 20
+    val_batch_size: 1
+    train_file_path: data/spider/train_spider_processed_v2.jsonl
+    val_file_path: data/spider/dev_processed.jsonl
+    train_max_instances: 20
     # val_max_instances: 40

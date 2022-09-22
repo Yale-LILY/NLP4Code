@@ -8,7 +8,7 @@ from execution.spider_execution import connect_databse, spider_execution_sql
 from execution.spider_execution import db_to_df_dict, spider_execution_py, spider_answer_eq
 
 
-TRAIN_DATA_PATH = "data/spider/train_spider_converted.json"
+TRAIN_DATA_PATH = "data/spider/train_spider_processed_v2.json"
 DEV_DATA_PATH = "data/spider/dev.json"
 
 """

@@ -7,8 +7,28 @@ from typing import Tuple, Optional, List, Union
 from transformers import GPTNeoForCausalLM, GPT2Tokenizer
 from transformers import PreTrainedModel, PreTrainedTokenizer, GPT2LMHeadModel
 from transformers import GPT2Tokenizer, GPTJForCausalLM
+# from transformers import BloomForCausalLM
 from transformers import RobertaTokenizer, T5ForConditionalGeneration
+# from transformers import CodeGenTokenizer, CodeGenForCausalLM, T5Tokenizer
+# from transformers import T5Tokenizer
+
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
 from transformers.generation_utils import GenerationMixin
+
+def is_model_gpt_style(name: str) -> bool:
+    if "t5" in name:
+        return False
+    else:
+        return True
+
+def sql_program_len(code: str) -> int:
+    """ return the length of the sql query """
+    return len(list(filter(lambda x: not len(x.strip()) == 0, code.split())))
+
+def python_program_len(code: str) -> int:
+    """ return the length of the python program """
+    return len(list(filter(lambda x: not x.startswith("#") and not len(x.strip()) == 0, code.split("\n"))))
 
 # from https://stackoverflow.com/questions/1769332/script-to-remove-python-comments-docstrings
 def remove_comments_and_docstrings(source):
@@ -102,11 +122,57 @@ def get_model(model_name: str,
     elif model_name.startswith("Salesforce/codet5-"):
         tokenizer = RobertaTokenizer.from_pretrained(model_name, 
                                                  additional_special_tokens=additional_special_tokens)
+        tokenizer.pad_token = tokenizer.eos_token
+
         if not tokenizer_only:
             model = T5ForConditionalGeneration.from_pretrained(model_name, 
                                                     pad_token_id=tokenizer.eos_token_id,
                                                     gradient_checkpointing=gradient_ckpt, 
                                                     use_cache=not gradient_ckpt)
+            if len(additional_special_tokens) > 0:
+                model.resize_token_embeddings(len(tokenizer))
+    # elif model_name.startswith("Salesforce/codegen-"):
+    #     tokenizer = CodeGenTokenizer.from_pretrained(model_name,
+    #                                                 additional_special_tokens=additional_special_tokens)
+    #     tokenizer.pad_token = tokenizer.eos_token
+
+    #     if not tokenizer_only:
+    #         model = CodeGenForCausalLM.from_pretrained(model_name, 
+    #                                                 pad_token_id=tokenizer.eos_token_id,
+    #                                                 gradient_checkpointing=gradient_ckpt, 
+    #                                                 use_cache=not gradient_ckpt)
+    #         if len(additional_special_tokens) > 0:
+    #             model.resize_token_embeddings(len(tokenizer))
+    # elif model_name.startswith("bigscience/bloom-"):
+    #     tokenizer = AutoTokenizer.from_pretrained(model_name,
+    #                                                 additional_special_tokens=additional_special_tokens)
+    #     tokenizer.pad_token = tokenizer.eos_token
+
+    #     if not tokenizer_only:
+    #         model = BloomForCausalLM.from_pretrained(model_name,
+    #                                                 pad_token_id=tokenizer.eos_token_id,
+    #                                                 use_cache=not gradient_ckpt)
+    #         if gradient_ckpt:
+    #             model._set_gradient_checkpointing(gradient_ckpt)
+    #         if len(additional_special_tokens) > 0:
+    #             model.resize_token_embeddings(len(tokenizer))
+    elif model_name.startswith("facebook/incoder"):
+        tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                                    additional_special_tokens=additional_special_tokens)
+        tokenizer.bos_token_id = 0
+        tokenizer.pad_token_id = 1
+        tokenizer.eos_token_id = 2
+
+        if not tokenizer_only:
+            model = AutoModelForCausalLM.from_pretrained(model_name, use_cache=not gradient_ckpt)
+            if len(additional_special_tokens) > 0:
+                model.resize_token_embeddings(len(tokenizer))
+    elif model_name.startswith("t5-"):
+        tokenizer = T5Tokenizer.from_pretrained(model_name)
+
+        if not tokenizer_only:
+            model = T5ForConditionalGeneration.from_pretrained(model_name)
+                                                    
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
     else:
@@ -117,6 +183,19 @@ def get_model(model_name: str,
     else:
         return model, tokenizer
 
+def right_pad_sequences(sequences: List[torch.Tensor], batch_first: bool = True, padding_value: Union[int, bool] = 0, 
+                       max_len: int = -1, device: torch.device = None) -> torch.Tensor:
+    assert all([len(seq.shape) == 1 for seq in sequences])
+    max_len = max_len if max_len > 0 else max(len(s) for s in sequences)
+    device = device if device is not None else sequences[0].device
+
+    padded_seqs = []
+    for seq in sequences:
+        # print(padding_value)
+        new = torch.full((max_len - seq.shape[0],), padding_value, dtype=torch.long).to(device)
+        padded_seqs.append(torch.cat((seq, new)))
+    return torch.stack(padded_seqs)
+
 def left_pad_sequences(sequences: List[torch.Tensor], batch_first: bool = True, padding_value: Union[int, bool] = 0, 
                        max_len: int = -1, device: torch.device = None) -> torch.Tensor:
     assert all([len(seq.shape) == 1 for seq in sequences])
@@ -125,7 +204,9 @@ def left_pad_sequences(sequences: List[torch.Tensor], batch_first: bool = True, 
 
     padded_seqs = []
     for seq in sequences:
-        padded_seqs.append(torch.cat((torch.full((max_len - seq.shape[0],), padding_value, dtype=torch.long).to(device), seq)))
+        # print(padding_value)
+        new = torch.full((max_len - seq.shape[0],), padding_value, dtype=torch.long).to(device)
+        padded_seqs.append(torch.cat((new, seq)))
     return torch.stack(padded_seqs)
 
 def sanity_check(test_str: str, model, tokenizer):
