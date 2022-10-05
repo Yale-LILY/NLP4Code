@@ -28,6 +28,20 @@ manually_annotated_sql_to_py = {
         "t1 = pd.merge(city, farm_competition, left_on='city_id', right_on='host_city_id')\nanswer = t1[['year', 'official_name']]",
 }
 
+def saved_promptify_sql(prompt_file_path: str, example: Dict, max_prompt_examples: int = 100, lower_case_schema: bool = False) -> Text:
+    with open(prompt_file_path, 'r') as f:
+        prompt = f.read()
+
+    # cut by the max prompt examples
+    prompt_examples = prompt.split('\n\n-- Example:')
+    assert len(prompt_examples) == 9
+    prompt = '\n\n-- Example'.join(prompt_examples[:max_prompt_examples+1]).strip()
+
+    example_text = example_to_demonstration_sql(example, train=False, lower_case_schema=lower_case_schema)
+    prompt += '\n\n-- Example:\n\n' + example_text.strip()
+
+    return prompt
+
 def example_to_demonstration_sql_3(example: Dict, train: bool = True) -> Text:
     text = f"{example['question']} | {example['db_id']} |"
     

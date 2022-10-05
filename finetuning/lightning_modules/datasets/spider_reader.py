@@ -46,11 +46,11 @@ class SpiderDataset(NL2CodeDataset):
 
     @overrides
     def get_train_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:
+        example["db_path"] = os.path.join("data/spider/database", example["db_id"], f'{example["db_id"]}.sqlite')
 
         if self.use_skg_format:
             context = example["text_in"] + example["struct_in"]
             code: str = example["seq_out"]
-            example["db_path"] = os.path.join("data/spider/database", example["db_id"], f'{example["db_id"]}.sqlite')
             example["answer"] = -10000 # this is a dummy value
         else:
             context = example_to_demonstration_sql(example, train=False, lower_case_schema=True) # we only need the context
@@ -64,12 +64,12 @@ class SpiderDataset(NL2CodeDataset):
 
     @overrides
     def get_test_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:
+        example["db_path"] = os.path.join("data/spider/database", example["db_id"], f'{example["db_id"]}.sqlite')
 
         if self.use_skg_format:
             context = example["text_in"] + example["struct_in"]
             code: str = example["seq_out"]
 
-            example["db_path"] = os.path.join("data/spider/database", example["db_id"], f'{example["db_id"]}.sqlite')
             example["answer"] = -10000 # this is a dummy value since we don't need the answer to eval for spider
         else:
             context = example_to_demonstration_sql(example, train=False, lower_case_schema=True) # we only need the context
