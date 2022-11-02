@@ -28,16 +28,19 @@ def main():
         else: 
             exec_match, exec_info = task.check_annotation_correctness(example, annotation)
             if exec_match:
+                print("TESTEST", exec_info)
                 task.save_single_annotation(example, annotation, exec_result=exec_info)
                 same_example = False
-                save = input("Correct! Press ENTER to save this annotation, or type `cancel` to improve this annotation: ")
+                save = input("\033[42mCorrect!\033[0m Press ENTER to save this annotation, or type `cancel` to improve this annotation: ")
                 if save == "cancel":
                     same_example = True
                     last_annotation = annotation
             else:
                 last_annotation = annotation
+                print("\033[1m" + " RESULT... " + "\033[0m")
                 print("Annotation is not correct. More information: (if you believe the annotation is correct, enter `override`)")
-                print(exec_info)
+                print("\033[41m" + exec_info + "\033[0m")
+                print("_________________________________________________________________________________________________________")
                 same_example = True
             
 

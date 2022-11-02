@@ -74,9 +74,9 @@ class AnnotationTask:
     
     def get_and_display_next_example(self):
         next_example_idx = self.annotation_indices[len(self.annotated_examples)]
-        print('#' * 20 + f" Example {next_example_idx} " + '#' * 20)
+        print("\033[1;7;34m" + '#' * 20 + f" Example {next_example_idx} " + '#' * 20 + "\033[0m")
         self.display_example(self.examples[next_example_idx])
-        print('#' * 40)
+        print("\033[1;7;34m" + '#' * 40 + "\033[0m")
 
         return self.examples[next_example_idx]
     
