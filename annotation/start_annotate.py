@@ -21,25 +21,27 @@ def main():
         elif annotation == "skip":
             task.save_single_annotation(example, annotation)
             same_example = False
-        elif annotation == "override":
+        elif annotation == "override" and last_annotation is not None:
             exec_match, exec_info = task.check_annotation_correctness(example, last_annotation)
             task.save_single_annotation(example, last_annotation, exec_result=exec_info)
             same_example = False
         else: 
             exec_match, exec_info = task.check_annotation_correctness(example, annotation)
+            last_annotation = annotation
             if exec_match:
-                print("TESTEST", exec_info)
-                task.save_single_annotation(example, annotation, exec_result=exec_info)
                 same_example = False
-                save = input("\033[42mCorrect!\033[0m Press ENTER to save this annotation, or type `cancel` to improve this annotation: ")
+                print("\033[1m" + " RESULT... " + "\033[0m")
+                print("\033[42m" + "Correct! Returned: " + exec_info + "\033[0m")
+                save = input("Press \033[33mENTER\033[0m to save this annotation, or type `\033[33mcancel\033[0m` to improve this annotation: ")
+                print("_________________________________________________________________________________________________________")
                 if save == "cancel":
                     same_example = True
-                    last_annotation = annotation
+                else:
+                    task.save_single_annotation(example, annotation, exec_result=exec_info)
             else:
-                last_annotation = annotation
                 print("\033[1m" + " RESULT... " + "\033[0m")
-                print("Annotation is not correct. More information: (if you believe the annotation is correct, enter `override`)")
                 print("\033[41m" + exec_info + "\033[0m")
+                print("Annotation is not correct. More information: (if you believe the annotation is correct, enter `\033[33moverride\033[0m`)")
                 print("_________________________________________________________________________________________________________")
                 same_example = True
             

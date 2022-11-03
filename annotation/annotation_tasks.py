@@ -148,10 +148,10 @@ class SQL2PandasAnnotationTask(AnnotationTask):
         annotated_sql = annotation.strip()
         exec_match, exec_result = self.executor.exec_program(annotated_sql, example)
         if exec_match == 1:
-            return True, ""
+            return True, f"{exec_result}"
         else:
             expected_answer = example['answer'] if self.dataset_name == "spider" else example['original_answer']
-            return False, f"Expected {expected_answer} but got {exec_result}"
+            return False, f"Expected: {expected_answer} but got {exec_result}"
 
     @overrides
     def get_annotation_instructions(self, example: Dict[str, Any]) -> str:
