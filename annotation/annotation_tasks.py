@@ -95,7 +95,7 @@ class SQL2PandasAnnotationTask(AnnotationTask):
         assert dataset_name in ["spider", "squall"], f"Invalid dataset name {dataset_name}"
         self.dataset_name = dataset_name
         self.annotation_size = annotation_size
-        self.executor = WTQPythonExecutor() if dataset_name == "squall" else None
+        self.executor = WTQPythonExecutor() if dataset_name == "squall" else SpiderExecutor()
 
         data_file_name = "data/spider/train_spider_processed_v2.jsonl" if dataset_name == "spider" \
             else "data/squall/squall_processed_train_all.jsonl"
