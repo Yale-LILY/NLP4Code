@@ -74,9 +74,9 @@ class AnnotationTask:
     
     def get_and_display_next_example(self):
         next_example_idx = self.annotation_indices[len(self.annotated_examples)]
-        print('#' * 20 + f" Example {next_example_idx} " + '#' * 20)
+        print("\033[1;7;34m" + '#' * 20 + f" Example {next_example_idx} " + '#' * 20 + "\033[0m")
         self.display_example(self.examples[next_example_idx])
-        print('#' * 40)
+        print("\033[1;7;34m" + '#' * 40 + "\033[0m")
 
         return self.examples[next_example_idx]
     
@@ -148,10 +148,10 @@ class SQL2PandasAnnotationTask(AnnotationTask):
         annotated_sql = annotation.strip()
         exec_match, exec_result = self.executor.exec_program(annotated_sql, example)
         if exec_match == 1:
-            return True, ""
+            return True, f"{exec_result}"
         else:
             expected_answer = example['answer'] if self.dataset_name == "spider" else example['original_answer']
-            return False, f"Expected {expected_answer} but got {exec_result}"
+            return False, f"Expected: {expected_answer} but got {exec_result}"
 
     @overrides
     def get_annotation_instructions(self, example: Dict[str, Any]) -> str:
