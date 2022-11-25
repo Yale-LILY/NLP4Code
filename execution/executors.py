@@ -9,7 +9,7 @@ from concurrent.futures import ProcessPoolExecutor as Pool
 from execution.program_tracing import assertion_to_test
 
 from execution.spider_official_exec_match import eval_exec_match
-from execution.spider_execution import spider_execution_pd_sql, pd_df_to_dict, spider_execution_py, db_to_df_dict
+from execution.spider_execution import spider_execution_pd_sql, pd_df_to_dict, spider_execution_py, db_to_df_dict, spider_answer_eq
 from execution.safe_execution_util import execute
 from execution.program_tracing import get_function_final_state
 from execution.wtq_eval import wtq_execution_sql, wtq_answer_eq
@@ -194,6 +194,22 @@ class WTQExecutor(SpiderExecutor):
         else:
             exec_match_result = int(wtq_answer_eq(exec_results, example["original_answer"]))
             return exec_match_result, exec_results
+
+class SpiderPythonExecutor(SpiderExecutor):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @staticmethod
+    def real_exec_program(program: str, example: Dict[str, Any]) -> Tuple[int, Union[str, List, Dict]]:
+        # get the table name -> dataframe dict
+        conn = sqlite3.connect(example["db_path"])
+        df_dicts = db_to_df_dict(conn)
+
+        # execute the program
+        exec_result = spider_execution_py(program, df_dicts)
+        exec_match_result = int(spider_answer_eq(exec_result, example["answer"]))
+        
+        return exec_match_result, exec_result
 
 class WTQPythonExecutor(SpiderExecutor):
     def __init__(self, **kwargs):

@@ -9,7 +9,7 @@ import pandas as pd
 from overrides import overrides
 from typing import List, Dict, Any, Tuple
 
-from execution.executors import SpiderExecutor, WTQExecutor, WTQPythonExecutor
+from execution.executors import WTQPythonExecutor, SpiderPythonExecutor
 from execution.spider_execution import spider_execution_pd_sql, pd_df_to_dict, spider_execution_py, db_to_df_dict
 
 class AnnotationTask:
@@ -95,7 +95,7 @@ class SQL2PandasAnnotationTask(AnnotationTask):
         assert dataset_name in ["spider", "squall"], f"Invalid dataset name {dataset_name}"
         self.dataset_name = dataset_name
         self.annotation_size = annotation_size
-        self.executor = WTQPythonExecutor() if dataset_name == "squall" else SpiderExecutor()
+        self.executor = WTQPythonExecutor() if dataset_name == "squall" else SpiderPythonExecutor()
 
         data_file_name = "data/spider/train_spider_processed_v2.jsonl" if dataset_name == "spider" \
             else "data/squall/squall_processed_train_all.jsonl"
