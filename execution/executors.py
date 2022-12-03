@@ -207,7 +207,10 @@ class SpiderPythonExecutor(SpiderExecutor):
 
         # execute the program
         exec_result = spider_execution_py(program, df_dicts)
-        exec_match_result = int(spider_answer_eq(exec_result, example["answer"]))
+        if "order" in example["query_toks_no_value"]:
+            exec_match_result = int(spider_answer_eq(exec_result, example["answer"]))
+        else:
+            exec_match_result = int(spider_answer_eq(exec_result, example["answer"], True))
         
         return exec_match_result, exec_result
 

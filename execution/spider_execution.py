@@ -243,7 +243,7 @@ def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame], return_erro
     for table_name in df_dict.keys():
         # table names may be reserved words like "class"
         if table_name in keyword.kwlist:
-            table_vars_code += f"# {' '.join(list(df_dict[table_name].columns))}\n{table_name} = df_dict['{table_name}']\n"
+            table_vars_code += f"# {' '.join(list(df_dict[table_name].columns))}\n_{table_name} = df_dict['{table_name}']\n"
             # but we have to make sure that table columns are not changed
             # code = code.replace(table_name, f"_{table_name}")
             code = re.sub("((?<!_)class(?!_))", "_class", code)
@@ -356,8 +356,6 @@ def spider_answer_eq(prediction: Union[pd.DataFrame, pd.Series, List[Tuple[Any]]
                 gold_flattened = list_to_lower_case(
                     flatten_list_of_list(gold_answer, sort))
                 pred_flattened = flatten_list_of_list(prediction, sort)
-                print(pred_flattened)
-                print(gold_flattened)
                 result = compare_lists(pred_flattened, gold_flattened)
             else:
                 result = False
