@@ -243,12 +243,12 @@ def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame], return_erro
     for table_name in df_dict.keys():
         # table names may be reserved words like "class"
         if table_name in keyword.kwlist:
-            table_vars_code += f"_{table_name} = df_dict['{table_name}']\n"
+            table_vars_code += f"# {' '.join(list(df_dict[table_name].columns))}\n_{table_name} = df_dict['{table_name}']\n"
             # but we have to make sure that table columns are not changed
             # code = code.replace(table_name, f"_{table_name}")
             code = re.sub("((?<!_)class(?!_))", "_class", code)
         else:
-            table_vars_code += f"{table_name} = df_dict['{table_name}']\n"
+            table_vars_code += f"# {' '.join(list(df_dict[table_name].columns))}\n{table_name} = df_dict['{table_name}']\n"
 
     # lower everything in quotes
     code = re.sub(r"'(.*?)'", lambda p: f"'{p.group(1).lower()}'", code)
@@ -256,7 +256,7 @@ def spider_execution_py(code: str, df_dict: Dict[str, pd.DataFrame], return_erro
     # TODO further processing needed, case 784, 1721,
     #  and select, drop_duplicate, followed by sorting
     code = re.sub(r"(.*(?<!\[))(\[\[?.*?\]?\])(\.sort_values.*)", r"\1\3\2", code)
-    code = table_vars_code + "\n" + f"answer = {code}"
+    code = table_vars_code + "\n" + code
 
     # execute the code
     try:
@@ -347,9 +347,10 @@ def spider_answer_eq(prediction: Union[pd.DataFrame, pd.Series, List[Tuple[Any]]
                      sort: bool = False) -> bool:
 
     try:
-        if isinstance(prediction, int) or isinstance(prediction, float) or (not isinstance(prediction, list) and not isinstance(prediction, pd.DataFrame) and not isinstance(prediction, np.ndarray) and not isinstance(prediction, tuple) and np.issubdtype(prediction, np.integer)):
+        if isinstance(prediction, int) or isinstance(prediction, float) or isinstance(prediction, str) or \
+            (not isinstance(prediction, (list, pd.DataFrame, pd.Series, np.ndarray, tuple)) and np.issubdtype(prediction, np.integer)):
             prediction = [prediction]
-
+            
         if isinstance(prediction, list) or isinstance(prediction, np.ndarray):
             if isinstance(gold_answer, list):
                 gold_flattened = list_to_lower_case(
