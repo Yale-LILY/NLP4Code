@@ -16,8 +16,9 @@ PY_LANGUAGE = Language(language_build_path, 'python')
 parser = Parser()
 parser.set_language(PY_LANGUAGE)
 
-train_file = "./data/gsmath/train.jsonl"
-test_file = "./data/gsmath/test.jsonl"
+#set file to evaluate
+input_file = "./annotated data/gsmath/gsmath_failed_train.jsonl"
+# input_file = "./annotated data/gsmath/test_errors.jsonl"
 
 def get_answer_from_answer_str(answer_str: str) -> float:
     result_str = answer_str.split("\n")[-1].split(" ")[-1]
@@ -62,6 +63,7 @@ def get_code_from_answer_str(answer_str: str, question_str: str) -> str:
         if "/" in result:
             result = eval(result)
         if not math.isclose(eval(expression), float(result)):
+            logging.debug(f"expression: {eval(expression)} result: {float(result)}")
             return "NULL"
 
         # interpret the formula with a parse tree
@@ -139,47 +141,34 @@ def verify_code(code: str, gold_answer: str) -> bool:
     except Exception as e:
         return False
 
-def process_gsmath(instances: List[Dict[str, str]], set_name: str) -> List[Dict[str, Any]]:
+def process_gsmath(instances: List[Dict[str, str]]) -> List[Dict[str, Any]]:
     failed_code_extraction_indices = []
+
+    # updates the code and answer in the logged error messages
     for i, instance in tqdm(enumerate(instances)):
-        # put it in the mathqa style: text, code, answer, task_id
-        instance["text"] = instance["question"]
-        instance.pop("question")
-
-        instance["original_answer"] = instance["answer"]
-        instance["task_id"] = f"{set_name}_{i}"
-
         instance["code"] = get_code_from_answer_str(instance["original_answer"], instance["text"])
         instance["answer"] = get_answer_from_answer_str(instance["original_answer"])
-        
-        if instance["code"] == "NULL":
-            # failed to extract code, will skip this example in training, and only record for dev/test
-            failed_code_extraction_indices.append(i)
-
-    # dumps indexed data into a file
-    if set_name == "train":
-        with open("./data/gsmath/gsmath_indexed_train.jsonl", "w") as f:
-            f.write("\n".join([json.dumps(data) for data in instances]))
-    elif set_name == "val":
-        with open("./data/gsmath/gsmath_indexed_val.jsonl", "w") as f:
-            f.write("\n".join([json.dumps(data) for data in instances]))
-    elif set_name == "test":
-        with open("./data/gsmath/gsmath_indexed_test.jsonl", "w") as f:
-            f.write("\n".join([json.dumps(data) for data in instances]))
-
 
     # verify the validity of the code
     failed_code_execution_indices = []
     for i, instance in enumerate(instances):
-        if i in failed_code_extraction_indices:
-            continue
+        if instance["code"] == "NULL":
+            failed_code_extraction_indices.append(i)
+            logging.debug(f"{instance['task_id']} failed to extract, " \
+                  f"original_answer: {instance['original_answer']}, " \
+                  f"code: \n{instance['code']}\nanswer: {instance['answer']}")
 
-        if not verify_code(instance["code"], instance["answer"]):
+        elif not verify_code(instance["code"], instance["answer"]):
             failed_code_execution_indices.append(i)
-            # # logs the failed item
-            # logging.debug(f"{instance['task_id']} failed to verify, " \
-            #       f"original_answer: {instance['original_answer']}, " \
-            #       f"code: \n{instance['code']}\nanswer: {instance['answer']}")
+            # logs the failed item
+            logging.debug(f"{instance['task_id']} failed to verify, " \
+                  f"original_answer: {instance['original_answer']}, " \
+                  f"code: \n{instance['code']}\nanswer: {instance['answer']}")
+        
+        # used to check instances that work
+        # logging.debug(f"{instance['task_id']} Works!!!, " \
+        #           f"original_answer: {instance['original_answer']}, " \
+        #           f"code: \n{instance['code']}\nanswer: {instance['answer']}")
 
     all_failed_indices = sorted(failed_code_extraction_indices + failed_code_execution_indices)
 
@@ -187,52 +176,18 @@ def process_gsmath(instances: List[Dict[str, str]], set_name: str) -> List[Dict[
     print(f"{len(failed_code_execution_indices)}/{len(instances)} failed to execute to the correct result")
     print(f"{len(all_failed_indices)}/{len(instances)} failed in total")
 
-    # dumps failed examples into a file
-    if set_name == "train":
-        with open("./data/gsmath/gsmath_failed_train.jsonl", "w") as f:
-            f.write("\n".join([json.dumps(instances[data]) for data in all_failed_indices]))
-    elif set_name == "val":
-        with open("./data/gsmath/gsmath_failed_val.jsonl", "w") as f:
-            f.write("\n".join([json.dumps(instances[data]) for data in all_failed_indices]))
-    elif set_name == "test":
-        with open("./data/gsmath/gsmath_failed_test.jsonl", "w") as f:
-            f.write("\n".join([json.dumps(instances[data]) for data in all_failed_indices]))
-
-    # remove the failed examples if this is training set
-    if set_name == "train":
-        for i in all_failed_indices[::-1]:
-            instances.pop(i)
-
-    return instances
 
 if __name__ == "__main__":
-    # load the train and test data
+    # configure logging
     if (os.path.exists("failed.log")):
         os.remove("failed.log")
     logging.basicConfig(filename='failed.log',level=logging.DEBUG)
 
-    with open(train_file, "r") as f:
-        train_lines = f.readlines()
-        train_data = [json.loads(line) for line in train_lines]
-
-    with open(test_file, "r") as f:
-        test_lines = f.readlines()
-        test_data = [json.loads(line) for line in test_lines]
-
-    # split the train data to train and dev
-    train_data, dev_data = train_data[:int(len(train_data) * 0.8)], train_data[int(len(train_data) * 0.8):]
+    # load the input file for comparison
+    with open(input_file, "r") as f:
+        input_lines = f.readlines()
+        input_data = [json.loads(line) for line in input_lines]
 
     # process all the data
-    processed_train_data = process_gsmath(train_data, "train")
-    processed_dev_data = process_gsmath(dev_data, "val")
-    processed_test_data = process_gsmath(test_data, "test")
-
-    # write the processed data to files
-    with open("./data/gsmath/gsmath_train.jsonl", "w") as f:
-        f.write("\n".join([json.dumps(data) for data in processed_train_data]))
-    with open("./data/gsmath/gsmath_val.jsonl", "w") as f:
-        f.write("\n".join([json.dumps(data) for data in processed_dev_data]))
-    with open("./data/gsmath/gsmath_test.jsonl", "w") as f:
-        f.write("\n".join([json.dumps(data) for data in processed_test_data]))
-
-
+    # note that this doesn't change the failed file, so the code will need to be swapped for the correct code at some point
+    process_gsmath(input_data)
