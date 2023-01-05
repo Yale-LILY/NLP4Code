@@ -1,6 +1,6 @@
 seed_everything: 333
 trainer:
-  gpus: 0, 1
+  gpus: 0
   gradient_clip_val: 1.0
   # default_root_dir: &exp_name results/spider-t5_base-finetuning
   default_root_dir: &exp_name results/debug-tmp
@@ -49,7 +49,7 @@ trainer:
 model:
   class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
-    transformer_model_name: &transformer t5-base
+    transformer_model_name: &transformer EleutherAI/gpt-neo-125M
     executor_cls: execution.executors.SpiderExecutor
     categorize_func: execution.spider_execution.spider_categorize_complexity
     category_list: ["JOIN", "NESTED", "COMPOUND", "SIMPLE"]
