@@ -260,7 +260,8 @@ class NL2CodeDataModule(LightningDataModule):
                                                 else customized_collate_fn_enc_dec
 
         dtloader = DataLoader(self.val_data, batch_size=self.val_batch_size, 
-                               shuffle=False, drop_last=True, collate_fn=collate_fn)
+                               shuffle=False, drop_last=True, collate_fn=collate_fn,
+                               pin_memory=True)
         return dtloader
 
     def test_dataloader(self):

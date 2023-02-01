@@ -248,12 +248,17 @@ class Seq2SeqModel(LightningModule):
             self.metrics_dict["program_len_diff"](program_len_diff)
             self.category_metrics.update(program_dict["exec_acc"], metadata) # note that this can't be forward as compute will be called
         
-        if self.print_eval_every_n_batches > 0:
-            # compute the metrics
-            eval_metrics_dict = {}
-            for k in self.metrics_dict.keys():
-                eval_metrics_dict[k] = float(self.metrics_dict[k].compute())
-            print("eval metrics: ", eval_metrics_dict)
+        # if self.print_eval_every_n_batches > 0:
+        #     # compute the metrics
+        #     eval_metrics_dict = {}
+        #     for k in self.metrics_dict.keys():
+        #         eval_metrics_dict[k] = float(self.metrics_dict[k].compute())
+        #     print("eval metrics: ", eval_metrics_dict)
+        # compute the metrics
+        eval_metrics_dict = {}
+        for k in self.metrics_dict.keys():
+            eval_metrics_dict[k] = float(self.metrics_dict[k].compute())
+        print("eval metrics: ", eval_metrics_dict)
 
         # save the outputs to the model
         self.predictions.extend(outputs)
@@ -318,12 +323,12 @@ class Seq2SeqModel(LightningModule):
         self.category_metrics.reset()
 
         # save the predictions
-        save_pred_file_path = os.path.join(self.trainer.log_dir,
-                                f'predictions_step_{self.trainer.global_step}_rank_{self.trainer.global_rank}.jsonl')
-        with open(save_pred_file_path, 'w+') as f:
-            for prediction in self.predictions:
-                f.write(json.dumps(prediction)+'\n')
-        print(f"{len(self.predictions)} predictions saved to {save_pred_file_path}")
+        # save_pred_file_path = os.path.join(self.trainer.log_dir,
+        #                         f'predictions_step_{self.trainer.global_step}_rank_{self.trainer.global_rank}.jsonl')
+        # with open(save_pred_file_path, 'w+') as f:
+        #     for prediction in self.predictions:
+        #         f.write(json.dumps(prediction)+'\n')
+        # print(f"{len(self.predictions)} predictions saved to {save_pred_file_path}")
 
         # reset the predictions
         self.predictions = []

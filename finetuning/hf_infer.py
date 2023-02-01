@@ -32,61 +32,79 @@ from finetuning.lightning_modules.models.seq2seq_model_util import (
     right_pad_sequences,
 )
 
+from consts import MODEL_NAME, RUN_NAME
+
 
 import os
 import torch
 from typing import Dict
 
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["WANDB_PROJECT"] = "codegen-hf-migration-tests"
 
-from consts import MODEL_NAME, MAX_STEPS, RUN_NAME, EVAL_STEPS
 
-# model, tokenizer = get_model(
-#     MODEL_NAME,
-#     gradient_ckpt=True,
-#     additional_init_args={
-#         "executor_cls": "execution.executors.SpiderExecutor",
-#         "categorize_func": "execution.spider_execution.spider_categorize_complexity",
-#         "category_list": ["JOIN", "NESTED", "COMPOUND", "SIMPLE"],
-#         "max_gen_len": 128,
-#         "sampling_temp": 0.01,
-#     },
-# )
+# hyperparams
+MAX_STEPS = 25000
+EVAL_STEPS = 25
+
+lone_model, tokenizer = get_model(
+    MODEL_NAME,
+    gradient_ckpt=True,
+    additional_init_args={
+        "executor_cls": "execution.executors.SpiderExecutor",
+        "categorize_func": "execution.spider_execution.spider_categorize_complexity",
+        "category_list": ["JOIN", "NESTED", "COMPOUND", "SIMPLE"],
+        "max_gen_len": 128,
+        "sampling_temp": 0.01,
+    },
+)
+
+spider_data_module = Text2SqlDataModule(
+    transformer_model_name=MODEL_NAME,
+    batch_size=4,
+    val_batch_size=4,
+    train_max_instances=200,
+    val_max_instances=100,
+    train_set_init_args={"file_path": "data/spider/train_spider_processed_v2.jsonl"},
+    val_set_init_args={
+        "file_path": "data/spider/dev_processed.jsonl",
+    },
+    set_common_init_args={
+        "use_skg_format": False,
+    },
+)
 
 training_args = Seq2SeqTrainingArguments(
     output_dir="results/debug-tmp",  # local output dir
-    do_train=True,
+    # for inference!
+    do_train=False,
     do_eval=True,
     run_name=RUN_NAME,
     report_to="wandb",
-    # hyperparams
-    learning_rate=5e-05,
-    weight_decay=0.01,
-    max_steps=MAX_STEPS,
+    # # hyperparams
+    # learning_rate=5e-05,
+    # weight_decay=0.01,
+    # max_steps=MAX_STEPS,
     fp16=True,
     # find batch size automatically to avoid cuda OOM: only compatible with accelerate
     auto_find_batch_size=True,
-    # checkpointing
-    save_strategy="epoch",
-    # validation (?)
-    evaluation_strategy=IntervalStrategy.STEPS,
-    eval_steps=EVAL_STEPS,
-    logging_steps=EVAL_STEPS,
+    # # checkpointing
+    # save_strategy="epoch",
+    # # validation (?)
+    # evaluation_strategy=IntervalStrategy.STEPS,
+    # eval_steps=EVAL_STEPS,
+    # logging_steps=EVAL_STEPS,
     # per_device_eval_batch_size=1,
     eval_accumulation_steps=4,
-    # memory optimizations
-    gradient_checkpointing=True,
+    # # memory optimizations
+    # gradient_checkpointing=True,
     ddp_find_unused_parameters=True,
     # deepspeed="deepspeed_config.json",
     predict_with_generate=True,
-    generation_max_length=128,
+    generation_max_length=256,
 )
 
-collator = DataCollatorForSeq2Seq(
-    tokenizer=seq2seq_model.tokenizer, model=seq2seq_model.model
-)
+collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=lone_model)
 
 
 class ValidationCallback(TrainerCallback):
@@ -195,5 +213,5 @@ trainer = Seq2SeqTrainer(
 # decode_test = seq2seq_model.tokenizer.decode(res.label_ids[0])
 # print(decode_test)
 
-# trainer.evaluate()
-trainer.train()
+trainer.evaluate()
+# trainer.train()

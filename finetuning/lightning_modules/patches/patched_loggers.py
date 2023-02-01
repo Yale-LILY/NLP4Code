@@ -45,6 +45,8 @@ class PatchedWandbLogger(WandbLogger):
         if "tmp" in processed_name and not offline:
             print(f"WandbLogger: {processed_name} is a tmp exp so running in offline mode")
             kwargs['offline'] = True
+        # TODO: manually disable online logs for now
+        kwargs['offline'] = True
 
         # create the save_dir if it doesn't exist
         print(f"ready to create save_dir: {save_dir}", flush=True)
