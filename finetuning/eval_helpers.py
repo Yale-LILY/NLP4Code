@@ -125,6 +125,7 @@ def validation_step_end(
     # predictions.extend(outputs)
 
 
+# attempt to use compute_metrics to inject custom validation
 def compute_metrics(eval_pred: EvalPrediction) -> dict:
     print(len(eval_pred.predictions))
     print(eval_pred.predictions[0].shape)

@@ -52,18 +52,7 @@ os.environ["WANDB_PROJECT"] = "codegen-hf-migration-tests"
 MAX_STEPS = 25000
 EVAL_STEPS = 25
 
-lone_model, tokenizer = get_model(
-    MODEL_NAME,
-    gradient_ckpt=True,
-    additional_init_args={
-        "executor_cls": "execution.executors.SpiderExecutor",
-        "categorize_func": "execution.spider_execution.spider_categorize_complexity",
-        "category_list": ["JOIN", "NESTED", "COMPOUND", "SIMPLE"],
-        "max_gen_len": 128,
-        "sampling_temp": 0.01,
-    },
-)
-
+# reuse PL DataModule code: only need access to train+val datasets and dataloaders
 spider_data_module = Text2SqlDataModule(
     transformer_model_name=MODEL_NAME,
     batch_size=4,
@@ -79,6 +68,7 @@ spider_data_module = Text2SqlDataModule(
     },
 )
 
+# @see https://huggingface.co/docs/transformers/main_classes/trainer#transformers.Seq2SeqTrainingArguments
 training_args = Seq2SeqTrainingArguments(
     output_dir="results/debug-tmp",  # local output dir
     # for inference!
@@ -109,9 +99,14 @@ training_args = Seq2SeqTrainingArguments(
     generation_max_length=256,
 )
 
-collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=lone_model)
+# @see https://huggingface.co/docs/transformers/main_classes/trainer#transformers.Trainer.data_collator
+collator = DataCollatorForSeq2Seq(
+    tokenizer=seq2seq_model.tokenizer, model=seq2seq_model.model
+)
 
 
+# custom callback to inject behavior into HF trainer loop
+# @see https://huggingface.co/docs/transformers/main_classes/trainer#transformers.Trainer.callbacks
 class ValidationCallback(TrainerCallback):
     def on_evaluate(
         self,
@@ -141,55 +136,8 @@ class ValidationCallback(TrainerCallback):
         # return super().on_evaluate(args, state, control, **kwargs)
 
 
-# class CustomTrainer(Seq2SeqTrainer):
-#     def __init__(
-#         self,
-#         seq2seq_model: Seq2SeqModel,
-#         args: TrainingArguments,
-#         train_dataset: Dataset,
-#         eval_dataset: Dataset,
-#     ):
-#         self.seq2seq_model = seq2seq_model
-#         collator = DataCollatorForSeq2Seq(
-#             tokenizer=seq2seq_model.tokenizer, model=seq2seq_model.model
-#         )
-#         self.collator = collator
-#         self.args = args
-#         self.train_dataset = train_dataset
-#         self.eval_dataset = eval_dataset
-
-#         super().__init__(
-#             model=seq2seq_model.model,
-#             data_collator=collator,
-#             args=args,
-#             train_dataset=train_dataset,
-#             eval_dataset=eval_dataset,
-#             tokenizer=seq2seq_model.tokenizer,
-#             compute_metrics=compute_metrics,
-#         )
-
-# def evaluate(self, eval_dataset, ignore_keys, metric_key_prefix):
-#     print("TEST")
-#     super().evaluate(
-#         eval_dataset=eval_dataset,
-#         ignore_keys=ignore_keys,
-#         metric_key_prefix=metric_key_prefix,
-#     )
-
-# def training_step(
-#     self, batch: Dict[str, torch.Tensor], batch_idx: int
-# ) -> Dict[str, torch.Tensor]:
-#     return self.seq2seq_model.training_step(batch=batch, batch_idx=batch_idx)
-
-
-# trainer = CustomTrainer(
-#     seq2seq_model=seq2seq_model,
-#     args=training_args,
-#     train_dataset=train_dataset,
-#     eval_dataset=eval_dataset,
-# )
-
-
+# when using compute_metrics, fix CUDA OOM bug
+# https://discuss.huggingface.co/t/cuda-out-of-memory-when-using-trainer-with-compute-metrics/2941
 def preprocess_logits_for_metrics(logits, labels):
     """
     Original Trainer may have a memory leak.
@@ -199,12 +147,16 @@ def preprocess_logits_for_metrics(logits, labels):
     return pred_ids, labels
 
 
+# HF Trainer "entry point"
+# @see https://huggingface.co/docs/transformers/main_classes/trainer#transformers.Trainer
 trainer = Seq2SeqTrainer(
     model=seq2seq_model.model,
     args=training_args,
     data_collator=collator,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
+    # compute_metrics is called by Trainer.evaluate: extends metrics dict
+    # @see https://huggingface.co/docs/transformers/main_classes/trainer#transformers.Trainer.compute_metrics
     # compute_metrics=compute_metrics,
     callbacks=[ValidationCallback],
     preprocess_logits_for_metrics=preprocess_logits_for_metrics,
@@ -215,8 +167,73 @@ trainer = Seq2SeqTrainer(
 # print(res)
 # print(res.predictions)
 # print(res.label_ids)
-# decode_test = seq2seq_model.tokenizer.decode(res.label_ids[0])
-# print(decode_test)
 
 trainer.evaluate()
 # trainer.train()
+
+
+# ======== Unused but may be useful ========
+
+# UNUSED: attempt to remove Seq2SeqModel dependency (underlying PT LightningModule dependency)
+# lone_model, tokenizer = get_model(
+#     MODEL_NAME,
+#     gradient_ckpt=True,
+#     additional_init_args={
+#         "executor_cls": "execution.executors.SpiderExecutor",
+#         "categorize_func": "execution.spider_execution.spider_categorize_complexity",
+#         "category_list": ["JOIN", "NESTED", "COMPOUND", "SIMPLE"],
+#         "max_gen_len": 128,
+#         "sampling_temp": 0.01,
+#     },
+# )
+
+
+# UNUSED: attempt to override Seq2SeqTrainer class methods: evaluate, training_step, etc.
+# see top of HF Trainer doc page: https://huggingface.co/docs/transformers/main_classes/trainer#transformers.Trainer
+class CustomTrainer(Seq2SeqTrainer):
+    def __init__(
+        self,
+        seq2seq_model: Seq2SeqModel,
+        args: TrainingArguments,
+        train_dataset: Dataset,
+        eval_dataset: Dataset,
+    ):
+        self.seq2seq_model = seq2seq_model
+        collator = DataCollatorForSeq2Seq(
+            tokenizer=seq2seq_model.tokenizer, model=seq2seq_model.model
+        )
+        self.collator = collator
+        self.args = args
+        self.train_dataset = train_dataset
+        self.eval_dataset = eval_dataset
+
+        super().__init__(
+            model=seq2seq_model.model,
+            data_collator=collator,
+            args=args,
+            train_dataset=train_dataset,
+            eval_dataset=eval_dataset,
+            tokenizer=seq2seq_model.tokenizer,
+            compute_metrics=compute_metrics,
+        )
+
+    def evaluate(self, eval_dataset, ignore_keys, metric_key_prefix):
+        print("TEST")
+        super().evaluate(
+            eval_dataset=eval_dataset,
+            ignore_keys=ignore_keys,
+            metric_key_prefix=metric_key_prefix,
+        )
+
+    def training_step(
+        self, batch: Dict[str, torch.Tensor], batch_idx: int
+    ) -> Dict[str, torch.Tensor]:
+        return self.seq2seq_model.training_step(batch=batch, batch_idx=batch_idx)
+
+
+# trainer = CustomTrainer(
+#     seq2seq_model=seq2seq_model,
+#     args=training_args,
+#     train_dataset=train_dataset,
+#     eval_dataset=eval_dataset,
+# )
