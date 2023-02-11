@@ -1,7 +1,7 @@
 {  
     "zero_allow_untested_optimizer": true,
     "zero_optimization": {
-        "stage": 2,
+        "stage": 3,
         "offload_optimizer": {
             "device": "cpu",
             "pin_memory": true
@@ -10,5 +10,6 @@
         "overlap_comm": true,
         "allgather_bucket_size": 1e10,
         "reduce_bucket_size": 1e10 
-    }
+    },
+    "train_batch_size": "auto"
 }
