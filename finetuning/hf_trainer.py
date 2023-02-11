@@ -145,18 +145,18 @@ class CustomTrainer(Seq2SeqTrainer):
             compute_metrics=compute_metrics,
         )
 
-    # def evaluate(self, eval_dataset, ignore_keys, metric_key_prefix):
-    #     print("TEST")
-    #     super().evaluate(
-    #         eval_dataset=eval_dataset,
-    #         ignore_keys=ignore_keys,
-    #         metric_key_prefix=metric_key_prefix,
-    #     )
+    def evaluate(self, eval_dataset, ignore_keys, metric_key_prefix):
+        print("TEST")
+        super().evaluate(
+            eval_dataset=eval_dataset,
+            ignore_keys=ignore_keys,
+            metric_key_prefix=metric_key_prefix,
+        )
 
-    # def training_step(
-    #     self, batch: Dict[str, torch.Tensor], batch_idx: int
-    # ) -> Dict[str, torch.Tensor]:
-    #     return self.seq2seq_model.training_step(batch=batch, batch_idx=batch_idx)
+    def training_step(
+        self, batch: Dict[str, torch.Tensor], batch_idx: int
+    ) -> Dict[str, torch.Tensor]:
+        return self.seq2seq_model.training_step(batch=batch, batch_idx=batch_idx)
 
 
 # trainer = CustomTrainer(

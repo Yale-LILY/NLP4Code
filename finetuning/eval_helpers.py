@@ -26,7 +26,6 @@ spider_data_module = Text2SqlDataModule(
 
 spider_data_module.setup(stage="fit")
 
-
 train_dataset = spider_data_module.train_data
 
 eval_dataset = spider_data_module.val_data

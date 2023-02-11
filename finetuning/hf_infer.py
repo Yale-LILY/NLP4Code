@@ -1,3 +1,7 @@
+import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 from torch.utils.data import Dataset
 from transformers import (
     Trainer,
@@ -35,10 +39,11 @@ from finetuning.lightning_modules.models.seq2seq_model_util import (
 from consts import MODEL_NAME, RUN_NAME
 
 
-import os
 import torch
 from typing import Dict
 
+# LightningModule extends torch.nn.Module
+# -> use inheritance: base Module class to support Lightning for training, and also HF Trainer for inference
 
 os.environ["WANDB_PROJECT"] = "codegen-hf-migration-tests"
 
@@ -98,8 +103,8 @@ training_args = Seq2SeqTrainingArguments(
     eval_accumulation_steps=4,
     # # memory optimizations
     # gradient_checkpointing=True,
-    ddp_find_unused_parameters=True,
-    # deepspeed="deepspeed_config.json",
+    # ddp_find_unused_parameters=True,
+    deepspeed="deepspeed_config.json",
     predict_with_generate=True,
     generation_max_length=256,
 )
@@ -136,45 +141,45 @@ class ValidationCallback(TrainerCallback):
         # return super().on_evaluate(args, state, control, **kwargs)
 
 
-class CustomTrainer(Seq2SeqTrainer):
-    def __init__(
-        self,
-        seq2seq_model: Seq2SeqModel,
-        args: TrainingArguments,
-        train_dataset: Dataset,
-        eval_dataset: Dataset,
-    ):
-        self.seq2seq_model = seq2seq_model
-        collator = DataCollatorForSeq2Seq(
-            tokenizer=seq2seq_model.tokenizer, model=seq2seq_model.model
-        )
-        self.collator = collator
-        self.args = args
-        self.train_dataset = train_dataset
-        self.eval_dataset = eval_dataset
+# class CustomTrainer(Seq2SeqTrainer):
+#     def __init__(
+#         self,
+#         seq2seq_model: Seq2SeqModel,
+#         args: TrainingArguments,
+#         train_dataset: Dataset,
+#         eval_dataset: Dataset,
+#     ):
+#         self.seq2seq_model = seq2seq_model
+#         collator = DataCollatorForSeq2Seq(
+#             tokenizer=seq2seq_model.tokenizer, model=seq2seq_model.model
+#         )
+#         self.collator = collator
+#         self.args = args
+#         self.train_dataset = train_dataset
+#         self.eval_dataset = eval_dataset
 
-        super().__init__(
-            model=seq2seq_model.model,
-            data_collator=collator,
-            args=args,
-            train_dataset=train_dataset,
-            eval_dataset=eval_dataset,
-            tokenizer=seq2seq_model.tokenizer,
-            compute_metrics=compute_metrics,
-        )
+#         super().__init__(
+#             model=seq2seq_model.model,
+#             data_collator=collator,
+#             args=args,
+#             train_dataset=train_dataset,
+#             eval_dataset=eval_dataset,
+#             tokenizer=seq2seq_model.tokenizer,
+#             compute_metrics=compute_metrics,
+#         )
 
-    # def evaluate(self, eval_dataset, ignore_keys, metric_key_prefix):
-    #     print("TEST")
-    #     super().evaluate(
-    #         eval_dataset=eval_dataset,
-    #         ignore_keys=ignore_keys,
-    #         metric_key_prefix=metric_key_prefix,
-    #     )
+# def evaluate(self, eval_dataset, ignore_keys, metric_key_prefix):
+#     print("TEST")
+#     super().evaluate(
+#         eval_dataset=eval_dataset,
+#         ignore_keys=ignore_keys,
+#         metric_key_prefix=metric_key_prefix,
+#     )
 
-    # def training_step(
-    #     self, batch: Dict[str, torch.Tensor], batch_idx: int
-    # ) -> Dict[str, torch.Tensor]:
-    #     return self.seq2seq_model.training_step(batch=batch, batch_idx=batch_idx)
+# def training_step(
+#     self, batch: Dict[str, torch.Tensor], batch_idx: int
+# ) -> Dict[str, torch.Tensor]:
+#     return self.seq2seq_model.training_step(batch=batch, batch_idx=batch_idx)
 
 
 # trainer = CustomTrainer(
