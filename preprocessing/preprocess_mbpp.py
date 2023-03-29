@@ -101,6 +101,16 @@ def create_mbpp_prompt(prompt_examples_path: str, save_file_path: str, add_asser
     with open(save_file_path, 'w+') as f:
         f.write(final_prompt)
 
+def get_gen_logprob(tokens: List[str], token_logprobs: List[float], end_seq: str = "### Task End ###") -> float:
+    end_token_idx = -1
+    for i in range(len(tokens)):
+        if tokens[i].startswith(end_seq[0]) and "".join(tokens[i:]).startswith(end_seq):
+            end_token_idx = i
+            break
+    
+    program_logprob = sum(token_logprobs[:end_token_idx])
+    return program_logprob, program_logprob / end_token_idx
+
 def create_verification_data(codex_output_file: str, dataset_output_file: str):
     with open(codex_output_file, 'r') as f:
         data = [json.loads(line) for line in f.readlines()]
@@ -131,7 +141,12 @@ def create_verification_data(codex_output_file: str, dataset_output_file: str):
 
         processed_example["generated_k_programs"] = [{"program": generated_programs[i], 
                                                     "exec_match": batch_exec_results[i][0],
-                                                    "exec_states": batch_exec_results[i][1]} for i in range(2, len(generated_programs))]
+                                                    "exec_states": batch_exec_results[i][1],
+                                                    } for i in range(2, len(generated_programs))]
+        
+        for i, program_dict in enumerate(processed_example["generated_k_programs"]):
+            program_logprobs, norm_program_logprobs = get_gen_logprob(example["generation_tokens"][i], example["generation_probs"][i])
+            program_dict.update({"gen_prob": program_logprobs, "norm_gen_prob": norm_program_logprobs})
         
         processed_examples.append(processed_example)
 
@@ -146,4 +161,5 @@ if __name__ == "__main__":
     # create_mbpp_prompt('data/mbpp/mbpp_prompt.jsonl', 'prompt_files/mbpp_prompt_3_test.txt', 
     #                    add_assertion_n=3, test_input_only=True)
 
-    create_verification_data("results/mbpp-codex_davinci-few_shot-test-pass_at_100-1_test/predictions_step_0_rank_0.jsonl", 'data/mbpp/mbpp_verification_test.jsonl')
+    create_verification_data("results/mbpp-codex_davinci-few_shot-train-pass_at_100-1_test_input_only/predictions_step_0_rank_0.jsonl", 
+                             'data/mbpp/mbpp_input_only_verification_train.jsonl')

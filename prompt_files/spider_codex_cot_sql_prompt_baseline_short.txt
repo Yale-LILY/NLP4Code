@@ -1,0 +1,46 @@
+-- Translate natural language questions into SQL queries.
+
+-- Example:
+
+-- Database game_injury:
+--  Table stadium: id, name, Home_Games, Average_Attendance, Total_Attendance, Capacity_Percentage
+--  Table game: stadium_id, id, Season, Date, Home_team, Away_team, Score, Competition
+--  Table injury_accident: game_id, id, Player, Injury, Number_of_matches, Source
+-- Question: How many distinct kinds of injuries happened after season 2010?
+-- SQL:
+SELECT count(DISTINCT T1.Injury) FROM injury_accident AS T1 JOIN game AS T2 ON T1.game_id  =  T2.id WHERE T2.Season  >  2010
+
+-- Example:
+
+-- Database farm:
+--  Table city: City_ID, Official_Name, Status, Area_km_2, Population, Census_Ranking
+--  Table farm: Farm_ID, Year, Total_Horses, Working_Horses, Total_Cattle, Oxen, Bulls, Cows, Pigs, Sheep_and_Goats
+--  Table farm_competition: Competition_ID, Year, Theme, Host_city_ID, Hosts
+--  Table competition_record: Competition_ID, Farm_ID, Rank
+-- Question: Return the hosts of competitions for which the theme is not Aliens?
+-- SQL:
+SELECT Hosts FROM farm_competition WHERE Theme !=  'Aliens'
+
+-- Example:
+
+-- Database school_finance:
+--  Table School: School_id, School_name, Location, Mascot, Enrollment, IHSAA_Class, IHSAA_Football_Class, County
+--  Table budget: School_id, Year, Budgeted, total_budget_percent_budgeted, Invested, total_budget_percent_invested, Budget_invested_percent
+--  Table endowment: endowment_id, School_id, donator_name, amount
+-- Question: Show the average, maximum, minimum enrollment of all schools.
+-- SQL:
+SELECT avg(Enrollment) ,  max(Enrollment) ,  min(Enrollment) FROM School
+
+-- Example:
+
+-- Database cre_Docs_and_Epenses:
+--  Table Ref_Document_Types: Document_Type_Code, Document_Type_Name, Document_Type_Description
+--  Table Ref_Budget_Codes: Budget_Type_Code, Budget_Type_Description
+--  Table Projects: Project_ID, Project_Details
+--  Table Documents: Document_ID, Document_Type_Code, Project_ID, Document_Date, Document_Name, Document_Description, Other_Details
+--  Table Statements: Statement_ID, Statement_Details
+--  Table Documents_with_Expenses: Document_ID, Budget_Type_Code, Document_Details
+--  Table Accounts: Account_ID, Statement_ID, Account_Details
+-- Question: Return the ids and details corresponding to projects for which there are more than two documents.
+-- SQL:
+SELECT T1.Project_ID ,  T1.Project_Details FROM Projects AS T1 JOIN Documents AS T2 ON T1.Project_ID  =  T2.Project_ID GROUP BY T1.Project_ID HAVING count(*)  >  2

@@ -6,19 +6,22 @@ import random
 import os
 
 from tqdm import tqdm
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 
 from execution.spider_execution import connect_databse, spider_execution_sql, squall_answer_eq
 from execution.spider_execution import db_to_df_dict, spider_execution_py, spider_answer_eq, flatten_list_of_list
 from execution.wtq_eval import wtq_answer_eq
 
 from preprocessing.preprocess_spider import process_spider_output_example, pd_df_from_dict, post_process_exec_result
+from finetuning.lightning_modules.datasets.spider_reader import example_to_demonstration_sql_bridge
 
 
-DATA_PATH = "data/squall/squall.json"
+DATA_PATH = "data/squall/wtq-test-w_answer.json"
+# DATA_PATH = "data/squall/squall.json"
 DB_DIR = "data/squall/tables/db"
 
-COLUMN_DICT_FILE = "data/squall/column_mapping_dict.jsonl"
+COLUMN_DICT_FILE = "data/squall/column_mapping_dict_test.jsonl"
+# COLUMN_DICT_FILE = "data/squall/column_mapping_dict.jsonl"
 # COLUMN_DICT_FILE = "data/squall/column_dict.json"
 
 """
@@ -46,7 +49,7 @@ def load_json(path: str) -> dict:
         data = json.load(f)
     return data
 
-def process_squall_example(example: Dict[str, Any], col_name_mapping: Dict[str, Dict[str, str]]) -> Dict[str, Any]:
+def process_squall_example(example: Dict[str, Any], col_name_mapping: Dict[str, Dict[str, str]], add_sql: bool = True) -> Dict[str, Any]:
     processed_example = {"db_id": example["tbl"], "question": " ".join(example["nl"]), 
                          "query": "", "answer": "", "original_answer": example['tgt'],
                          "metadata": example}
@@ -67,22 +70,22 @@ def process_squall_example(example: Dict[str, Any], col_name_mapping: Dict[str, 
     processed_example["db_table_headers"] = df_dict_headers
 
     # get the sql query
-    processed_sql_tokens = []
-    for token_fields in example["sql"]:
-        if token_fields[0] == "Column" and token_fields[1] in original_col_name_dict: # to handle a edge case
-            processed_sql_tokens.append(original_col_name_dict[token_fields[1]])
-        else:
-            processed_sql_tokens.append(token_fields[1])
-    sql_query = " ".join(processed_sql_tokens)
+    if add_sql:
+        processed_sql_tokens = []
+        for token_fields in example["sql"]:
+            if token_fields[0] == "Column" and token_fields[1] in original_col_name_dict: # to handle a edge case
+                processed_sql_tokens.append(original_col_name_dict[token_fields[1]])
+            else:
+                processed_sql_tokens.append(token_fields[1])
+        sql_query = " ".join(processed_sql_tokens)
 
-    sql_query = name_change(sql_query, original_col_name_dict)
-    sql_query = sql_query.replace(" from w", " from main_table")
-    processed_example["query"] = sql_query
+        sql_query = name_change(sql_query, original_col_name_dict)
+        sql_query = sql_query.replace(" from w", " from main_table")
+        processed_example["query"] = sql_query
 
-    # verify the sql query
-    
-    sql_exec_result = spider_execution_sql(sql_query, conn) 
-    processed_example["answer"] = sql_exec_result
+        # verify the sql query
+        sql_exec_result = spider_execution_sql(sql_query, conn) 
+        processed_example["answer"] = sql_exec_result
 
     return processed_example
 
@@ -215,15 +218,16 @@ def preprocess_squall_dataset():
     # load the column renaming dict
     with open(COLUMN_DICT_FILE, 'r') as f:
         dict_items = [json.loads(s) for s in f.readlines()]
-        col_renaming_dict = {item['db_id']: item['col_renaming_mapping'] for item in dict_items}
+        # col_renaming_dict = {item['db_id']: item['col_renaming_mapping'] for item in dict_items}
+        col_renaming_dict = dict_items[0]
 
     processed_data = []
     for example in tqdm(dataset):
-        processed_data.append(process_squall_example(example, col_renaming_dict))
-        executable_sql_n = sum(map(lambda x: float(x['answer'] is not None), processed_data))
-        print(f"{len(processed_data)} examples, {executable_sql_n} executable sql")
+        processed_data.append(process_squall_example(example, col_renaming_dict, add_sql=False))
+        # executable_sql_n = sum(map(lambda x: float(x['answer'] is not None), processed_data))
+        # print(f"{len(processed_data)} examples, {executable_sql_n} executable sql")
     
-    with open("data/squall/squall_processed.jsonl", "w+") as f:
+    with open("data/squall/squall_processed_test.jsonl", "w+") as f:
         for example in processed_data:
             f.write(json.dumps(example)+"\n")
 
@@ -361,22 +365,267 @@ def all_data_aggregation():
         for example in all_processed_examples:
             f.write(json.dumps(example)+"\n")
 
+def get_example_val_for_db_columns(db_path: str, table_columns_dict: Dict[str, List[str]]) -> Dict[str, List[Tuple[str, str]]]:
+    # return a dict of table name to a list of column name and example value pairs
+    result_dict = {}
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
 
+    for table_name, column_names in table_columns_dict.items():
+        col_name_val_tuples = []
+        for column_name in column_names:
+            sql = f"SELECT {column_name} FROM {table_name} WHERE {column_name} IS NOT NULL"
+            try:
+                cursor = conn.cursor()
+                cursor.execute(sql)
+                result = cursor.fetchone()
+                if result is not None:
+                    col_name_val_tuples.append((column_name, result[0]))
+                else:
+                    col_name_val_tuples.append((column_name, "NULL"))
+            except Exception as e:
+                error_msg = f"ERROR: {str(e)}"
+                col_name_val_tuples.append((column_name, "NULL"))
+        result_dict[table_name] = col_name_val_tuples
+    
+    conn.close()
+    
+    return result_dict
 
+def get_example_row_for_db(db_path: str, table_columns_dict: List[str]) -> Dict[str, List[Tuple[Any]]]:
+    # return a dict of table name to some rows represented as tuples
+    result_dict = {}
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+
+    for table_name, column_names in table_columns_dict.items():
+        sql = f"SELECT {', '.join(column_names)} FROM {table_name} LIMIT 3"
+        try:
+            cursor = conn.cursor()
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            result_dict[table_name] = result
+        except Exception as e:
+            error_msg = f"ERROR: {str(e)}"
+            result_dict[table_name] = None
+
+    return result_dict
+
+def build_db_info(examples: Dict[str, Any], save_file_path: str):
+    db_info = {}
+    for example in tqdm(examples):
+        db_id = example["metadata"]["db_id"]
+
+        if db_id not in db_info:
+            db_path = os.path.join(DB_DIR, f"{db_id}.db")
+            db_headers = example["metadata"]["db_table_headers"]
+            db_info_dict = {"db_path": db_path, "columns": db_headers, 
+                            "column_example_values": get_example_val_for_db_columns(db_path, db_headers),
+                            "column_example_rows": get_example_row_for_db(db_path, db_headers)}
+            db_info[db_id] = db_info_dict
+    
+    # some basic analysis
+    db_null_col_num_list = []
+    for _, db_info_dict in db_info.items():
+        db_null_col_num = 0
+        for _, column_name_val_tuples in db_info_dict["column_example_values"].items():
+            for _, column_val in column_name_val_tuples:
+                if column_val == "NULL":
+                    db_null_col_num += 1
+        db_null_col_num_list.append(db_null_col_num)
+    print(f"average number of null columns: {sum(db_null_col_num_list)/len(db_null_col_num_list)}")
+                    
+    
+    with open(save_file_path, "w+") as f:
+        json.dump(db_info, f)
+
+def create_prompt():
+    # set some constant values as function parameters
+    promptify_func: callable = example_to_demonstration_sql_bridge
+    save_file_path: str = "prompt_files/squall_codex_cot_sql_prompt_bridge.txt"
+
+    # load all the examples
+    results = []
+    file_names = [f"data/squall/squall-codex_davinci-pass_at_50-{x}-output_gen_prob.jsonl" for x in ["train"]]
+    for file_name in file_names:
+        with open(file_name, "r") as f:
+            results.extend([json.loads(line) for line in f.readlines()])
+    question_example_dict = {example["metadata"]["db_id"]+example["metadata"]["question"]: example["metadata"] for example in results}
+
+    # find the same few_shot examples
+    with open("prompt_files/squall_codex_cot_sql_prompt_baseline.txt", "r") as f:
+        lines = f.readlines()
+        db_ids = [x[len("-- Database"):].strip()[:-1] for x in list(filter(lambda x: x.startswith("-- Database"), lines))]
+        questions = [x[len("-- Question:"):].strip() for x in list(filter(lambda x: x.startswith("-- Question:"), lines))]
+    few_shot_examples = [question_example_dict[db_id+question] for question, db_id in zip(questions, db_ids)]
+    # few_shot_examples = [x["metadata"] for x in random.sample(results, 10)]
+
+    # now actually build the prompts
+    prompt = "-- Translate natural language questions into SQL queries.\n\n"
+    for example in few_shot_examples:
+        example_prompt = "-- Example:\n\n" + promptify_func(example)
+        prompt += example_prompt + "\n\n"
+    prompt = prompt.strip()
+    
+    with open(save_file_path, "w+") as f:
+        f.write(prompt)
+
+def get_squall_wtq_difference():
+    # load all the examples from train and dev of squall, which is already prompted
+    results = []
+    file_names = [f"data/squall/squall-codex_davinci-pass_at_50-{x}-output_gen_prob-bridge_prompt.jsonl" for x in ["train", "dev", "wtq_only"]]
+    for file_name in file_names:
+        with open(file_name, "r") as f:
+            results.extend([json.loads(line) for line in f.readlines()])
+    id_result_dict = {x["metadata"]["metadata"]["nt"]: x["metadata"] for x in results}
+
+    def get_table_id(file_name: str):
+        # an example: csv/204-csv/622.csv
+        name_splits = file_name.split("csv")
+        folder_name = name_splits[1][1:-1]
+        csv_name = name_splits[2][1:-1]
+        assert folder_name.isnumeric()
+        assert csv_name.isnumeric()
+        return  f"{folder_name}_{csv_name}"
+
+    # load the original wtq dataset, which is in tsv format
+    wtq_data = []
+    with open("data/squall/training.tsv", "r") as f:
+        lines = f.readlines()
+        for line in lines[1:]:
+            fields = line.strip().split("\t")
+            assert len(fields) == 4
+
+            # parse the fields
+            id = fields[0]
+            question = fields[1]
+            table_id = get_table_id(fields[2])
+            answer = fields[3]
+
+            if id in id_result_dict:
+                # if the example is in the squall dataset, then we skip it
+                assert table_id == id_result_dict[id]["db_id"]
+                # assert question.replace(" ", "") == id_result_dict[id]["question"].replace(" ", "") # remove all the spaces
+                continue
+            else:
+                wtq_data.append({
+                    "db_id": table_id,
+                    "question": question,
+                    "query": "",
+                    "answer": "",
+                    "original_answer": answer,
+                    "metadata": {
+                        "tbl": table_id, 
+                        "nt": id
+                    }
+                })
+    
+    # save the wtq data
+    with open("data/squall/wtq_only_train_dev_missing.jsonl", "w+") as f:
+        for example in wtq_data:
+            f.write(json.dumps(example) + "\n")
+
+def get_wtq_only_db_info():
+    with open("data/squall/db_info.json", "r") as f:
+        db_info = json.load(f)
+    
+    # read all the remaining wtq examples
+    with open("data/squall/wtq_only_train_dev.jsonl", "r") as f:
+        wtq_only_examples = [json.loads(line) for line in f.readlines()]
+    db_ids = list(filter(lambda y: y not in db_info, set([x["db_id"] for x in wtq_only_examples])))
+    print(f"db_ids: {db_ids}")
+
+    for db_id in tqdm(db_ids):
+        assert db_id not in db_info
+
+        db_path = os.path.join(DB_DIR, f"{db_id}.db")
+        conn = sqlite3.connect(db_path)
+        df_dict = db_to_df_dict(conn)
+
+        db_headers = {}
+        for k, v in df_dict.items():
+            db_headers[k] = v.columns.tolist()
+
+        db_info_dict = {"db_path": db_path, "columns": db_headers, 
+                        "column_example_values": get_example_val_for_db_columns(db_path, db_headers),
+                        "column_example_rows": get_example_row_for_db(db_path, db_headers)}
+        db_info[db_id] = db_info_dict
+    
+    with open("data/squall/db_info_wtq.json", "w+") as f:
+        json.dump(db_info, f)
+
+def resplit_squall_to_wtq():
+    # first combine the train, dev from squall and wtq only datasets
+    results = []
+    file_names = [f"data/squall/squall-codex_davinci-pass_at_50-{x}-output_gen_prob-bridge_prompt.jsonl" for x in ["train", "dev", "wtq_only", "wtq_only_missing"]]
+    for file_name in file_names:
+        with open(file_name, "r") as f:
+            results.extend([json.loads(line) for line in f.readlines()])
+    id_example_dict = {x["metadata"]["metadata"]["nt"]: x for x in results}
+    
+    # then read the original split of the wtq dataset
+    with open("data/squall/random-split-1-train.tsv", "r") as f:
+        wtq_train_ids = [line.split("\t")[0] for line in f.readlines()][1:]
+    with open("data/squall/random-split-1-dev.tsv", "r") as f:
+        wtq_dev_ids = [line.split("\t")[0] for line in f.readlines()][1:]
+    
+    # then split the combined dataset into train and dev
+    wtq_train_prompted = [id_example_dict[i] for i in wtq_train_ids]
+    wtq_dev_prompted = [id_example_dict[i] for i in wtq_dev_ids]
+
+    print(f"wtq_train_prompted: {len(wtq_train_prompted)}")
+    print(f"wtq_dev_prompted: {len(wtq_dev_prompted)}")
+
+    with open("data/squall/wtq-codex_davinci-pass_at_50-train.jsonl", "w+") as f:
+        for example in wtq_train_prompted:
+            f.write(json.dumps(example) + "\n")
+    with open("data/squall/wtq-codex_davinci-pass_at_50-dev.jsonl", "w+") as f:
+        for example in wtq_dev_prompted:
+            f.write(json.dumps(example) + "\n")
+
+def restore_wtq_data():
+    # restore the wtq data from few-shot results
+    for split in ["train", "dev", "test"]:
+        file_name = f"data/squall/wtq-codex_davinci-pass_at_50-{split}.jsonl"
+
+        with open(file_name, "r") as f:
+            results = [json.loads(line) for line in f.readlines()]
+
+            with open(f"data/squall/wtq_restored_{split}.jsonl", "w+") as f:
+                for result in results:
+                    example = result["metadata"]
+                
+                    example.pop("pad_token_id")
+                    example.pop("correct_token_idx")
+                    example.pop("incorrect_token_idx")
+
+                    f.write(json.dumps(example) + "\n")
 
 def main():
     # read the data
+    # data = load_json(DATA_PATH)
 
     # build_column_name_dict(data)
 
     # preprocess_squall_dataset()
 
-    train_dev_split()
+    # train_dev_split()
 
     # all_data_aggregation()
 
+    # results = []
+    # file_names = [f"data/squall/squall-codex_davinci-pass_at_50-{x}-output_gen_prob.jsonl" for x in ["train", "dev", "test"]]
+    # for file_name in file_names:
+    #     with open(file_name, "r") as f:
+    #         results.extend([json.loads(line) for line in f.readlines()])
     
+    # build_db_info(results, "data/squall/db_info.json")
 
+    # create_prompt()
+
+    # get_squall_wtq_difference()
+
+    # resplit_squall_to_wtq()
+
+    restore_wtq_data()
 
 if __name__ == "__main__":
     main()

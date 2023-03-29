@@ -8,6 +8,7 @@ import string
 import random
 import re
 import multiprocessing
+import warnings
 
 from typing import List, Dict, Any, Union, Tuple
 from pathlib import Path
@@ -19,11 +20,13 @@ from execution.spider_official_exec_match import eval_exec_match
 # from .safe_execution_util import execute
 
 def pd_df_to_dict(df: pd.DataFrame) -> Tuple[dict, bool]:
-    cutoff = False
-    if len(df) > 5:
-        df = df.head(5)
-        cutoff = True
-    return df.to_dict(orient='tight'), cutoff
+    with warnings.catch_warnings():
+        warnings.simplefilter(action='ignore', category=UserWarning)
+        cutoff = False
+        if len(df) > 5:
+            df = df.head(5)
+            cutoff = True
+        return df.to_dict(orient='tight'), cutoff
 
 def pd_df_from_dict(dt: dict) -> pd.DataFrame:
     return pd.DataFrame.from_dict(dt, orient='tight')
@@ -52,6 +55,7 @@ def connect_databse(db_path: str, read_only: bool=True) -> sqlite3.Connection:
     if read_only:
         conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     else:
+        raise ValueError("Error: read_only must be True")
         conn = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
     return conn
 
@@ -108,6 +112,7 @@ def spider_decomp_execution_sql(sql: str, example: Dict[str, Any], return_error_
     random_file_name = int(abs(hash(db_path+example["query"]+example["question"]))) % 10000000
     tmp_db_path = os.path.join(str(db_path_root), 'tmp', f"tmp_{random_file_name}.{extension}")
     shutil.copyfile(db_path, tmp_db_path) 
+    raise ValueError("Error: read_only must be True")
     conn = sqlite3.connect(f"file:{tmp_db_path}?mode=rw", uri=True)
     cursor = conn.cursor()
 

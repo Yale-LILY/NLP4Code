@@ -333,7 +333,7 @@ def wtq_execution_sql(sql: str, example: Dict[str, Any], return_error_msg: bool 
     except:
         return None
 
-def wtq_answer_eq(prediction: List[Any], gold_answer: str) -> bool:
+def wtq_answer_eq(prediction: List[Any], gold_answer: str, allow_normalize: bool = True) -> bool:
     if prediction is None or len(prediction) == 0: 
         return False
     
@@ -355,7 +355,7 @@ def wtq_answer_eq(prediction: List[Any], gold_answer: str) -> bool:
     eval_result = check_denotation(pred_vals, gold_vals)
 
     # give another try by normalize out the units
-    if not eval_result:
+    if not eval_result and allow_normalize:
         num_unit_split = gold_answer_str.split(" ")
         if "," in gold_answer_str and is_number(gold_answer_str.replace(",", "")):
             second_chance_eval_result = wtq_answer_eq(prediction, gold_answer_str.replace(",", ""))

@@ -1,0 +1,24 @@
+-- Translate natural language questions into SQL queries. ###<eoi>###
+
+-- Example:
+
+-- Database game_injury:
+--  Table stadium: id, name, Home_Games, Average_Attendance, Total_Attendance, Capacity_Percentage
+--  Table game: stadium_id, id, Season, Date, Home_team, Away_team, Score, Competition
+--  Table injury_accident: game_id, id, Player, Injury, Number_of_matches, Source
+-- Question: How many distinct kinds of injuries happened after season 2010?
+-- SQL:###<sep>###
+SELECT count(DISTINCT T1.Injury) FROM injury_accident AS T1 JOIN game AS T2 ON T1.game_id  =  T2.id WHERE T2.Season  >  2010
+###<sep>###
+
+-- Example:
+
+-- Database farm:
+--  Table city: City_ID, Official_Name, Status, Area_km_2, Population, Census_Ranking
+--  Table farm: Farm_ID, Year, Total_Horses, Working_Horses, Total_Cattle, Oxen, Bulls, Cows, Pigs, Sheep_and_Goats
+--  Table farm_competition: Competition_ID, Year, Theme, Host_city_ID, Hosts
+--  Table competition_record: Competition_ID, Farm_ID, Rank
+-- Question: Return the hosts of competitions for which the theme is not Aliens?
+-- SQL:###<sep>###
+SELECT Hosts FROM farm_competition WHERE Theme !=  'Aliens'
+###<sep>###

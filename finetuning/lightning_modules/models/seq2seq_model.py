@@ -18,12 +18,12 @@ from torchmetrics import Metric, MeanMetric, MetricCollection
 from pytorch_lightning import LightningModule
 from pytorch_lightning.utilities.deepspeed import convert_zero_checkpoint_to_fp32_state_dict
 
-from .seq2seq_model_util import get_model, post_process_code, is_model_gpt_style
+from .seq2seq_model_util import get_model, is_model_gpt_style
 from finetuning.lightning_modules.patches.categorized_metric import CategorizedMetric
 from execution.executors import BaseExecutor
 
-# those are for eval() of the execution funcs, see line 59
-import execution 
+# these are for eval() of the execution funcs, see line 59
+import execution
 import finetuning.lightning_modules.models
 import finetuning.lightning_modules.datasets
 
@@ -43,6 +43,9 @@ class Seq2SeqModel(LightningModule):
                  gradient_ckpt: bool = False,
                  pass_at_k: int = 1,
                  eval_pass_at_k_every_n_epochs: int = 1,
+                 eval_pass_at_k_at_epoch_end: bool = True,
+                 save_raw_generation_results: bool = False,
+                 use_chat_format: bool = False,
                  print_eval_every_n_batches: int = -1,
                  max_generation_batches: int = 100,
                  max_steps: int = -1,
@@ -64,9 +67,17 @@ class Seq2SeqModel(LightningModule):
         self.max_generation_batches = max_generation_batches
         self.print_eval_every_n_batches = print_eval_every_n_batches
         self.beam_size = beam_size
+        self.save_raw_generation_results = save_raw_generation_results
+        self.use_chat_format = use_chat_format
 
         # We only instantiate this when we need it.
         self.transformer_model_name = transformer_model_name
+        if "openai" in self.transformer_model_name:
+            transformer_model_init_args["save_raw_generation_results"] = self.save_raw_generation_results
+            transformer_model_init_args["use_chat_format"] = self.use_chat_format
+        else:
+            assert self.use_chat_format == False, "use_chat_format is only supported for openai models"
+
         self.model, self.tokenizer = get_model(transformer_model_name, gradient_ckpt=gradient_ckpt, 
                                                additional_init_args=transformer_model_init_args)
 
@@ -77,9 +88,9 @@ class Seq2SeqModel(LightningModule):
         # save the prediction results for every valiation epoch
         self.predictions: List[Dict[str, Any]] = []
 
-        self.opt_params = optimizer["init_args"]
-        self.lrs_params = lr_scheduler
-        assert lr_scheduler["name"] in ["linear", "cosine", "constant"], "lr_scheduler must be one of 'linear', 'cosine', 'constant'"
+        self.opt_params = optimizer["init_args"] if optimizer is not None else {}
+        self.lrs_params = lr_scheduler if lr_scheduler is not None else {}
+        assert lr_scheduler is None or lr_scheduler["name"] in ["linear", "cosine", "constant"], "lr_scheduler must be one of 'linear', 'cosine', 'constant'"
 
         # load the state dict from the checkpoint file
         if load_ckpt_file is not None:
@@ -112,12 +123,21 @@ class Seq2SeqModel(LightningModule):
             self.metrics_dict[f"pass@{self.pass_at_k}"]= MeanMetric()
             self.metrics_dict["unique_program_ratio"]= MeanMetric()
     
+    def generation_score_to_log_prob(self, generated_token_ids: torch.Tensor, scores: Tuple[torch.Tensor]) -> Tuple[List[float], List[int]]:
+        # generated_token_ids: (batch_size, seq_len)
+        # scores: (seq_len, batch_size, vocab_size)
+        logprobs = F.log_softmax(torch.stack(scores, dim=0).transpose(0, 1), dim=2) # (batch_size, seq_len, vocab_size)
+        selected_token_logprobs = [torch.gather(logprobs[i], 1, generated_token_ids[i].unsqueeze(1)).squeeze(1).tolist() \
+                                    for i in range(generated_token_ids.size(0))]
+
+        return selected_token_logprobs
+    
     def generate_and_post_process(self, 
                                   input_ids: torch.Tensor, 
                                   attention_mask: torch.Tensor, 
                                   temperature: float, 
                                   beam_search: bool = False,
-                                  num_return_sequences: int = 1) -> List[str]:
+                                  num_return_sequences: int = 1) -> Tuple[List[str], List[List[float]], List[List[int]]]:
 
         if beam_search:
             assert num_return_sequences == 1, "beam search only support num_return_sequences = 1"
@@ -129,9 +149,14 @@ class Seq2SeqModel(LightningModule):
             num_beam = 1
             temp = temperature
 
-        generated_token_ids = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=use_sample, 
+        generation_results = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=use_sample, 
                                                   max_new_tokens=self.max_gen_len, num_beams=num_beam,
-                                                  temperature=temp, num_return_sequences=num_return_sequences)
+                                                  temperature=temp, num_return_sequences=num_return_sequences,
+                                                  return_dict_in_generate=True, output_scores=True)
+        
+        # unpack the results
+        generated_token_ids = generation_results["sequences"]
+        generated_scores = generation_results["scores"]
 
         if is_model_gpt_style(self.transformer_model_name):
             generated_token_ids = generated_token_ids[:, input_ids.shape[1]:]
@@ -140,15 +165,26 @@ class Seq2SeqModel(LightningModule):
         # NOTE: incoder can not correctly skip <pad> token thus skipping special token would cause error
         if "incoder" in self.transformer_model_name:
             generated_strs = self.tokenizer.batch_decode(generated_token_ids, clean_up_tokenization_spaces=False)
-        elif "codex" in self.transformer_model_name:
-            generated_strs = generated_token_ids # codex would directly output the string
+        elif "openai" in self.transformer_model_name:
+            generated_strs = generated_token_ids # openai models would directly output the string
         else:
             generated_strs = self.tokenizer.batch_decode(generated_token_ids, skip_special_tokens=True)
+        
+        if self.save_raw_generation_results:
+            if "openai" in self.transformer_model_name:
+                generation_log_probs = generated_scores
+                generated_token_ids = generation_results["tokens"]
+            else:
+                generation_log_probs = self.generation_score_to_log_prob(generated_token_ids, generated_scores)
+                generated_token_ids = [x.tolist() for x in generated_token_ids]
         
         # do some truncation
         generated_programs = [self.executor.process_output(s, self.tokenizer.eos_token) for s in generated_strs]
 
-        return generated_programs
+        if self.save_raw_generation_results:
+            return generated_programs, generation_log_probs, generated_token_ids
+        else:
+            return generated_programs, None, None
 
     def forward(  # type: ignore
         self, 
@@ -166,28 +202,47 @@ class Seq2SeqModel(LightningModule):
         Returns:
             Dict[str, Any]: results saved in a `Dict` object.
         """        
-        generated_programs = self.generate_and_post_process(input_ids, attention_mask, self.sampling_temp,
-                                                            beam_search=(self.beam_size > 1))
+        generated_programs, generation_probs, generation_tokens = \
+            self.generate_and_post_process(input_ids, attention_mask, self.sampling_temp, beam_search=(self.beam_size > 1))
 
-        output_dicts = [{"generated_program": generated_programs[i], "metadata": metadata[i]} \
-                        for i in range(len(generated_programs))]
+        # construct the output dict with the basic information
+        output_dicts = []
+        for i in range(len(generated_programs)):
+            output_dict = {}
+            output_dict["generated_program"] = generated_programs[i]
+            output_dict["metadata"] = metadata[i]
+            if self.save_raw_generation_results:
+                output_dict["generation_probs"] = generation_probs[i]
+                output_dict["generation_tokens"] = generation_tokens[i]
+            output_dicts.append(output_dict)
 
         # evaluate pass at k 
         if self.current_epoch % self.eval_pass_at_k_every_n_epochs == 0 and self.pass_at_k > 1:
             generated_strs_list = [[] for _ in range(len(metadata))]
+            if self.save_raw_generation_results:
+                generation_probs_list = [[] for _ in range(len(metadata))]
+                generation_tokens_list = [[] for _ in range(len(metadata))]
             remaining_k = self.pass_at_k
             while remaining_k > 0:
                 generate_batch_size = min(remaining_k, self.max_generation_batches)
                 remaining_k -= generate_batch_size
 
-                batch_generated_programs = self.generate_and_post_process(input_ids, attention_mask, self.sampling_temp_at_k, 
+                batch_generated_programs, batch_generation_probs, batch_generation_tokens = \
+                    self.generate_and_post_process(input_ids, attention_mask, self.sampling_temp_at_k, 
                                                 num_return_sequences=generate_batch_size)
 
                 for i in range(len(metadata)):
                     generated_strs_list[i].extend(batch_generated_programs[i*generate_batch_size:(i+1)*generate_batch_size])
+                    if self.save_raw_generation_results:
+                        generation_probs_list[i].extend(batch_generation_probs[i*generate_batch_size:(i+1)*generate_batch_size])
+                        generation_tokens_list[i].extend(batch_generation_tokens[i*generate_batch_size:(i+1)*generate_batch_size])
+
 
             for i in range(len(metadata)):
                 output_dicts[i]["generated_k_programs"] =  generated_strs_list[i]
+                if self.save_raw_generation_results:
+                    output_dicts[i]["generation_probs"] = generation_probs_list[i]
+                    output_dicts[i]["generation_tokens"] = generation_tokens_list[i]
 
 
         return output_dicts

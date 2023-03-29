@@ -119,6 +119,9 @@ def unsafe_execute(check_program: str,
             result["result"] = f"failed: {e}"
         finally:
             result["ostream"] = ostream.getvalue()
+        
+        if "result" not in result:
+            result["result"] = "failed: unknown error"
 
         # Needed for cleaning up.
         shutil.rmtree = rmtree
