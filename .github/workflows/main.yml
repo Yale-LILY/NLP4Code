@@ -1,0 +1,133 @@
+name: CI
+
+# run on pushes to main + PR creation/push
+# TODO: excludes regex
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+
+  # Code style and linting
+  STYLE:
+    name: STYLE
+    # runs-on: self-hosted
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      # - name: Test SSL workaround
+      #   run: python -m pip install --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --trusted-host pypi.org --upgrade pip
+
+      # - name: Setup Python
+      #   uses: actions/setup-python@v2
+      #   env:
+      #     # Log useful debugging information.
+      #     ACTIONS_STEP_DEBUG: 'true'
+      #   with:
+      #     python-version: 3.8
+
+      - name: Installation
+        run: |
+          pip install black
+          pip install flake8
+      - name: Debug info
+        run: |
+          which pip
+          pip --version
+          which python
+          python --version
+          pip freeze
+          df -h
+          echo $HOME
+      - name: Run black
+        run: black --check .
+
+      - name: Run flake8
+        run: flake8 --count .
+
+  # Unit tests
+  TESTS:
+    name: TESTS
+    # runs-on: self-hosted
+    runs-on: ubuntu-22.04
+    env:
+      CUDA_VISIBLE_DEVICES: 1
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Set up installation
+        run: pip install --upgrade pip virtualenv
+
+      - name: Set up virtual environment
+        run: |
+          rm -rf .venv
+          python3 -m venv .venv
+          . .venv/bin/activate
+      
+      - name: Pre-installation upgrade
+        run: |
+          . .venv/bin/activate
+          pip install --upgrade pip
+          pip install --upgrade setuptools
+          pip install --upgrade wheel
+      - name: Debug info
+        run: |
+          . .venv/bin/activate
+          pwd
+          which pip
+          pip --version
+          which python
+          python --version
+          pip freeze
+          df -h
+          echo $HOME
+          export
+      - name: Installation
+        run: |
+          . .venv/bin/activate
+          pip install -r requirements.txt
+          # pip install numpy
+          # python -m pip install --upgrade pip setuptools wheel
+          # pip install pyrouge@git+https://github.com/bheinzerling/pyrouge.git     
+          # pip install en_core_web_sm@https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.0.0/en_core_web_sm-3.0.0-py3-none-any.whl
+          # pip install -e .
+          # # pip install cython
+          # # pip install -r requirements.txt
+          # # pip install -U git+https://github.com/bheinzerling/pyrouge.git
+
+      - name: Setup scripts
+        run: |
+          . .venv/bin/activate
+          # python setup.py develop --user
+          # pip install -e .
+
+      - name: Test datasets
+        run: |
+          . .venv/bin/activate
+          python tests/test_datasets.py
+
+      - name: Test executors
+        run: |
+          . .venv/bin/activate
+          python tests/test_executors.py
+
+      - name: Test inference pipeline
+        run: |
+          . .venv/bin/activate
+          python tests/test_inference_pipeline.py
+
+      - name: Test models
+        run: |
+          . .venv/bin/activate
+          python tests/test_models.py
