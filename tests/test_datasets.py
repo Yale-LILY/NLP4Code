@@ -1,8 +1,9 @@
 import unittest
 
-from os import path
+from os import path, sys
 
 ROOT_DIR = path.dirname(path.dirname(path.abspath(__file__)))
+sys.path.append(ROOT_DIR)
 
 from execution.executors import MathExecutor
 
