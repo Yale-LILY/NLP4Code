@@ -13,7 +13,8 @@ from transformers import PreTrainedTokenizer
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 # OPENAI_API_ORG = os.environ.get('OPENAI_API_ORG')
 if OPENAI_API_KEY is None:
-    raise Exception("Please set your OpenAI API key in the environment variable OPENAI_API_KEY")
+    pass
+    # raise Exception("Please set your OpenAI API key in the environment variable OPENAI_API_KEY")
 else:
     openai.api_key = OPENAI_API_KEY
     # openai.organization = OPENAI_API_ORG
