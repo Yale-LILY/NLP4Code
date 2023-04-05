@@ -39,6 +39,8 @@ jobs:
           pip install flake8
       - name: Debug info
         run: |
+          pwd
+          ls -la
           which pip
           pip --version
           which python
@@ -85,6 +87,7 @@ jobs:
         run: |
           . .venv/bin/activate
           pwd
+          ls -la
           which pip
           pip --version
           which python
@@ -115,6 +118,7 @@ jobs:
       - name: Test datasets
         run: |
           . .venv/bin/activate
+          ls -la
           python tests/test_datasets.py
 
       - name: Test executors
