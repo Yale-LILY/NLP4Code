@@ -1,0 +1,103 @@
+seed_everything: 333
+trainer:
+  gpus: 2
+  gradient_clip_val: 1.0
+  # default_root_dir: &exp_name results/mbpp-codex_davinci-few_shot-test-pass_at_100-save_raw_generation_results-1_assertion
+  default_root_dir: &exp_name results/debug-tmp
+  val_check_interval: 1.0
+  max_steps: &max_steps 25000
+  # progress_bar_refresh_rate: 1
+  num_sanity_val_steps: 0
+  log_every_n_steps: 1
+  logger+:
+    - class_path: finetuning.lightning_modules.patches.patched_loggers.PatchedWandbLogger
+      init_args:
+        entity: yale-lily
+        project: unified-codegen
+        save_dir: *exp_name
+        name: *exp_name
+        log_model: False
+        save_code: True
+        offline: False
+        # offline: True
+  callbacks+:
+    - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
+      init_args:
+        # monitor: exec_acc
+        monitor: pass@100
+        mode: max
+        # filename: '{step}-{exec_acc:.4f}-{exec_rate:.4f}'
+        filename: '{step}-{pass@100:.4f}-{exec_acc:.4f}'
+        save_top_k: 3
+        save_last: True
+    - class_path: pytorch_lightning.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: step
+    - class_path: pytorch_lightning.callbacks.progress.TQDMProgressBar
+      init_args:
+        refresh_rate: 1
+    # - class_path: pytorch_lightning.callbacks.gpu_stats_monitor.GPUStatsMonitor
+    #   init_args:
+    #     memory_utilization: true
+    #     gpu_utilization: true
+        
+  # accelerator: gpu
+  # replace_sampler_ddp: False
+  # https://github.com/PyTorchLightning/pytorch-lightning/issues/8262
+  # strategy: deepspeed_stage_2
+  strategy: ddp_find_unused_parameters_false
+  precision: 16
+  # accumulate_grad_batches: 2
+
+model:
+  class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
+  init_args:
+    transformer_model_name: default
+    executor_cls: execution.executors.MBPPExecutor
+    # categorize_func: execution.spider_execution.spider_categorize_complexity
+    # category_list: ["JOIN", "NESTED", "COMPOUND", "SIMPLE"]
+    max_gen_len: 256
+    sampling_temp: 0.001
+    # sampling_temp_at_k: 0.8
+    # pass_at_k: 100
+    # load_ckpt_file: results/squall-t5_large-finetuning-cat_eval-pass_100_eval-max_pass_at_k/cot-codegen/2vx58eip/checkpoints/step=534-pass@100=0.8419-exec_acc=0.5593.ckpt
+    # eval_pass_at_k_every_n_epochs: 1
+    # max_generation_batches: 10
+    print_eval_every_n_batches: 1
+    save_raw_generation_results: true
+    gradient_ckpt: true
+    # transformer_model_init_args:
+    #   stop_seq: "### Task End ###"
+    # eval_greedy_search: true
+    optimizer:
+      init_args: 
+        # lr: 5.0e-5
+        lr: 0.0
+        betas: 
+          - 0.9
+          - 0.999
+        eps: 1.0e-8
+        weight_decay: 0.1
+    lr_scheduler:
+      name: linear
+      init_args:
+        num_warmup_steps: 100
+        num_training_steps: *max_steps
+
+data:
+  class_path: lightning_modules.datasets.mbpp_reader.FewShotMBPPDataModule
+  init_args:
+    transformer_model_name: default
+    batch_size: 1
+    val_batch_size: 1
+    # train_max_instances: 100
+    # val_max_instances: 5
+    train_set_init_args:
+      file_path: data/mbpp/mbpp_train.jsonl
+    val_set_init_args:
+      # prompt_examples: 4
+      add_assertion_n: 1
+      test_input_only: false
+      file_path: data/mbpp/mbpp_test.jsonl
+      prompt_file: prompt_files/mbpp_prompt_1_test.txt
+      # file_path: data/spider/dev_processed_db_path.jsonl

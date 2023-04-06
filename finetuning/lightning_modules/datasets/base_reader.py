@@ -33,7 +33,8 @@ class NL2CodeDataset(Dataset):
         mask_context_loss: bool = False,
         multi_instance_example: bool = False,
         enable_tqdm: bool = False,
-        stats_keys: List[str] = ["total_instances"],
+        generation_length: int = 128,
+        stats_keys: List[str] = ["total_instances", "input_too_long"],
         **kwargs):
         super().__init__(**kwargs)
 
@@ -51,6 +52,7 @@ class NL2CodeDataset(Dataset):
         self.mode = mode
         self.multi_instance_example = multi_instance_example
         self.enable_tqdm = enable_tqdm
+        self.generation_length = generation_length
 
         # use to report dataset statistics
         self.stats = dict()
@@ -64,14 +66,14 @@ class NL2CodeDataset(Dataset):
         example_dict = {"metadata": example}
 
         if train_mode:
-            tokenizer_outputs = self.tokenizer("\n".join([context, code]))
-            context_len = len(self.tokenizer(context + "\n")["input_ids"])
+            tokenizer_outputs = self.tokenizer("\n".join([context, code]), truncation=length_cutoff)
+            context_len = len(self.tokenizer(context + "\n", truncation=length_cutoff)["input_ids"])
             if self.mask_context_loss:
                 example_dict["labels"] = [-100] * context_len + tokenizer_outputs["input_ids"][context_len:]
             else:
                 example_dict["labels"] = tokenizer_outputs["input_ids"].copy()
         else:
-            tokenizer_outputs = self.tokenizer(context + "\n")
+            tokenizer_outputs = self.tokenizer(context + "\n", truncation=length_cutoff)
 
         example_dict["input_ids"] = tokenizer_outputs["input_ids"]
         example_dict["attention_mask"] = tokenizer_outputs["attention_mask"]
@@ -104,9 +106,18 @@ class NL2CodeDataset(Dataset):
     def get_example_dict(self, example: Dict[str, Any], context: str, code: str = "", 
                          train_mode: bool = True, length_cutoff: bool = True) -> Dict[str, Any]:
         if not is_model_gpt_style(self.transformer_model_name):
-            return self.get_example_dict_enc_dec(example, context, code, train_mode, length_cutoff=length_cutoff)
+            example_dict = self.get_example_dict_enc_dec(example, context, code, train_mode, length_cutoff=length_cutoff)
         else:
-            return self.get_example_dict_gpt(example, context, code, train_mode, length_cutoff=length_cutoff)
+            example_dict = self.get_example_dict_gpt(example, context, code, train_mode, length_cutoff=length_cutoff)
+        
+        # for verification only
+        example_dict["metadata"]["correct_token_idx"] = 10932 if "bart" in self.transformer_model_name.lower() else 4273 # default for T5
+        example_dict["metadata"]["incorrect_token_idx"] = 2362 if "bart" in self.transformer_model_name.lower() else 150 # default for T5
+        
+        if len(example_dict["input_ids"]) + self.generation_length > self.tokenizer.model_max_length:
+            self.stats["input_too_long"] += 1
+        
+        return example_dict
 
     def get_train_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:
         raise NotImplementedError("the base class should not be used directly")

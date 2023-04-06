@@ -2,16 +2,18 @@
 Repository for the NLP4Code project at the LILY lab.
 
 ## Installation
-[Optional] Create a virtualenv or conda enviroment  
-
-Next, install the repository as a python package by running the following in the NLP4Code folder:
+*[Recommended]* Create a virtualenv or conda enviroment  
+```bash
+conda create -n nlp4code python=3.8
+conda activate nlp4code
 ```
-pip install -e .
-```
-
-Then, install the rest of the dependencies:
-```
+Then, install the dependencies:
+```bash
 pip install -r requirements.txt
+```
+*(Optional)* At any point, if you met with the Python import problem (e.g., `ModuleNotFoundError`), try doing this in the main (`NLP4Code`) directory:
+```bash
+export PYTHONPATH=`pwd`
 ```
 
 ## Wandb
@@ -49,26 +51,11 @@ For fine-tuning, in the main directory, do:
 python finetuning/trainer.py fit --config finetuning/training_configs/*.yaml
 ```
 
-## Preprocessing APPS
-create the following directory and uncompress the original data
+## Testing
+There are some basic tests in the `tests` folder, to run all the tests (follow [this link](https://docs.python.org/3/library/unittest.html#command-line-interface) for more):
+To run tests, do
+```bash
+python -m unittest discover <test_directory>
+# or
+python -m unittest discover -s <directory> -p '*_test.py'
 ```
-mkdir -p data/apps
-cd data/apps
-wget https://people.eecs.berkeley.edu/~hendrycks/APPS.tar.gz
-tar -cvzf APPS.tar.gz
-```
-Then run the preprocessing script
-```
-python preprocessing_apps.py
-```
-After this step, you should see the train/val/test files in `data/apps/preprocessing/[train, val, test].jsonl`
-
-For most tasks (*e.g.,* evaluating perplexity), you can simply use `example['solutions']['raw_code']`
-
-## Evaluation
-Currently the following evaluation metrics are implemented:
-* Pass@1 (i.e., Execution Accuracy)
-* Pass@K 
-* Execution rate
-
-## something else

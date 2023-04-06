@@ -1,15 +1,9 @@
-import math
-import scipy
-import json
 import os
 
 from concurrent.futures import ProcessPoolExecutor as Pool
 from typing import List, Dict, Tuple, Any, Union, NamedTuple, Set
-from scipy import special
 
 from typing import List, Dict, Any
-from tqdm import tqdm
-from finetuning.lightning_modules.datasets.reader_utils import get_statements_from_code, byte_idx_to_char_idx
 from execution.safe_execution_util import execute, canonicalize_var_dict, simple_canonicalize_var_dict
 from tree_sitter import Language, Parser
 
@@ -24,6 +18,59 @@ language_build_path = os.path.join(os.path.dirname(__file__)+'/../preprocessing/
 PY_LANGUAGE = Language(language_build_path, 'python')
 parser = Parser()
 parser.set_language(PY_LANGUAGE)
+
+COM_STMTS = ['if_statement', 'for_statement', 'while_statement', 'try_statement', 'with_statement',
+             'function_definition', 'class_definition']
+PY_MODULES = ['module', 'block', 'decorated_definition']
+
+def byte_idx_to_char_idx(byte_idx: int, line: str) -> int:
+    """convert byte index to char index"""
+    return len(bytes(line, 'utf-8')[:byte_idx].decode('utf-8'))
+
+def get_statements_from_code(code: str, parser, tolerate_errors: bool=False) -> List[Dict[str, Any]]:
+    parsed_tree = parser.parse(bytes(code, 'utf-8'))
+
+    # do a dfs on the parsed tree to record all the simple statements
+    target_stmts: List[Dict] = []
+    node_stack = [parsed_tree.root_node]
+    while len(node_stack) > 0:
+        node = node_stack.pop()
+
+        if (node.type.endswith('statement') or node.type in ['comment', 'decorator']) \
+            and node.type not in COM_STMTS:
+            # this is a simple statement or a comment, so we can add it to the list
+            target_stmts.append({'type': node.type, 'start_point': node.start_point, 
+                                 'end_point': node.end_point, 'start_byte': node.start_byte, 
+                                 'end_byte': node.end_byte})
+        elif node.type in COM_STMTS or node.type.endswith('clause'):
+            # separate the header and the body by the ":" token
+            children_types = [c.type for c in node.children]
+            separator_idx = children_types.index(':')
+            assert separator_idx != -1
+
+            # start of the header is the starter of the complex stmt, end is the end of the ":" token
+            target_stmts.append({'type': node.type+'_header', 'start_point': node.start_point, 
+                                 'start_byte': node.children[separator_idx].start_byte,
+                                 'end_point': node.children[separator_idx].end_point, 
+                                 'end_byte': node.children[separator_idx].end_byte})
+            node_stack.extend(node.children[separator_idx+1:][::-1])
+        elif node.type in PY_MODULES:
+            node_stack.extend(node.children[::-1])
+        elif node.type == 'ERROR':
+            # err_code_line = code[:byte_idx_to_char_idx(node.end_byte, code)].split('\n')[-1]
+            # print(f"failed to parse code: #########\n{err_code_line}\n#########")
+            if tolerate_errors:
+                continue
+            else:
+                # failed to parse tree, return None NOTE: previously returning [], but this will get 
+                # confused with blank cells
+                return None
+        else:
+            # other types, not sure what it contains, but assume it doesn't contain more statements
+            print(f'unexpected node type: {node.type}')
+            assert 'statement' not in node.sexp()
+
+    return target_stmts
 
 """
 Tracing the execution of a program:
@@ -108,206 +155,3 @@ def assertion_to_test(assertion: str) -> str:
     call_str = program_bytes[call_stmt.start_byte:call_stmt.end_byte].decode("utf-8").strip()
 
     return call_str
-
-
-
-def get_execution_states(program: str, debug=False) -> Union[ProgTrace, None]:
-    # first parse the program with tree-sitter
-    stmts = get_statements_from_code(program, parser)
-
-    if stmts is None:
-        if debug:
-            print(f'skipping unparseable example')
-            print(f"##########\n{program}\n##########")
-        return None
-
-    # extract the stmt strings
-    idx = 0
-    stmt_states = []
-    for stmt in stmts:
-        start_idx = byte_idx_to_char_idx(stmt['start_byte'], program)
-        end_idx = byte_idx_to_char_idx(stmt['end_byte'], program)
-
-        if start_idx != idx:
-            # add the gap
-            stmt_states.append({"code": program[idx:start_idx], "type": "gap"})
-
-        # add the stmt
-        stmt_states.append({"code": program[start_idx:end_idx], "type": "stmt"})
-        idx = end_idx
-
-
-    # NOTE: FIXME: This only works for straight-line programs since it does not consider indentation
-    for stmt in stmt_states:
-        if stmt["type"] == "stmt":
-            stmt["code"] += "\nrecord_state(locals())"
-
-    # now assemble the program back together
-    traced_program = "".join([stmt["code"] for stmt in stmt_states])
-
-    # execute the program with tracing code
-    result = execute(traced_program, {}, 
-                     globals={"tracing_local_list": tracing_local_list,
-                              "record_state": record_state}, use_tracing=True)
-
-    if result["result"] == "passed":
-        # add the *output* states for each statement and remove the tracing code to restore orginal program
-        stmt_idx = 0
-        for stmt in stmt_states:
-            if stmt["type"] == "stmt":
-                stmt["execution_state"] = result["tracing_local_list"][stmt_idx]
-                stmt["code"] = stmt["code"].replace("\nrecord_state(locals())", "")
-                stmt_idx += 1
-        prog_trace = [ProgTraceUnit(stmt["code"], stmt["type"], 
-                        stmt["execution_state"] if stmt["type"] == "stmt" else {}) for stmt in stmt_states]
-        return prog_trace
-    else:
-        if debug:
-            print(f'skipping example of error: {result["result"]}')
-            print(f"##########\n{program}\n##########")
-        return None
-
-def batch_program_tracing(programs: List[str], n_processes=20) -> List[Union[ProgTrace, None]]:
-    with Pool(n_processes) as p:
-        tracing_outputs = p.map(get_execution_states, programs)
-    return list(tracing_outputs)
-
-def exec_stmt_in_context(stmt: str, context: Dict[str, Any]):
-    # NOTE: FIXME: This only works for straight-line programs since it does not consider indentation
-    traced_stmt = stmt + "\nrecord_state(locals())"
-
-    # execute the program with tracing code
-    if "math" in context:
-        context["math"] = math
-    if "scipy" in context:
-        context["scipy"] = scipy
-        context["scipy.special"] = special
-
-    result = execute(traced_stmt, locals=context, 
-                     globals={"tracing_local_list": tracing_local_list, "deepcopy": deepcopy, 
-                              "record_state": record_state, "ModuleType": ModuleType}, use_tracing=True)
-
-    if result["result"] == "passed":
-        # return the execution states as the local var list
-        assert len(result["tracing_local_list"]) == 1, f"tracing_local_list: {result['tracing_local_list']}"
-        stmt_output_state = result["tracing_local_list"][0]
-        return stmt_output_state
-    else:
-        return None
-
-def is_trivial_state(state_dict: Dict[str, Any], prev_stmt: str):
-    if len(state_dict) == 0:
-        return True
-
-    assert prev_stmt is not None, "prev_stmt must be provided to determine trivial states unless the state is empty"
-
-    if prev_stmt.split(" ")[0] in ["#", "import"]:
-        return True
-
-    assert len(state_dict) == 1, f"prev_stmt {prev_stmt}; original state dict {state_dict}"
-
-    return f"{list(state_dict.keys())[0]} = {list(state_dict.values())[0]}" in prev_stmt
-
-def get_state_repr(state_dict: Dict[str, Any], prev_stmt: str = None, only_include_keys: List[str] = None, 
-                   prev_state_dict: Dict[str, Any] = None, use_diff=False, skip_trivial_states: bool = False):
-    if use_diff:
-        raise NotImplementedError
-
-    if only_include_keys is not None:
-        state_dict = {k: v for k, v in state_dict.items() if k in only_include_keys}
-
-    if skip_trivial_states and is_trivial_state(state_dict, prev_stmt):
-        return ""
-
-    repr = "# "
-    for key, value in state_dict.items():
-        repr += f"{key} = {value}; "
-    repr += "\n"
-
-    return repr
-
-def test1():
-    # load some sample programs
-    with open('data/mathqa/val-python.jsonl', 'r') as f:
-        lines = f.readlines()
-
-        json_examples = [json.loads(line) for line in lines]
-
-    with open('data/mathqa/val_python_with_states.jsonl', 'w+') as f:
-        success_count = 0
-        failed_count = 0
-        for json_example in tqdm(json_examples):
-
-            program = json_example["code"]
-            stmt_states = get_execution_states(program)
-
-            if stmt_states is not None:
-                json_example["states"] = stmt_states
-                f.write(json.dumps(json_example) + "\n")
-                success_count += 1
-            else:
-                failed_count += 1
-
-        print(f"Successfully traced {success_count}/{success_count+failed_count} programs")
-
-def test2():
-    with open("results/mbpp-codex_davinci-few_shot-test-pass_at_100-1_test/predictions_step_0_rank_0.jsonl", "r") as f:
-        dev_data = [json.loads(line) for line in f.readlines()]
-    
-    success = 0
-    total = 0
-    
-    # failed_indices = [289, 322, 197, 70, 326, 42, 300, 80, 242, 118, 186, 155]
-    # failed_indices = [242, 326]
-    # dev_data = [dev_data[i] for i in failed_indices]
-
-    # failed_indices = set()
-
-    for example in tqdm(dev_data):
-        generated_programs = [x['program'].strip() for x in example["generated_k_programs"]]
-        tests = example["metadata"]["test_list"]
-
-        for t in tests:
-            for sol in generated_programs:
-                program = sol + "\n\n" + example["metadata"]["test_setup_code"] + "\n\n" + assertion_to_test(t)
-                # tracing_result = get_function_final_state(program.strip())
-
-                # total += 1
-                # if tracing_result["result"] == "passed":
-                #     success += 1
-                # else:
-                    # print(f"failed to trace program: {tracing_result['result']}")
-                    # failed_indices.add((total-1) // 3)
-                    # tracing_result = get_function_final_state(program.strip())
-                    # print(f"##########\n{program}\n##########")
-                    # break
-
-        
-                # print(f"Success rate: {success}/{total} = {success/total}")
-    
-    # print(f"failing indices: {failed_indices}")
-
-def test3():
-    with open("data/mbpp/mbpp_train.jsonl", "r") as f:
-        data = [json.loads(line) for line in f.readlines()]
-    
-    total, success = 0, 0
-    for example in data:
-        tests = example["test_list"]
-
-        for t in tests:
-            program = example["code"] + "\n\n" + example["test_setup_code"] + "\n\n" + assertion_to_test(t)
-            exec_result = execute(program, timeout=10, output_locals=False)
-            total += 1
-
-            if exec_result["result"] == "passed":
-                success += 1
-            else:
-                print(f"failed to execute program: {exec_result['result']}")
-                print(f"the program is: ##########\n{program}\n##########")
-
-            print(f"Success rate: {success}/{total} = {success/total}")
-
-
-if __name__ == "__main__":
-    test2()

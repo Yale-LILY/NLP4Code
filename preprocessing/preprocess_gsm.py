@@ -152,9 +152,33 @@ def split_train_dev():
             f.write(json.dumps(example) + "\n")
         print(f"{len(dev_examples)} dev examples saved")
 
+def split_train_dev_from_codex_output():
+    examples = []
+    with open("data/gsmath/train.jsonl", "r") as f:
+        examples.extend([json.loads(s) for s in f.readlines()])
+    print(f"{len(examples)} examples")
+
+    codex_train_examples = []
+    with open("data/gsmath/codex_40_output_train.jsonl", "r") as f:
+        codex_train_examples.extend([json.loads(s) for s in f.readlines()])
+
+    codex_dev_examples = []
+    with open("data/gsmath/codex_40_output_dev.jsonl", "r") as f:
+        codex_dev_examples.extend([json.loads(s) for s in f.readlines()])
+
+    # assert len(codex_train_examples) + len(codex_dev_examples) == len(examples)
+
+    with open("data/gsmath/split_train.jsonl", "w") as f:
+        for example in codex_train_examples:
+            f.write(json.dumps(example["metadata"]) + "\n")
+
+    with open("data/gsmath/split_dev.jsonl", "w") as f:
+        for example in codex_dev_examples:
+            f.write(json.dumps(example["metadata"]) + "\n")
+
 if __name__ == "__main__":
     # train_files = [f"results_cot/gsm_codex_davinci-few_shot_baseline-for-in_house_models-pass@40-gsm_shot-train-{i}.jsonl" for i in range(1, 3)]
     # test_files = ["results_cot/gsm_codex_davinci-few_shot_baseline-for-in_house_models-pass@40-gsm_shot-test.jsonl"]
     # postprocess_gsm_output(train_files, "data/gsmath/codex_40_output_train.jsonl")
 
-    split_train_dev()
+    split_train_dev_from_codex_output()
