@@ -119,19 +119,19 @@ jobs:
         run: |
           . .venv/bin/activate
           ls -la
-          python tests/test_datasets.py
+          python -m unittest tests/test_datasets.py
 
       - name: Test executors
         run: |
           . .venv/bin/activate
-          python tests/test_executors.py
+          python -m unittest tests/test_executors.py
 
       - name: Test inference pipeline
         run: |
           . .venv/bin/activate
-          python tests/test_inference_pipeline.py
+          python -m unittest tests/test_inference_pipeline.py
 
       - name: Test models
         run: |
           . .venv/bin/activate
-          python tests/test_models.py
+          python -m unittest tests/test_models.py
