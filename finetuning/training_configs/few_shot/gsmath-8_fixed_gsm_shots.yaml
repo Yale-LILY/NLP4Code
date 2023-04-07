@@ -92,5 +92,6 @@ data:
     #   file_path: data/squall/squall_train_processed.jsonl 
     val_set_init_args:
       # prompt_examples: 4
-      file_path: data/gsmath/split_dev.jsonl
+      # file_path: data/gsmath/split_dev.jsonl
+      # file_path: $(NLP4CODE_TEST_DATA_PATH)/gsmath/split_dev.jsonl
       prompt_file: prompt_files/cot_code_mwp_prompt_idiomatic_code_gsm_chat_style.txt
