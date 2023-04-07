@@ -81,7 +81,7 @@ model:
         num_training_steps: *max_steps
 
 data:
-  class_path: lightning_modules.datasets.mathqa_reader.FewShotMathQADataModule
+  class_path: finetuning.lightning_modules.datasets.mathqa_reader.FewShotMathQADataModule
   init_args:
     transformer_model_name: default-will-cause-error
     batch_size: 1
