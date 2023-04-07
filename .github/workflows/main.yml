@@ -57,8 +57,8 @@ jobs:
   # Unit tests
   TESTS:
     name: TESTS
-    # runs-on: self-hosted
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
+    # runs-on: ubuntu-22.04
     env:
       CUDA_VISIBLE_DEVICES: 1
 
