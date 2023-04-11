@@ -6,7 +6,7 @@ from overrides import overrides
 
 from typing import Dict, Iterable, List, Any, Optional, Union, Tuple
 
-from finetuning.lightning_modules.datasets.base_reader import NL2CodeDataset, NL2CodeDataModule
+from finetuning.lightning_modules.datasets.base_reader import NL2CodeDataset
 from execution.program_tracing import assertion_to_test
 
 """
@@ -262,36 +262,3 @@ class MBPPEndVerificationDataset(NL2CodeDataset):
 
         # this is because the base dataset module would assume returning a list with multi-instance on
         return [return_dict]
-
-class FewShotMBPPDataModule(NL2CodeDataModule):
-
-    @overrides
-    def setup(self, stage: Optional[str] = None):
-        # OPTIONAL, called for every GPU/machine (assigning state is OK)
-        assert stage in ["fit", "validate"]
-
-        if stage == "fit":
-            raise ValueError("Few shot datasets do not support training")
-
-        if self.val_data is None:
-            val_data = FewShotMBPPDataset(transformer_model_name=self.transformer_model_name,
-                                    mode="test", **self.val_set_init_args)
-            self.val_data = val_data 
-
-class MBPPEndVerificationDataModule(NL2CodeDataModule):
-
-    @overrides
-    def setup(self, stage: Optional[str] = None):
-        # OPTIONAL, called for every GPU/machine (assigning state is OK)
-        assert stage in ["fit", "validate"]
-
-        if stage == "fit":
-            if self.train_data is None:
-                train_data = MBPPEndVerificationDataset(transformer_model_name=self.transformer_model_name,
-                                        mode="train", **self.train_set_init_args)
-                self.train_data = train_data
-
-        if self.val_data is None:
-            val_data = MBPPEndVerificationDataset(transformer_model_name=self.transformer_model_name,
-                                    mode="test", **self.val_set_init_args)
-            self.val_data = val_data 

@@ -7,17 +7,21 @@ from overrides import overrides
 
 from typing import Dict, Iterable, List, Any, Optional, Union
 
-from finetuning.lightning_modules.datasets.base_reader import NL2CodeDataset, NL2CodeDataModule
+from finetuning.lightning_modules.datasets.base_reader import NL2CodeDataset
 from preprocessing.preprocess_spider import decompose_sql, pd_df_from_dict
 
+full_db_info = None
 DB_INFO_FILE = os.path.join(os.path.dirname(__file__), '../../../data/squall/db_info_wtq.json')
-with open(DB_INFO_FILE, "r") as f:
-    full_db_info = json.load(f)
 
 def example_to_demonstration_sql_bridge(example: Dict, train: bool = True, 
                                         include_schema: bool = True,
                                         include_sql: bool = True,
                                         lower_case_schema: bool = False) -> str:
+    # check if the DB info file is loaded
+    if full_db_info is None:
+        with open(DB_INFO_FILE, "r") as f:
+            full_db_info = json.load(f)
+    
     # add an example column value to the schema
     if include_schema:
         db_id = example['db_id']
@@ -332,51 +336,51 @@ class SpiderDataset(NL2CodeDataset):
         
         return [self.get_example_dict(example, context, train_mode=False)]
 
-class FewShotSQLDataModule(NL2CodeDataModule):
+# class FewShotSQLDataModule(NL2CodeDataModule):
 
-    @overrides
-    def setup(self, stage: Optional[str] = None):
-        # OPTIONAL, called for every GPU/machine (assigning state is OK)
-        assert stage in ["fit", "validate"]
+#     @overrides
+#     def setup(self, stage: Optional[str] = None):
+#         # OPTIONAL, called for every GPU/machine (assigning state is OK)
+#         assert stage in ["fit", "validate"]
 
-        if stage == "fit":
-            raise ValueError("Few shot datasets do not support training")
+#         if stage == "fit":
+#             raise ValueError("Few shot datasets do not support training")
 
-        if self.val_data is None:
-            val_data = FewShotSpiderDataset(transformer_model_name=self.transformer_model_name,
-                                    mode="test", **self.val_set_init_args)
-            self.val_data = val_data 
+#         if self.val_data is None:
+#             val_data = FewShotSpiderDataset(transformer_model_name=self.transformer_model_name,
+#                                     mode="test", **self.val_set_init_args)
+#             self.val_data = val_data 
 
-class SQLEndVerificationDataModule(NL2CodeDataModule):
+# class SQLEndVerificationDataModule(NL2CodeDataModule):
 
-    @overrides
-    def setup(self, stage: Optional[str] = None):
-        # OPTIONAL, called for every GPU/machine (assigning state is OK)
-        assert stage in ["fit", "validate"]
+#     @overrides
+#     def setup(self, stage: Optional[str] = None):
+#         # OPTIONAL, called for every GPU/machine (assigning state is OK)
+#         assert stage in ["fit", "validate"]
 
-        if stage == "fit":
-            if self.train_data is None:
-                train_data = SpiderEndVerificationDataset(transformer_model_name=self.transformer_model_name,
-                                        mode="train", **self.train_set_init_args)
-                self.train_data = train_data
+#         if stage == "fit":
+#             if self.train_data is None:
+#                 train_data = SpiderEndVerificationDataset(transformer_model_name=self.transformer_model_name,
+#                                         mode="train", **self.train_set_init_args)
+#                 self.train_data = train_data
 
-        if self.val_data is None:
-            val_data = SpiderEndVerificationDataset(transformer_model_name=self.transformer_model_name,
-                                    mode="test", **self.val_set_init_args)
-            self.val_data = val_data 
+#         if self.val_data is None:
+#             val_data = SpiderEndVerificationDataset(transformer_model_name=self.transformer_model_name,
+#                                     mode="test", **self.val_set_init_args)
+#             self.val_data = val_data 
 
-class Text2SqlDataModule(NL2CodeDataModule):
+# class Text2SqlDataModule(NL2CodeDataModule):
 
-    @overrides
-    def setup(self, stage: Optional[str] = None):
-        # OPTIONAL, called for every GPU/machine (assigning state is OK)
-        assert stage in ["fit", "validate"]
+#     @overrides
+#     def setup(self, stage: Optional[str] = None):
+#         # OPTIONAL, called for every GPU/machine (assigning state is OK)
+#         assert stage in ["fit", "validate"]
 
-        if stage == "fit":
-            train_data = SpiderDataset(transformer_model_name=self.transformer_model_name,
-                                    mode="train", **self.train_set_init_args)
-            self.train_data = train_data
+#         if stage == "fit":
+#             train_data = SpiderDataset(transformer_model_name=self.transformer_model_name,
+#                                     mode="train", **self.train_set_init_args)
+#             self.train_data = train_data
 
-        val_data = SpiderDataset(transformer_model_name=self.transformer_model_name,
-                                 mode="test", **self.val_set_init_args)
-        self.val_data = val_data 
+#         val_data = SpiderDataset(transformer_model_name=self.transformer_model_name,
+#                                  mode="test", **self.val_set_init_args)
+#         self.val_data = val_data 

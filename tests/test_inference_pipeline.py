@@ -8,13 +8,16 @@ class TestDecOnlyModelInference(unittest.TestCase):
     def test_basic(self):
         exit_code = os.system("export PYTHONPATH=`pwd`; " + \
                                 "python finetuning/trainer.py validate " + \
-                                "--config finetuning/training_configs/few_shot/gsmath-8_fixed_gsm_shots.yaml " + \
-                                "--trainer.gpus 0 " + \
-                                "--trainer.accelerator cpu " + \
-                                "--trainer.precision 32 " + \
+                                "--config tests/test_configs/few_shot-pipeline.yaml " + \
+                                # "--trainer.gpus 0 " + \
+                                # "--trainer.accelerator cpu " + \
+                                # "--trainer.precision 32 " + \
                                 "--model.init_args.transformer_model_name EleutherAI/gpt-neo-125M " + \
                                 "--data.init_args.transformer_model_name EleutherAI/gpt-neo-125M " + \
-                                "--data.init_args.val_max_instances 2 " + \
+                                "--data.init_args.val_max_instances 4 " + \
                                 "--data.init_args.val_batch_size 1 ")
         
         self.assertEqual(exit_code, 0)
+
+if __name__ == '__main__':
+    unittest.main()
