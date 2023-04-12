@@ -142,22 +142,32 @@ class FewShotNL2CodeDataModule(NL2CodeDataModule):
                 train_set_init_args: Dict[str, Any] = {},
                 val_set_init_args: Dict[str, Any] = {},
                 set_common_init_args: Dict[str, Any] = {},
-                # following is the few-shot specific settings
+                # following is the few-shot specific settings, but the same overriden rule applies
+                prompting_init_args: Dict[str, Any] = {},
                 exemplar_file_path: str = None,
                 num_exemplars: int = None,
-                fixed_exemplars: bool = True,
-                exemplar_selection_method: str = "first",
-                promptify_func: str = None,
+                fixed_exemplars: bool = None,
+                exemplar_selection_method: str = None,
+                add_instruction: bool = None,
+                use_chat_format: bool = None,
+                additional_prompt_func_args: Dict[str, Any] = {},
                 ):
-        # pack the four additional args into a dictionary
-        self.few_shot_init_args = {
-            "exemplar_file_path": exemplar_file_path,
-            "num_exemplars": num_exemplars,
-            "fixed_exemplars": fixed_exemplars,
-            "exemplar_selection_method": exemplar_selection_method,
-            "promptify_func": promptify_func,
-        }
-
+        # setting and overriding the default values for prompting settings
+        self.few_shot_init_args = prompting_init_args
+        if exemplar_file_path is not None:
+            self.few_shot_init_args["exemplar_file_path"] = exemplar_file_path
+        if num_exemplars is not None:
+            self.few_shot_init_args["num_exemplars"] = num_exemplars
+        if fixed_exemplars is not None:
+            self.few_shot_init_args["fixed_exemplars"] = fixed_exemplars
+        if exemplar_selection_method is not None:
+            self.few_shot_init_args["exemplar_selection_method"] = exemplar_selection_method
+        if add_instruction is not None:
+            self.few_shot_init_args["add_instruction"] = add_instruction
+        if use_chat_format is not None:
+            self.few_shot_init_args["use_chat_format"] = use_chat_format
+        
+        self.additional_prompt_func_args = additional_prompt_func_args
 
         super().__init__(transformer_model_name=transformer_model_name,
                          dataset_cls=dataset_cls,
@@ -180,6 +190,6 @@ class FewShotNL2CodeDataModule(NL2CodeDataModule):
 
         val_data = self.dataset_cls(transformer_model_name=self.transformer_model_name,
                                     mode="test", **self.val_set_init_args, 
-                                    **self.few_shot_init_args)
+                                    **self.few_shot_init_args, additional_prompt_func_args=self.additional_prompt_func_args)
 
         self.val_data = val_data 

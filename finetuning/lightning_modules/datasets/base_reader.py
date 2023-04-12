@@ -20,6 +20,8 @@ from finetuning.lightning_modules.models.seq2seq_model_util import get_model, le
 # https://docs.allennlp.org/main/api/data/data_loaders/multiprocess_data_loader/#multiprocessdataloader.common_issues
 os.environ['TOKENIZERS_PARALLELISM']='0'
 
+CHAT_SEP_TOKEN = "##<chat-sep>##"
+
 logger = logging.getLogger(__name__)
 
 class NL2CodeDataset(Dataset):
@@ -182,18 +184,27 @@ class NL2CodeDataset(Dataset):
 
 class FewShotNL2CodeDataset(NL2CodeDataset):
 
+    # class variables, can be overwritten by subclasses and can be changed in the init function
+    instruction: str = None
+    example_io_sep: str = ""
+    between_example_sep: str = "\n\n"
+
     def __init__(
         self, 
         mode: str = "test", 
+        # exemplar settings, these settings are also overridable from the command line as 
+        # they are also arguements for the datamodule class
         exemplar_file_path: str = None,
         num_exemplars: int = None,
         fixed_exemplars: bool = True,
         exemplar_selection_method: str = "first",
-        promptify_func: str = None,
-        instruction: str = None,
+        add_instruction: bool = True,
         use_chat_format: bool = False,
-        example_io_sep: str = "",
-        between_example_sep: str = "\n\n",
+        additional_prompt_func_args: Dict[str, Any] = {},
+        # override class variables
+        instruction: str = None,
+        example_io_sep: str = None,
+        between_example_sep: str = None,
         **kwargs):
 
         assert mode == "test", "FewShotNL2CodeDataset only supports test mode"
@@ -203,21 +214,27 @@ class FewShotNL2CodeDataset(NL2CodeDataset):
         self.num_exemplars = num_exemplars
         self.fixed_exemplars = fixed_exemplars
         self.exemplar_selection_method = exemplar_selection_method
-        self.promptify_func = promptify_func
-        self.instruction = instruction
 
+        self.add_instruction = add_instruction
         self.use_chat_format = use_chat_format
-        self.example_io_sep = example_io_sep
-        self.between_example_sep = between_example_sep
+        self.additional_prompt_args = additional_prompt_func_args
+
+        if instruction is not None:
+            self.instruction = instruction
+        if example_io_sep is not None:
+            self.example_io_sep = example_io_sep
+        if between_example_sep is not None:
+            self.between_example_sep = between_example_sep
 
         if self.use_chat_format:
-            self.example_io_sep = "##<chat-sep>##" + example_io_sep 
-            self.between_example_sep = "##<chat-sep>##" + between_example_sep
+            self.example_io_sep = CHAT_SEP_TOKEN + example_io_sep 
+            self.between_example_sep = CHAT_SEP_TOKEN + between_example_sep
 
         # read the exemplar file and 
         with open(exemplar_file_path, 'r') as f:
-            all_exemplars = json.load(f)
-        self.exemplar_nl_code_pairs: List[Tuple[str, str]] = [self.promptify_example(example) for example in all_exemplars]
+            all_exemplars = [json.loads(s) for s in f.readlines()]
+        self.exemplar_nl_code_pairs: List[Tuple[str, str]] = \
+            [self.promptify_example(example, add_code=True, **self.additional_prompt_args) for example in all_exemplars]
 
         if self.fixed_exemplars:
             # we pre-select the exemplars
@@ -234,7 +251,7 @@ class FewShotNL2CodeDataset(NL2CodeDataset):
     def get_prompt_for_example(self, example: Dict[str, Any]) -> str:
         """ with the instruction, connect the components of the example, and then connect the examples """
         # promptify the current example
-        nl_input, _ = self.promptify_example(example, add_code=False)
+        nl_input, _ = self.promptify_example(example, add_code=False, **self.additional_prompt_args)
 
         if self.fixed_exemplars or self.exemplar_selection_method == "first":
             example_exemplars = self.exemplar_nl_code_pairs[:self.num_exemplars]
@@ -245,16 +262,16 @@ class FewShotNL2CodeDataset(NL2CodeDataset):
             raise ValueError(f"Unknown exemplar_selection_method: {self.exemplar_selection_method}")
         
         # construct the actual prompt
-        prompt = self.instruction
+        prompt = self.instruction + self.between_example_sep if self.add_instruction else ""
         for nl, code in example_exemplars:
-            prompt += self.between_example_sep + nl + self.example_io_sep + code
-        prompt += self.between_example_sep + nl_input # the model needs to learn to generate the separator by itself
+            prompt += nl + self.example_io_sep + code + self.between_example_sep
+        prompt += nl_input # the model needs to learn to generate the separator by itself
 
         return prompt
 
-    def promptify_example(self, example: Dict[str, Any], add_code: bool = True) -> Tuple[str, str]:
+    def promptify_example(self, example: Dict[str, Any], add_code: bool = True, **kwargs) -> Tuple[str, str]:
         """ given an example json dict, return the input (program_context, nl) and output (code) """
-        return self.__getattribute__(self.promptify_func)(example, add_code=add_code)
+        raise NotImplementedError("promptify_example must be implemented by the subclass")
 
     @overrides
     def get_train_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:
