@@ -18,6 +18,7 @@ class MathQADataset(NL2CodeDataset):
         return [self.get_example_dict(example, example["text"], "", train_mode=False)]
 
 class FewShotMathQADataset(FewShotNL2CodeDataset):
+
     instruction: str = "Given questions in the comment, use python programs to produce the correct answers with the `answer` variable."
 
     @overrides
@@ -34,8 +35,8 @@ class FewShotMathQADataset(FewShotNL2CodeDataset):
 
         return [self.get_example_dict(example, context, train_mode=False)]
     
-    @overrides
-    def promptify_example(self, example: Dict[str, Any], add_code: bool = True, **kwargs) -> Tuple[str, str]:
+    # @overrides
+    def promptify_example(self, example: Dict[str, Any], add_code: bool = True) -> Tuple[str, str]:
         if add_code:
             assert "annotated_code" in example, "annotated_code not found in exemplar dict"
         

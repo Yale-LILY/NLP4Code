@@ -6,18 +6,10 @@ import time
 from typing import Dict, List, Any, Optional, Tuple
 
 from itertools import chain
+from transformers import PreTrainedTokenizer, GenerationMixin
 
-from transformers.generation_utils import GenerationMixin
-from transformers import PreTrainedTokenizer 
-
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-# OPENAI_API_ORG = os.environ.get('OPENAI_API_ORG')
-if OPENAI_API_KEY is None:
-    pass
-    # raise Exception("Please set your OpenAI API key in the environment variable OPENAI_API_KEY")
-else:
-    openai.api_key = OPENAI_API_KEY
-    # openai.organization = OPENAI_API_ORG
+# the key will be set when the first call is made
+OPENAI_API_KEY = None
 
 def prompt_to_chat(str_prompt: str) -> List[Dict[str, str]]:
     """
@@ -63,6 +55,15 @@ def openai_call(prompts: List[str], engine: str, use_chat_format: bool = False, 
     
     For more arguments to https://beta.openai.com/docs/api-reference/completions/create
     """
+    # first check if the API key is set
+    if OPENAI_API_KEY is None:
+        OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+        if OPENAI_API_KEY is None:
+            raise Exception("Please set your OpenAI API key in the environment variable OPENAI_API_KEY")
+        else:
+            openai.api_key = OPENAI_API_KEY
+            # openai.organization = OPENAI_API_ORG
+
     # prune out the None arguments since openAI api treats unspecified arguments differently
     def prune_none_args(**kwargs):
         return {k: v for k, v in kwargs.items() if v is not None}
