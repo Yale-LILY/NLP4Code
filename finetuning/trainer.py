@@ -1,5 +1,5 @@
 from pytorch_lightning import LightningModule, LightningDataModule
-from pytorch_lightning.utilities.cli import LightningCLI
+from pytorch_lightning.cli import LightningCLI
 
 # see https://github.com/PyTorchLightning/pytorch-lightning/issues/10349
 import warnings

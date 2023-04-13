@@ -41,7 +41,7 @@ t0 = n2**min(n1, 5)
 t1 = n1**min(n4, 5)
 answer = t0 * t1
 
-# if the length of an edge of cube p is thrice the length of an edge of cube q , what is the ratio of the volume of cube q to the volume of cube p ? 
+## if the length of an edge of cube p is thrice the length of an edge of cube q , what is the ratio of the volume of cube q to the volume of cube p ? 
 t0 = 1 / 3.0
 answer = t0**min(3.0, 5)
 
