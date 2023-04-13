@@ -3,6 +3,11 @@ import argparse
 from human_eval.evaluation_tasks import EvaluationTask
 
 def main():
+    """calling start_eval.py takes two input variables, dataset and output_file.
+        dataset: this dataset contains a model's outputs. given in the form of a path such as \data\squall\squall_processed_dev_all.jsonl
+        output_file: this lets the user specify where to output the human evals to. This is also a path"""
+
+
     parser = argparse.ArgumentParser()
     parser.add_argument("dataset", type=str, help="The dataset to evaluate on.")
     parser.add_argument("output_file", type=str, help="The output file to save the evaluation results.")
@@ -14,14 +19,16 @@ def main():
     print("Starting evaluation on dataset: {}".format(dataset))
     print("Saving results to: {}".format(output_file))
 
+    # we initialize the task as an EvaluationTask, defined in evaluation_tasks.py
+    # this class has several functions that help with the evaluation
     task = EvaluationTask(dataset_path=dataset, output_file=output_file)
 
-    same_example = False
+    same_example = False        # Used to keep track if a problem's been seen before. 
     last_evaluation = None
     while True:
         if not same_example:
             example = task.get_and_display_next_example()
-            print(example['metadata'])
+            # print(example['metadata'])
 
         if example['generated_program']['exec_acc']:     # generated program is correct
             print("\033[1;32m" +  " Reason for success: " + "\033[0m")

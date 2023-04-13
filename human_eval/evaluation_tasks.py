@@ -32,10 +32,12 @@ class EvaluationTask:
             self.recovery_progress(output_file)
 
     def read_data(self):
+        """Reads data from the input file. Saves it in json format in self.examples for later reference"""
         with open(self.dataset_path, "r") as f:
             self.examples = [json.loads(s) for s in f.readlines()]
 
     def get_evaluation_indices(self) -> List[int]:
+        """Creates a list of length n, where n is the number of examples. Shuffles that list before returning it"""
         indicies = list(range(len(self.examples)))
         random.shuffle(indicies)            # shuffle the indicies to get a random sample
         return indicies
@@ -50,7 +52,7 @@ class EvaluationTask:
         
         # then verify the evaluated examples to match the data file
         for i, example in enumerate(self.evaluated_examples):
-            assert example["metadata"] == self.examples[self.evaluation_indices[i]], \
+            assert example["metadata"] == self.examples[self.evaluation_indices[i]]['metadata'], \
                 f"evaluated example does not match the data file"
         
         print(f"Recovered progress from {output_file} for {len(self.evaluated_examples)} out of {len(self.evaluation_indices)} total examples")
@@ -65,6 +67,7 @@ class EvaluationTask:
             f.write(json.dumps(save_example) + "\n")
 
     def get_and_display_next_example(self):
+        """gets the next example, displays it, then returns it"""
         next_example_idx = self.evaluation_indices[len(self.evaluated_examples)]
         print("\033[1;7;34m" + '#' * 20 + f" Example {next_example_idx} " + '#' * 20 + "\033[0m")
         self.display_example(self.examples[next_example_idx])
@@ -73,7 +76,10 @@ class EvaluationTask:
         return self.examples[next_example_idx]
 
     def display_example(self, example: Dict[str, Any]) -> str:
+        """prints the data in a formatted way"""
         # prints the metadata. We're currently assuming that the dataset is spider or squall
+        # future work can add check if the dataset is squall/spider, and print the tables depending on that.
+        # you can check the dataset sort of by looking at the file path. You could also just check if the db_table_headers row exists.
         if example['generated_program']['exec_acc']:
             print("\033[1;32m" + "Execution Accuracy: True" + "\033[0m")
         else:
