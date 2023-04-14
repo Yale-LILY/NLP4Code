@@ -77,7 +77,7 @@ jobs:
           rm -rf .venv
           python3 -m venv .venv
           . .venv/bin/activate
-        # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-environment-variable
+          # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-environment-variable
           echo PATH=$PATH >> $GITHUB_ENV
       
       - name: Pre-installation upgrade
