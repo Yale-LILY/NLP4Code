@@ -99,6 +99,7 @@ class EvaluationTask:
 
         # you can check the dataset sort of by checking if the db_table_headers row exists.
         table_exists = example['metadata'].get('db_table_headers', False)
+        # print(example)
         if table_exists:
             print("\033[1;33mTables:\033[0m\n")
             for header in example['metadata']['db_table_headers']:

@@ -30,8 +30,14 @@ def main():
             example = task.get_and_display_next_example()
             # print(example['metadata'])
 
-        correct = example['generated_program'].get('exec_match', example['generated_program'].get('exec_acc', False))
-        if correct:
+        answer = example['generated_program'].get('exec_match', example['generated_program'].get('exec_acc', False))
+
+        if answer == "ERROR: no answer variable":        # sometimes there is an error in the generated program. This will be parsed automatically later.
+            print("\033[1;33m ERROR on answer.")
+            task.save_single_evaluation(example['metadata'], "ERROR")       # we simply save it as an error for now.
+            same_example = False
+
+        elif answer:
             print("\033[1;32m" +  " Reason for success: " + "\033[0m")
             print("\tSpurious: 0")
             print("\tSame as gold: 1")
