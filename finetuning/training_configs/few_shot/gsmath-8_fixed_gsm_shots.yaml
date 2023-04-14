@@ -81,7 +81,7 @@ model:
         num_training_steps: *max_steps
 
 data:
-  class_path: finetuning.lightning_modules.datasets.mathqa_reader.FewShotMathQADataModule
+  class_path: lightning_modules.datasets.mathqa_reader.FewShotMathQADataModule
   init_args:
     transformer_model_name: default-will-cause-error
     batch_size: 1
@@ -93,5 +93,5 @@ data:
     val_set_init_args:
       # prompt_examples: 4
       # file_path: data/gsmath/split_dev.jsonl
-      # file_path: $(NLP4CODE_TEST_DATA_PATH)/gsmath/split_dev.jsonl
+      file_path: $(NLP4CODE_TEST_DATA_PATH)/gsmath/split_dev.jsonl
       prompt_file: prompt_files/cot_code_mwp_prompt_idiomatic_code_gsm_chat_style.txt
