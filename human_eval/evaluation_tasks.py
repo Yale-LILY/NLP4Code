@@ -56,7 +56,7 @@ class EvaluationTask:
                 f"evaluated example does not match the data file"
         
         print(f"Recovered progress from {output_file} for {len(self.evaluated_examples)} out of {len(self.evaluation_indices)} total examples")
-        time.sleep(2)
+        time.sleep(.2)
 
     def save_single_evaluation(self, example: Dict[str, Any], evaluation: str):
         save_example = {"metadata": example, "evaluation": evaluation}
@@ -79,16 +79,29 @@ class EvaluationTask:
         """prints the data in a formatted way"""
         # prints the metadata. We're currently assuming that the dataset is spider or squall
         # future work can add check if the dataset is squall/spider, and print the tables depending on that.
-        # you can check the dataset sort of by looking at the file path. You could also just check if the db_table_headers row exists.
-        if example['generated_program']['exec_acc']:
+
+        # gsmath and squall/Spider have different keys for execution accuracy, so we check both
+        correct = example['generated_program'].get('exec_match', example['generated_program'].get('exec_acc', False))
+        if correct:
             print("\033[1;32m" + "Execution Accuracy: True" + "\033[0m")
         else:
-            print("\033[1;31m" + "Execution Accuracy: False" + "\033[0m")
+            print("\033[1;30m" + "Execution Accuracy: False" + "\033[0m")
 
-        print(f"Question: {example['metadata']['question']}")
-        print(f"Generated Program: {example['generated_program']['program']}")
-        print("Tables:")
-        for header in example['metadata']['db_table_headers']:
-            print("Table: ", header)
-            for row in example['metadata']['db_table_headers'][header]:
-                print("\t" + row)
+        print(f"\033[1;33mQuestion:\033[0m\n{example['metadata']['question']}")
+
+        original_answer = example['metadata'].get('original_answer', False)
+        if original_answer:
+            print(f"\033[1;33mOriginal Answer:\033[0m\n{original_answer}")
+
+        # similar to the accuract, gsmath and squall/Spider have different keys for the generated program
+        generated_program = example['generated_program'].get('program', example['generated_program'].get('code', None))
+        print(f"\033[1;33mGenerated Program:\033[0m\n{generated_program}")
+
+        # you can check the dataset sort of by checking if the db_table_headers row exists.
+        table_exists = example['metadata'].get('db_table_headers', False)
+        if table_exists:
+            print("\033[1;33mTables:\033[0m\n")
+            for header in example['metadata']['db_table_headers']:
+                print("Table: ", header)
+                for row in example['metadata']['db_table_headers'][header]:
+                    print("\t" + row)

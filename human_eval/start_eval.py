@@ -30,7 +30,8 @@ def main():
             example = task.get_and_display_next_example()
             # print(example['metadata'])
 
-        if example['generated_program']['exec_acc']:     # generated program is correct
+        correct = example['generated_program'].get('exec_match', example['generated_program'].get('exec_acc', False))
+        if correct:
             print("\033[1;32m" +  " Reason for success: " + "\033[0m")
             print("\tSpurious: 0")
             print("\tSame as gold: 1")
