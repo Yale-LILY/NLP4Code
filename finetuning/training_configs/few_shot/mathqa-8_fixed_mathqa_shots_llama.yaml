@@ -1,6 +1,6 @@
 seed_everything: 333
 trainer:
-  gpus: 1
+  gpus: 2
   gradient_clip_val: 1.0
   default_root_dir: &exp_name results/debug-tmp-128
   # default_root_dir: &exp_name results/gsmath-incoder_6b-few_shot-pass_at_50-train-output_prob-gen_len_256-gsm_shots-split_0
@@ -53,7 +53,7 @@ trainer:
 model:
   class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
-    transformer_model_name: &transformer decapoda-research/llama-13b-hf
+    transformer_model_name: &transformer decapoda-research/llama-7b-hf
     executor_cls: execution.executors.MathExecutor
     max_gen_len: 256
     sampling_temp: 0.001
@@ -96,4 +96,4 @@ data:
       file_path: data/mathqa/val_dedup_init_val.jsonl
       prompt_file: prompt_files/mathqa_non_idiomatic_code_init_val.txt
 
-# clear; export PYTHONPATH=`pwd`; python finetuning/new_trainer.py validate --config finetuning/training_configs/few_shot/mathqa-8_fixed_mathqa_shots.yaml
+# clear; export PYTHONPATH=`pwd`; python finetuning/new_trainer.py validate --config finetuning/training_configs/few_shot/mathqa-8_fixed_mathqa_shots_llama.yaml
