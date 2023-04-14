@@ -115,6 +115,20 @@ jobs:
           # python setup.py develop --user
           # pip install -e .
 
+      - name: Post-installation/setup debug info
+        run: |
+          . .venv/bin/activate
+          pwd
+          ls -la
+          which pip
+          pip --version
+          which python
+          python --version
+          pip freeze
+          df -h
+          echo $HOME
+          export
+
       - name: Test datasets
         run: |
           . .venv/bin/activate
@@ -129,8 +143,6 @@ jobs:
       - name: Test inference pipeline
         run: |
           . .venv/bin/activate
-          pwd
-          export
           python -m unittest tests/test_inference_pipeline.py
 
       - name: Test models
