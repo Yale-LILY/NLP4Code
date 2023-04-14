@@ -129,6 +129,8 @@ jobs:
       - name: Test inference pipeline
         run: |
           . .venv/bin/activate
+          pwd
+          export
           python -m unittest tests/test_inference_pipeline.py
 
       - name: Test models
