@@ -32,9 +32,9 @@ def main():
 
         answer = example['generated_program'].get('exec_match', example['generated_program'].get('exec_acc', False))
 
-        if answer == "ERROR: no answer variable":        # sometimes there is an error in the generated program. This will be parsed automatically later.
-            print("\033[1;33m ERROR on answer.")
-            task.save_single_evaluation(example['metadata'], "ERROR")       # we simply save it as an error for now.
+        if example['generated_program'].get('exec_result', False) == 'ERROR: program failed to execute':        # sometimes there is an error in the generated program. This will be parsed automatically later.
+            print("\033[1;36m ERROR on answer.\n Saving Automatically. \033[0m")
+            task.save_single_evaluation(example['metadata'], "ERROR: program failed to execute")       # we simply save it as an error for now.
             same_example = False
 
         elif answer:
