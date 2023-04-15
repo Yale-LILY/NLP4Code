@@ -52,8 +52,10 @@ def main():
             print("\tMissing something: 0")
             print("\tSomething extra: 1")
             print("\tSubtle difference: 2")
+            print("\tBig difference: 3")
+            print("\tUnclear question: 4")
             reason = input("Enter the number corresponding to the reason for failure: ")
-            reasons = ['missing', 'extra', 'subtle']
+            reasons = ['missing', 'extra', 'subtle', 'big', 'unclear']
             task.save_single_evaluation(example['metadata'], reasons[int(reason)])
             same_example = False
 
