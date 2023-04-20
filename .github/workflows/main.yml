@@ -1,7 +1,6 @@
 name: CI
 
 # run on pushes to main + PR creation/push
-# TODO: excludes regex
 on:
   push:
     branches:
@@ -57,9 +56,12 @@ jobs:
   # Unit tests
   TESTS:
     name: TESTS
-    # runs-on: self-hosted
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted # lada
+    # runs-on: ubuntu-22.04
+
+    # do not expose sensitive environment variables in this yaml
     env:
+    # TODO: dynamically choose GPUs if tests end up using them
       CUDA_VISIBLE_DEVICES: 1
 
     steps:
@@ -71,11 +73,15 @@ jobs:
       - name: Set up installation
         run: pip install --upgrade pip virtualenv
 
-      - name: Set up virtual environment
+      - name: Set up + activate virtual environment
         run: |
           rm -rf .venv
           python3 -m venv .venv
           . .venv/bin/activate
+          echo $PATH
+          # TODO: check why this doesn't work
+          # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-environment-variable
+          echo "PATH=$PATH" >> $GITHUB_ENV
       
       - name: Pre-installation upgrade
         run: |
@@ -83,6 +89,7 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade setuptools
           pip install --upgrade wheel
+
       - name: Debug info
         run: |
           . .venv/bin/activate
@@ -95,43 +102,46 @@ jobs:
           pip freeze
           df -h
           echo $HOME
+          echo $PATH
           export
+
       - name: Installation
         run: |
           . .venv/bin/activate
           pip install -r requirements.txt
-          # pip install numpy
-          # python -m pip install --upgrade pip setuptools wheel
-          # pip install pyrouge@git+https://github.com/bheinzerling/pyrouge.git     
-          # pip install en_core_web_sm@https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.0.0/en_core_web_sm-3.0.0-py3-none-any.whl
-          # pip install -e .
-          # # pip install cython
-          # # pip install -r requirements.txt
-          # # pip install -U git+https://github.com/bheinzerling/pyrouge.git
 
-      - name: Setup scripts
+      - name: Post-installation/setup debug info
         run: |
           . .venv/bin/activate
-          # python setup.py develop --user
-          # pip install -e .
+          pwd
+          ls -la
+          which pip
+          pip --version
+          which python
+          python --version
+          pip freeze
+          df -h
+          echo $HOME
+          echo $PATH
+          export
 
       - name: Test datasets
         run: |
           . .venv/bin/activate
           ls -la
-          python tests/test_datasets.py
+          python -m unittest tests/test_datasets.py
 
       - name: Test executors
         run: |
           . .venv/bin/activate
-          python tests/test_executors.py
+          python -m unittest tests/test_executors.py
 
       - name: Test inference pipeline
         run: |
           . .venv/bin/activate
-          python tests/test_inference_pipeline.py
+          python -m unittest tests/test_inference_pipeline.py
 
       - name: Test models
         run: |
           . .venv/bin/activate
-          python tests/test_models.py
+          python -m unittest tests/test_models.py
