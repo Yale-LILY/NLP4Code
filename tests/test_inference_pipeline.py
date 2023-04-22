@@ -14,8 +14,10 @@ class TestDecOnlyModelInference(unittest.TestCase):
                                 # "--trainer.precision 32 " + \
                                 "--model.init_args.transformer_model_name EleutherAI/gpt-neo-125M " + \
                                 "--data.init_args.transformer_model_name EleutherAI/gpt-neo-125M " + \
-                                "--data.init_args.val_max_instances 4 " + \
-                                "--data.init_args.val_batch_size 1 ")
+                                "--data.init_args.val_max_instances 2 " + \
+                                # "--data.init_args.val_batch_size 1 ")
+                                "--data.init_args.val_batch_size 1 " + \
+                                "--data.init_args.val_set_init_args.file_path $NLP4CODE_TEST_DATA_PATH/gsmath/split_dev.jsonl ")
         
         self.assertEqual(exit_code, 0)
 
