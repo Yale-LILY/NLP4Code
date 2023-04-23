@@ -149,10 +149,6 @@ class Seq2SeqModel(LightningModule):
             num_beam = 1
             temp = temperature
 
-        # https://github.com/THUDM/ChatGLM-6B/issues/31
-        if "santacoder" in self.transformer_model_name:
-            use_sample = False
-
         generation_results = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=use_sample, 
                                                   max_new_tokens=self.max_gen_len, num_beams=num_beam,
                                                   temperature=temp, num_return_sequences=num_return_sequences,
