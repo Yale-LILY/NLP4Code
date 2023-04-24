@@ -27,18 +27,8 @@ The structure of an example of MBPP:
 
 class FewShotMBPPDataset(FewShotNL2CodeDataset):
 
-    instruction: str = "Given the natural language description and example assertion(s), write a python function."
+    instruction: str = "## Given the natural language description and example assertion(s), write a python function."
     example_io_sep: str = "\n"
-
-    def __init__(self, 
-                 add_assertion_n: int,
-                 test_input_only: bool = False,
-                 **kwargs):
-        # init some dataset specific variables
-        self.add_assertion_n = add_assertion_n
-        self.test_input_only = test_input_only
-
-        super().__init__(**kwargs)
 
     @overrides
     def get_test_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:

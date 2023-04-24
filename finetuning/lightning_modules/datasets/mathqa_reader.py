@@ -19,7 +19,7 @@ class MathQADataset(NL2CodeDataset):
 
 class FewShotMathQADataset(FewShotNL2CodeDataset):
 
-    instruction: str = "Given questions in the comment, use python programs to produce the correct answers with the `answer` variable."
+    instruction: str = "## Given questions in the comment, use python programs to produce the correct answers with the `answer` variable."
 
     @overrides
     def get_test_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:

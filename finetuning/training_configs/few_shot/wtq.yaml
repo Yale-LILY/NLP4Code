@@ -30,8 +30,8 @@ model:
   class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
     transformer_model_name: default-will-cause-error
-    executor_cls: execution.executors.MBPPExecutor
-    max_gen_len: 256
+    executor_cls: execution.executors.SpiderExecutor
+    max_gen_len: 128
     sampling_temp: 0.001
     # sampling_temp_at_k: 0.8
     # pass_at_k: 50
@@ -44,19 +44,19 @@ data:
   class_path: lightning_modules.datasets.base_datamodule.FewShotNL2CodeDataModule
   init_args:
     transformer_model_name: default-will-cause-error
-    dataset_cls: FewShotMBPPDataset
+    dataset_cls: FewShotSpiderDataset
     batch_size: 1
     val_batch_size: 4
     ## prompting settings
     prompting_init_args:
-      exemplar_file_path: prompt_files/mbpp-official_first_3-10_exemplars.jsonl
-      num_exemplars: 3
+      exemplar_file_path: prompt_files/wtq-8_exemplars.jsonl
+      num_exemplars: 8
       fixed_exemplars: true
       exemplar_selection_method: first
       add_instruction: true
       use_chat_format: false
+    # val_max_instances: 64
     additional_prompt_func_args:
-      add_assertion_n: 1
-      test_input_only: false
+      use_bridge_format: true
     val_set_init_args:
-      file_path: data/mbpp/mbpp_test.jsonl
+      file_path: data/squall/wtq_restored_dev.jsonl
