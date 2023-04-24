@@ -94,8 +94,6 @@ DATASETS: List[Tuple[NL2CodeDataset, Dict]] = [
 #     FewShotSQLDataModule,
 # ]
 
-# train_file_path: data/mathqa/train-python.jsonl
-# val_file_path: data/mathqa/val-python.jsonl
 DATA_MODULES: List[Tuple[NL2CodeDataModule, Dict]] = [
     (
         MathQADataModule,
@@ -124,3 +122,13 @@ DATA_MODULES: List[Tuple[NL2CodeDataModule, Dict]] = [
         },
     ),
 ]
+
+# ======== models ========
+
+TEST_MODEL_TRANSFORMER_MODEL_NAMES = [
+    "EleutherAI/gpt-neo-125M",
+    "Salesforce/codet5-small",
+    "Salesforce/codegen-350M-multi",
+]
+
+TEST_MODEL_EXECUTOR_CLS = "execution.executors.MathExecutor"

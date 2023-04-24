@@ -83,14 +83,18 @@ def get_model(model_name: str,
                                                                use_cache=not gradient_ckpt,
                                                                **additional_init_args)
     elif model_name.startswith("Salesforce/codegen-"):
+        # TODO: using float32 here for tests
+        # RunTime error: "LayerNormKernelImpl" not implemented for 'Half' codegen
+        # https://github.com/huggingface/transformers/issues/21989
         tokenizer = CodeGenTokenizer.from_pretrained(model_name,
-                                                    additional_special_tokens=additional_special_tokens)
+                                                    additional_special_tokens=additional_special_tokens,
+                                                    torch_dtype=torch.float32)
         tokenizer.pad_token = tokenizer.eos_token
 
         if not tokenizer_only:
             model = CodeGenForCausalLM.from_pretrained(model_name, 
                                                     pad_token_id=tokenizer.eos_token_id, 
-                                                    torch_dtype=torch.float16, 
+                                                    torch_dtype=torch.float32, 
                                                     # device_map="auto",
                                                     use_cache=True)
             if len(additional_special_tokens) > 0:
