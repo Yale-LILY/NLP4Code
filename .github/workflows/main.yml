@@ -60,9 +60,9 @@ jobs:
     # runs-on: ubuntu-22.04
 
     # do not expose sensitive environment variables in this yaml
-    env:
+    # env:
     # TODO: dynamically choose GPUs if tests end up using them
-      CUDA_VISIBLE_DEVICES: 1
+    #   CUDA_VISIBLE_DEVICES: 1
 
     steps:
       - uses: actions/checkout@v2
