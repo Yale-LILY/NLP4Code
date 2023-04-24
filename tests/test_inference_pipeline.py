@@ -13,9 +13,9 @@ class TestDecOnlyModelInference(unittest.TestCase):
                                 "--trainer.gpus 0 " + \
                                 "--trainer.accelerator cpu " + \
                                 "--trainer.precision 32 " + \
+                                "--model.init_args.print_eval_every_n_batches 1 " + \
                                 "--model.init_args.transformer_model_name EleutherAI/gpt-neo-125M " + \
                                 "--data.init_args.transformer_model_name EleutherAI/gpt-neo-125M " + \
-                                "--model.init_args.print_eval_every_n_batches 1 " + \
                                 "--data.init_args.val_max_instances 2 " + \
                                 # "--data.init_args.val_batch_size 1 ")
                                 "--data.init_args.val_batch_size 1 " + \
