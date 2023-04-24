@@ -30,7 +30,7 @@ model:
   class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
     transformer_model_name: default-will-cause-error
-    executor_cls: execution.executors.SpiderExecutor
+    executor_cls: execution.executors.WTQExecutor
     max_gen_len: 128
     sampling_temp: 0.001
     # sampling_temp_at_k: 0.8

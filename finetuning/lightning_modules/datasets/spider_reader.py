@@ -9,12 +9,12 @@ from typing import Dict, Iterable, List, Any, Optional, Union, Tuple
 
 from finetuning.lightning_modules.datasets.base_reader import NL2CodeDataset, FewShotNL2CodeDataset
 
-full_db_info = None
-DB_INFO_FILE = os.path.join(os.path.dirname(__file__), '../../../data/squall/db_info_wtq.json')
 
 class FewShotSpiderDataset(FewShotNL2CodeDataset):
 
     instruction: str = "-- Given database schema and a question in natural language, generate the corresponding SQL query."
+    full_db_info = None
+    DB_INFO_FILE = os.path.join(os.path.dirname(__file__), '../../../data/squall/db_info_wtq.json')
 
     @overrides
     def get_test_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -25,15 +25,15 @@ class FewShotSpiderDataset(FewShotNL2CodeDataset):
     # @overrides
     def promptify_example(self, example: Dict[str, Any], add_code: bool = True, use_bridge_format: bool = False) -> Tuple[str, str]:
         # check if the DB info file is loaded
-        if full_db_info is None and use_bridge_format:
-            with open(DB_INFO_FILE, "r") as f:
-                full_db_info = json.load(f)
+        if self.full_db_info is None and use_bridge_format:
+            with open(self.DB_INFO_FILE, "r") as f:
+                self.full_db_info = json.load(f)
         
         # add db schema
         db_id = example['db_id']
-        db_info = full_db_info[db_id]
         text = f'-- Database {db_id}:\n'
         if use_bridge_format:
+            db_info = self.full_db_info[db_id]
             for table_name, columns in db_info['column_example_values'].items():
                 column_representation = ', '.join([f"{name} ({str(val)[:50] + '...' if len(str(val)) > 50 else ''})" for name, val in columns])
                 text += f'--  Table {table_name}: {column_representation}\n'
