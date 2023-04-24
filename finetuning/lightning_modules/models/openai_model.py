@@ -8,37 +8,39 @@ from typing import Dict, List, Any, Optional, Tuple
 from itertools import chain
 from transformers import PreTrainedTokenizer, GenerationMixin
 
+from finetuning.lightning_modules.datasets.reader_utils import CHAT_SEP_TOKEN
+
 # the key will be set when the first call is made
 OPENAI_API_KEY = None
 
-def prompt_to_chat(str_prompt: str) -> List[Dict[str, str]]:
+def prompt_to_chatgpt_format(str_prompt: str) -> List[Dict[str, str]]:
     """
     Convert a prompt to a chat format.
 
     The prompt is assumed to be the format of 
-        "instuction... ###<eoi>#### exemplar nl description ###<sep>### exemplar code ###<sep>### test nl description"
+        "instuction... `CHAT_SEP_TOKEN` exemplar nl description `CHAT_SEP_TOKEN` exemplar code `CHAT_SEP_TOKEN` test nl description"
     
     The chat format will be like:
     [
-        {"role": "system", "content": "instuction..."},
+        {"role": "system", "content": "instuction..."}, ## this is the *optional* instruction
         {"role": "user", "content": "exemplar nl description"},
-        {"role": "system", "content": "exemplar code"},
+        {"role": "assistant", "content": "exemplar code"},
         {"role": "user", "content": "test nl description"}
     ]
     """
-    assert "###<eoi>###" in str_prompt, "The prompt must contain the separators for the chat format"
+    assert CHAT_SEP_TOKEN in str_prompt, "The prompt must contain the separators for the chat format"
 
     # extract the instruction
-    instruction = str_prompt.split("###<eoi>###")[0].strip()
+    instruction = str_prompt.split(CHAT_SEP_TOKEN)[0].strip()
 
     # extract the exemplars and test
-    exemplars_and_test_list = str_prompt.split("###<eoi>###")[1].strip().split("###<sep>###")
+    exemplars_and_test_list = str_prompt.split(CHAT_SEP_TOKEN)[1:] # (exemplar input, output) * n + test input
     test_input = exemplars_and_test_list[-1].strip()
     exemplar_ios = exemplars_and_test_list[:-1]
     exemplar_pairs = [(exemplar_ios[i].strip(), exemplar_ios[i+1].strip()) for i in range(0, len(exemplar_ios), 2)]
 
     # construct the chat format
-    chat_prompt = [{"role": "system", "content": instruction}]
+    chat_prompt = [{"role": "system", "content": instruction}] if instruction != "" else []
     for exemplar_pair in exemplar_pairs:
         chat_prompt.append({"role": "user", "content": exemplar_pair[0]})
         chat_prompt.append({"role": "assistant", "content": exemplar_pair[1]})
@@ -56,6 +58,7 @@ def openai_call(prompts: List[str], engine: str, use_chat_format: bool = False, 
     For more arguments to https://beta.openai.com/docs/api-reference/completions/create
     """
     # first check if the API key is set
+    global OPENAI_API_KEY
     if OPENAI_API_KEY is None:
         OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
         if OPENAI_API_KEY is None:
@@ -82,7 +85,7 @@ def openai_call(prompts: List[str], engine: str, use_chat_format: bool = False, 
                 non_none_args.pop("engine")
                 assert len(prompts) == 1, "gpt-3.5-turbo only supports one prompt at a time"
                 if use_chat_format:
-                    non_none_args["messages"] = prompt_to_chat(prompts[0])
+                    non_none_args["messages"] = prompt_to_chatgpt_format(prompts[0])
                 else:
                     non_none_args["messages"] = [{"role": "system", "content": "You are a helpful assistant learning from my examples."},{"role": "user", "content": prompts[0]}]
                 non_none_args["model"] = engine

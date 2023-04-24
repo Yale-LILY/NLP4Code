@@ -13,6 +13,7 @@ from tqdm import tqdm
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import Dataset
 
+from .reader_utils import CHAT_SEP_TOKEN
 from finetuning.lightning_modules.models.seq2seq_model_util import is_model_gpt_style, right_pad_sequences
 from finetuning.lightning_modules.models.seq2seq_model_util import get_model, left_pad_sequences
 
@@ -20,7 +21,6 @@ from finetuning.lightning_modules.models.seq2seq_model_util import get_model, le
 # https://docs.allennlp.org/main/api/data/data_loaders/multiprocess_data_loader/#multiprocessdataloader.common_issues
 os.environ['TOKENIZERS_PARALLELISM']='0'
 
-CHAT_SEP_TOKEN = "##<chat-sep>##"
 
 logger = logging.getLogger(__name__)
 
@@ -227,8 +227,8 @@ class FewShotNL2CodeDataset(NL2CodeDataset):
             self.between_example_sep = between_example_sep
 
         if self.use_chat_format:
-            self.example_io_sep = CHAT_SEP_TOKEN + example_io_sep 
-            self.between_example_sep = CHAT_SEP_TOKEN + between_example_sep
+            self.example_io_sep = CHAT_SEP_TOKEN + self.example_io_sep 
+            self.between_example_sep = CHAT_SEP_TOKEN + self.between_example_sep
 
         # read the exemplar file and 
         with open(exemplar_file_path, 'r') as f:
