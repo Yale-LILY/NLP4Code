@@ -32,7 +32,7 @@ def main():
 
         answer = example['generated_program'].get('exec_match', example['generated_program'].get('exec_acc', False))
 
-        if example['generated_program'].get('exec_result', False) == 'ERROR: program failed to execute':        # sometimes there is an error in the generated program. This will be parsed automatically later.
+        if example['generated_program'].get('exec_result', False) == 'ERROR: program failed to execute' or example['generated_program'].get('exec_result', False) == 'ERROR: no answer variable':        # sometimes there is an error in the generated program. This will be parsed automatically later.
             print("\033[1;36m ERROR on answer.\n Saving Automatically. \033[0m")
             task.save_single_evaluation(example['metadata'], "ERROR: program failed to execute")       # we simply save it as an error for now.
             same_example = False
@@ -52,10 +52,10 @@ def main():
             print("\tMissing something: 0")
             print("\tSomething extra: 1")
             print("\tSubtle difference: 2")
-            print("\tBig difference: 3")
-            print("\tUnclear question: 4")
+            print("\tUnclear question: 3")
+            print("\tOther reason (to be reevaluated): 4")
             reason = input("Enter the number corresponding to the reason for failure: ")
-            reasons = ['missing', 'extra', 'subtle', 'big', 'unclear']
+            reasons = ['missing', 'extra', 'subtle', 'unclear', 'other']
             task.save_single_evaluation(example['metadata'], reasons[int(reason)])
             same_example = False
 

@@ -82,7 +82,7 @@ class EvaluationTask:
 
         # gsmath and squall/Spider have different keys for execution accuracy, so we check both
         compiled = example['generated_program'].get('exec_result', False)
-        if compiled == 'ERROR: program failed to execute':
+        if compiled == 'ERROR: program failed to execute' or compiled == 'ERROR: no answer variable':
             print("\033[1;36m" + "Execution Failed" + "\033[0m")
             return
 
