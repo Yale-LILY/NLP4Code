@@ -9,6 +9,8 @@ sys.path.append(ROOT_DIR)
 
 from tests.consts import DATA_MODULES, DATASETS, FEW_SHOT_DATASETS
 
+from torch.utils.data import DataLoader
+
 
 # test cases to add:
 # - test base_reader classes are abstract
@@ -36,6 +38,7 @@ class TestDataModules(unittest.TestCase):
             finetune_data_module = finetune_data_module_cls(
                 **finetune_data_module_init_kwargs
             )
-            # train_dl = finetune_data_module.train_dataloader()
-            # val_dl = finetune_data_module.val_dataloader()
-            # print(type(train_dl))
+            train_dl = finetune_data_module.train_dataloader()
+            self.assertTrue(isinstance(train_dl, DataLoader))
+            val_dl = finetune_data_module.val_dataloader()
+            self.assertTrue(isinstance(val_dl, DataLoader))
