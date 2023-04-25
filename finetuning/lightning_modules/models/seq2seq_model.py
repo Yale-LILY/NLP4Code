@@ -304,6 +304,10 @@ class Seq2SeqModel(LightningModule):
             self.category_metrics.update(program_dict["exec_acc"], metadata) # note that this can't be forward as compute will be called
         
         if self.print_eval_every_n_batches > 0:
+            # print the programs
+            for output_dict in outputs:
+                print("generated program: ", output_dict["generated_program"]["program"])
+
             # compute the metrics
             eval_metrics_dict = {}
             for k in self.metrics_dict.keys():
