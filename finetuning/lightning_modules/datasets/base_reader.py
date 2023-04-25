@@ -107,6 +107,9 @@ class NL2CodeDataset(Dataset):
     
     def get_example_dict(self, example: Dict[str, Any], context: str, code: str = "", 
                          train_mode: bool = True, length_cutoff: bool = True) -> Dict[str, Any]:
+        # add the prompt in the metadata        
+        example_dict["metadata"]["prompt"] = context
+
         if not is_model_gpt_style(self.transformer_model_name):
             example_dict = self.get_example_dict_enc_dec(example, context, code, train_mode, length_cutoff=length_cutoff)
         else:
