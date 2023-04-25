@@ -16,6 +16,11 @@ pip install -r requirements.txt
 export PYTHONPATH=`pwd`
 ```
 
+To run LLAMA-based model, you need to install the development version of `transformers` library:
+```bash
+pip install git+https://github.com/huggingface/transformers
+```
+
 ## Wandb
 We use Wandb for experiment tracking. Please register ask Ansong for an invitation to the Wandb Yale-LILY team before 
 running experiments. When you are ready to run the exps and log it to the cloud, do the following:

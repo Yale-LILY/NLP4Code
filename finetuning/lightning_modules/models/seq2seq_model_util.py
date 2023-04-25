@@ -13,6 +13,7 @@ from transformers import RobertaTokenizer, T5ForConditionalGeneration
 from transformers import CodeGenTokenizer, CodeGenForCausalLM, T5Tokenizer
 from transformers import BartTokenizer, BartModel, BartForConditionalGeneration
 from transformers import DebertaV2Tokenizer, DebertaV2ForSequenceClassification
+from transformers import LlamaTokenizer, LlamaForCausalLM
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedTokenizerFast
 
@@ -138,7 +139,29 @@ def get_model(model_name: str,
 
         if not tokenizer_only:
             model = BartForSequenceClassification.from_pretrained(model_name, num_labels=2)
-                                                    
+    elif "llama" in model_name.lower() or "alpaca" in model_name.lower():
+        tokenizer = LlamaTokenizer.from_pretrained(model_name,
+                                                    additional_special_tokens=additional_special_tokens)
+        tokenizer.pad_token = tokenizer.eos_token
+
+        if not tokenizer_only:
+            model = LlamaForCausalLM.from_pretrained(model_name, 
+                                                    pad_token_id=tokenizer.eos_token_id, 
+                                                    torch_dtype=torch.float16)
+            if len(additional_special_tokens) > 0:
+                model.resize_token_embeddings(len(tokenizer))
+    elif "santacoder" in model_name:
+        tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                                    additional_special_tokens=additional_special_tokens)
+        tokenizer.pad_token = tokenizer.eos_token
+
+        if not tokenizer_only:
+            model = AutoModelForCausalLM.from_pretrained(model_name,        
+                                                        pad_token_id=tokenizer.eos_token_id, 
+                                                        torch_dtype=torch.float16,
+                                                        trust_remote_code=True)
+            if len(additional_special_tokens) > 0:
+                model.resize_token_embeddings(len(tokenizer))
     elif model_name.startswith("openai/"):
         engine = model_name.split("/")[-1]
 
