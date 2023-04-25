@@ -111,6 +111,9 @@ class NL2CodeDataset(Dataset):
             example_dict = self.get_example_dict_enc_dec(example, context, code, train_mode, length_cutoff=length_cutoff)
         else:
             example_dict = self.get_example_dict_gpt(example, context, code, train_mode, length_cutoff=length_cutoff)
+
+        # add the prompt in the metadata        
+        example_dict["metadata"]["prompt"] = context
         
         if len(example_dict["input_ids"]) + self.generation_length > self.tokenizer.model_max_length:
             self.stats["input_too_long"] += 1
