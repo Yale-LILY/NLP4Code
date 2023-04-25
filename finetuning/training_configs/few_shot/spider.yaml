@@ -1,0 +1,60 @@
+seed_everything: 333
+trainer:
+  default_root_dir: &exp_name results/debug-tmp
+  # progress_bar_refresh_rate: 1
+  num_sanity_val_steps: 0
+  log_every_n_steps: 1
+  logger+:
+    - class_path: finetuning.lightning_modules.patches.patched_loggers.PatchedWandbLogger
+      init_args:
+        entity: yale-lily
+        project: unified-codegen
+        save_dir: *exp_name
+        name: *exp_name
+        log_model: False
+        save_code: True
+        offline: False
+        # offline: True
+  callbacks+:
+    - class_path: pytorch_lightning.callbacks.progress.TQDMProgressBar
+      init_args:
+        refresh_rate: 1
+        
+  accelerator: gpu
+  devices: 2
+  # strategy: deepspeed_stage_2
+  strategy: ddp_find_unused_parameters_false
+  precision: 16
+
+model:
+  class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
+  init_args:
+    transformer_model_name: default-will-cause-error
+    executor_cls: execution.executors.SpiderExecutor
+    max_gen_len: 128
+    sampling_temp: 0.001
+    # sampling_temp_at_k: 0.8
+    # pass_at_k: 50
+    # max_generation_batches: 5
+    gradient_ckpt: false
+    save_raw_generation_results: true
+    # print_eval_every_n_batches: 1
+
+data:
+  class_path: lightning_modules.datasets.base_datamodule.FewShotNL2CodeDataModule
+  init_args:
+    transformer_model_name: default-will-cause-error
+    dataset_cls: FewShotSpiderDataset
+    batch_size: 1
+    val_batch_size: 4
+    ## prompting settings
+    prompting_init_args:
+      exemplar_file_path: prompt_files/spider-8_exemplars.jsonl
+      num_exemplars: 8
+      fixed_exemplars: true
+      exemplar_selection_method: first
+      add_instruction: true
+      use_chat_format: false
+    # val_max_instances: 64
+    val_set_init_args:
+      file_path: data/spider/dev_processed_db_path.jsonl

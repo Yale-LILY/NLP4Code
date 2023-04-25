@@ -61,7 +61,7 @@ model:
     # load_ckpt_file: results/squall-t5_large-finetuning-cat_eval-pass_100_eval-max_pass_at_k/cot-codegen/2vx58eip/checkpoints/step=534-pass@100=0.8419-exec_acc=0.5593.ckpt
     # eval_pass_at_k_every_n_epochs: 1
     # max_generation_batches: 5
-    gradient_ckpt: true
+    gradient_ckpt: false
     # eval_greedy_search: true
     save_raw_generation_results: true
     # print_eval_every_n_batches: 1
@@ -81,16 +81,22 @@ model:
         num_training_steps: *max_steps
 
 data:
-  class_path: lightning_modules.datasets.mathqa_reader.FewShotMathQADataModule
+  class_path: lightning_modules.datasets.base_datamodule.FewShotNL2CodeDataModule
   init_args:
     transformer_model_name: default-will-cause-error
+    dataset_cls: FewShotMathQADataset
     batch_size: 1
     val_batch_size: 4
-    # train_max_instances: 100
+    ## prompting settings
+    prompting_init_args:
+      exemplar_file_path: prompt_files/gsmath-idiomatic_code-annotated-8_exemplars.jsonl
+      num_exemplars: 8
+      fixed_exemplars: true
+      exemplar_selection_method: first
+      add_instruction: true
+      use_chat_format: false
     # val_max_instances: 64
-    # train_set_init_args:
-    #   file_path: data/squall/squall_train_processed.jsonl 
     val_set_init_args:
       # prompt_examples: 4
-      file_path: data/mathqa/val_dedup_init_val.jsonl
-      prompt_file: prompt_files/mathqa_non_idiomatic_code_init_val.txt
+      # file_path: data/gsmath/split_dev.jsonl
+      file_path: $(NLP4CODE_TEST_DATA_PATH)/gsmath/split_dev.jsonl
