@@ -1,6 +1,6 @@
 seed_everything: 333
 trainer:
-  gpus: 2,3
+  gpus: 2
   gradient_clip_val: 1.0
   default_root_dir: &exp_name results/debug-tmp-128
   # default_root_dir: &exp_name results/gsmath-incoder_6b-few_shot-pass_at_50-train-output_prob-gen_len_256-gsm_shots-split_0
@@ -45,8 +45,8 @@ trainer:
   # replace_sampler_ddp: False
   # https://github.com/PyTorchLightning/pytorch-lightning/issues/8262
   # strategy: deepspeed_stage_2
-  strategy: deepspeed_stage_3_offload
-  # strategy: ddp_find_unused_parameters_false
+  # strategy: deepspeed_stage_2
+  strategy: ddp_find_unused_parameters_false
   precision: 16
   # accumulate_grad_batches: 2
 
@@ -59,12 +59,9 @@ model:
     sampling_temp: 0.001
     # sampling_temp_at_k: 0.8
     # pass_at_k: 50
-    # load_ckpt_file: results/squall-t5_large-finetuning-cat_eval-pass_100_eval-max_pass_at_k/cot-codegen/2vx58eip/checkpoints/step=534-pass@100=0.8419-exec_acc=0.5593.ckpt
-    # eval_pass_at_k_every_n_epochs: 1
     # max_generation_batches: 5
-    # gradient_ckpt: true
-    # eval_greedy_search: true
-    # save_raw_generation_results: true
+    gradient_ckpt: false
+    save_raw_generation_results: true
     # print_eval_every_n_batches: 1
     optimizer:
       init_args: 
@@ -82,18 +79,22 @@ model:
         num_training_steps: *max_steps
 
 data:
-  class_path: lightning_modules.datasets.mathqa_reader.FewShotMathQADataModule
+  class_path: lightning_modules.datasets.base_datamodule.FewShotNL2CodeDataModule
   init_args:
     transformer_model_name: *transformer
+    dataset_cls: FewShotMathQADataset
     batch_size: 1
-    val_batch_size: 1
-    # train_max_instances: 100
-    val_max_instances: 64
-    # train_set_init_args:
-    #   file_path: data/squall/squall_train_processed.jsonl 
+    val_batch_size: 4
+    ## prompting settings
+    prompting_init_args:
+      exemplar_file_path: prompt_files/mathqa-non_idiomatic_code-annotated-8_exemplars.jsonl
+      num_exemplars: 8
+      fixed_exemplars: true
+      exemplar_selection_method: first
+      add_instruction: true
+      use_chat_format: false
+    # val_max_instances: 64
     val_set_init_args:
-      # prompt_examples: 4
       file_path: data/mathqa/val_dedup_init_val.jsonl
-      prompt_file: prompt_files/mathqa_non_idiomatic_code_init_val.txt
 
-# clear; export PYTHONPATH=`pwd`; python finetuning/new_trainer.py validate --config finetuning/training_configs/few_shot/mathqa-8_fixed_mathqa_shots.yaml
+# clear; export PYTHONPATH=`pwd`; python finetuning/new_trainer.py validate --config finetuning/training_configs/few_shot/mathqa-8_fixed_mathqa_shots_llama.yaml
