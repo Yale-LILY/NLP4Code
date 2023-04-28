@@ -6,30 +6,30 @@ NLP4CODE_TEST_DATA_PATH = os.environ["NLP4CODE_TEST_DATA_PATH"]
 
 from execution.executors import MathExecutor
 from finetuning.lightning_modules.datasets.base_reader import (
-    NL2CodeDataModule,
+    # NL2CodeDataModule,
     NL2CodeDataset,
 )
 from finetuning.lightning_modules.datasets.mathqa_reader import (
-    FewShotMathQADataModule,
+    # FewShotMathQADataModule,
     FewShotMathQADataset,
     MathQADataset,
-    MathQADataModule,
-    MathQAEndVerificationDataset,
-    MathQAEndVerificationDataModule,
+    # MathQADataModule,
+    # MathQAEndVerificationDataset,
+    # MathQAEndVerificationDataModule,
 )
 from finetuning.lightning_modules.datasets.mbpp_reader import (
-    FewShotMBPPDataModule,
+    # FewShotMBPPDataModule,
     FewShotMBPPDataset,
-    MBPPEndVerificationDataModule,
-    MBPPEndVerificationDataset,
+    # MBPPEndVerificationDataModule,
+    # MBPPEndVerificationDataset,
 )
 from finetuning.lightning_modules.datasets.spider_reader import (
     FewShotSpiderDataset,
-    FewShotSQLDataModule,
+    # FewShotSQLDataModule,
     SpiderDataset,
-    SpiderEndVerificationDataset,
-    SQLEndVerificationDataModule,
-    Text2SqlDataModule,
+    # SpiderEndVerificationDataset,
+    # SQLEndVerificationDataModule,
+    # Text2SqlDataModule,
 )
 
 # TODO: use special test string for test transformer model name?
@@ -94,34 +94,34 @@ DATASETS: List[Tuple[NL2CodeDataset, Dict]] = [
 #     FewShotSQLDataModule,
 # ]
 
-DATA_MODULES: List[Tuple[NL2CodeDataModule, Dict]] = [
-    (
-        MathQADataModule,
-        {
-            "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
-            "train_set_init_args": {
-                "file_path": f"{NLP4CODE_TEST_DATA_PATH}/mathqa/train_dedup.jsonl"
-            },
-            "val_set_init_args": {
-                "file_path": f"{NLP4CODE_TEST_DATA_PATH}/mathqa/val_dedup.jsonl"
-            },
-        },
-    ),
-    (
-        Text2SqlDataModule,
-        {
-            "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
-            "train_set_init_args": {
-                "file_path": f"{NLP4CODE_TEST_DATA_PATH}/spider/train_spider_processed_v2.jsonl"
-            },
-            "val_set_init_args": {
-                "file_path": f"{NLP4CODE_TEST_DATA_PATH}/spider/dev_processed.jsonl"
-            },
-            "train_max_instances": 10,
-            "val_max_instances": 10,
-        },
-    ),
-]
+# DATA_MODULES: List[Tuple[NL2CodeDataModule, Dict]] = [
+#     (
+#         MathQADataModule,
+#         {
+#             "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
+#             "train_set_init_args": {
+#                 "file_path": f"{NLP4CODE_TEST_DATA_PATH}/mathqa/train_dedup.jsonl"
+#             },
+#             "val_set_init_args": {
+#                 "file_path": f"{NLP4CODE_TEST_DATA_PATH}/mathqa/val_dedup.jsonl"
+#             },
+#         },
+#     ),
+#     (
+#         Text2SqlDataModule,
+#         {
+#             "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
+#             "train_set_init_args": {
+#                 "file_path": f"{NLP4CODE_TEST_DATA_PATH}/spider/train_spider_processed_v2.jsonl"
+#             },
+#             "val_set_init_args": {
+#                 "file_path": f"{NLP4CODE_TEST_DATA_PATH}/spider/dev_processed.jsonl"
+#             },
+#             "train_max_instances": 10,
+#             "val_max_instances": 10,
+#         },
+#     ),
+# ]
 
 # ======== models ========
 

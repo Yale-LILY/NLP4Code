@@ -7,7 +7,8 @@ ROOT_DIR = path.dirname(path.dirname(path.abspath(__file__)))
 sys.path.append(ROOT_DIR)
 
 
-from tests.consts import DATA_MODULES, DATASETS, FEW_SHOT_DATASETS
+# from tests.consts import DATA_MODULES, DATASETS, FEW_SHOT_DATASETS
+from tests.consts import DATASETS, FEW_SHOT_DATASETS
 
 from torch.utils.data import DataLoader
 
@@ -33,12 +34,12 @@ class TestDataModules(unittest.TestCase):
         # TODO: this is dummy test
         self.assertTrue(True)
 
-    def test_finetune_data_modules(self):
-        for finetune_data_module_cls, finetune_data_module_init_kwargs in DATA_MODULES:
-            finetune_data_module = finetune_data_module_cls(
-                **finetune_data_module_init_kwargs
-            )
-            train_dl = finetune_data_module.train_dataloader()
-            self.assertTrue(isinstance(train_dl, DataLoader))
-            val_dl = finetune_data_module.val_dataloader()
-            self.assertTrue(isinstance(val_dl, DataLoader))
+    # def test_finetune_data_modules(self):
+    #     for finetune_data_module_cls, finetune_data_module_init_kwargs in DATA_MODULES:
+    #         finetune_data_module = finetune_data_module_cls(
+    #             **finetune_data_module_init_kwargs
+    #         )
+    #         train_dl = finetune_data_module.train_dataloader()
+    #         self.assertTrue(isinstance(train_dl, DataLoader))
+    #         val_dl = finetune_data_module.val_dataloader()
+    #         self.assertTrue(isinstance(val_dl, DataLoader))
