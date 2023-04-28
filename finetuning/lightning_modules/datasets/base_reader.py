@@ -3,22 +3,24 @@ import logging
 import sys
 import os
 import torch
+import random
 
-from typing import Dict, Iterable, List, Any, Optional, Union
+from typing import Dict, Iterable, List, Any, Optional, Union, Tuple
 from itertools import chain
+from overrides import overrides
 from tqdm import tqdm
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import Dataset
 
+from .reader_utils import CHAT_SEP_TOKEN
 from finetuning.lightning_modules.models.seq2seq_model_util import is_model_gpt_style, right_pad_sequences
 from finetuning.lightning_modules.models.seq2seq_model_util import get_model, left_pad_sequences
-
-from torch.utils.data import DataLoader
 
 # set environment variable to avoid deadlocks, see: 
 # https://docs.allennlp.org/main/api/data/data_loaders/multiprocess_data_loader/#multiprocessdataloader.common_issues
 os.environ['TOKENIZERS_PARALLELISM']='0'
+
 
 logger = logging.getLogger(__name__)
 
@@ -109,10 +111,9 @@ class NL2CodeDataset(Dataset):
             example_dict = self.get_example_dict_enc_dec(example, context, code, train_mode, length_cutoff=length_cutoff)
         else:
             example_dict = self.get_example_dict_gpt(example, context, code, train_mode, length_cutoff=length_cutoff)
-        
-        # for verification only
-        example_dict["metadata"]["correct_token_idx"] = 10932 if "bart" in self.transformer_model_name.lower() else 4273 # default for T5
-        example_dict["metadata"]["incorrect_token_idx"] = 2362 if "bart" in self.transformer_model_name.lower() else 150 # default for T5
+
+        # add the prompt in the metadata        
+        example_dict["metadata"]["prompt"] = context
         
         if len(example_dict["input_ids"]) + self.generation_length > self.tokenizer.model_max_length:
             self.stats["input_too_long"] += 1
@@ -184,101 +185,97 @@ class NL2CodeDataset(Dataset):
     def extend(self, instances):
         self.instances.extend(instances)
 
-def customized_collate_fn_gpt(examples: List[Dict[str, Any]]) -> Dict[str, Any]:
-    return customized_collate_fn(examples, is_left_pad=True)
+class FewShotNL2CodeDataset(NL2CodeDataset):
 
-def customized_collate_fn_enc_dec(examples: List[Dict[str, Any]]) -> Dict[str, Any]:
-    return customized_collate_fn(examples, is_left_pad=False)
+    # class variables, can be overwritten by subclasses and can be changed in the init function
+    instruction: str = None
+    example_io_sep: str = ""
+    between_example_sep: str = "\n\n"
 
-def customized_collate_fn(examples: List[Dict[str, Any]], is_left_pad: bool = True) -> Dict[str, Any]:
-    result_dict = {}
+    def __init__(
+        self, 
+        mode: str = "test", 
+        # exemplar settings, these settings are also overridable from the command line as 
+        # they are also arguements for the datamodule class
+        exemplar_file_path: str = None,
+        num_exemplars: int = None,
+        fixed_exemplars: bool = True,
+        exemplar_selection_method: str = "first",
+        add_instruction: bool = True,
+        use_chat_format: bool = False,
+        additional_prompt_func_args: Dict[str, Any] = {},
+        # override class variables
+        instruction: str = None,
+        example_io_sep: str = None,
+        between_example_sep: str = None,
+        **kwargs):
 
-    pad_token_id = examples[0]["metadata"]["pad_token_id"]
+        assert mode == "test", "FewShotNL2CodeDataset only supports test mode"
+        assert exemplar_selection_method in ["first", "random"], "exemplar_selection_method must be first or random"
 
-    pad_func = left_pad_sequences if is_left_pad else right_pad_sequences
+        self.exemplar_file_path = exemplar_file_path
+        self.num_exemplars = num_exemplars
+        self.fixed_exemplars = fixed_exemplars
+        self.exemplar_selection_method = exemplar_selection_method
 
+        self.add_instruction = add_instruction
+        self.use_chat_format = use_chat_format
+        self.additional_prompt_args = additional_prompt_func_args
 
-    for k in examples[0].keys():
-        if k == "metadata":
-            result_dict[k] = [ex[k] for ex in examples]
-        elif k == "input_ids":
-            lists_to_pad = list(chain(*[[torch.tensor(t) for t in ex[k]] for ex in examples])) \
-                if isinstance(examples[0][k][0], list) else [torch.tensor(ex[k]) for ex in examples]
-            result_dict[k] = pad_func(lists_to_pad, batch_first=True, padding_value=pad_token_id)
-        elif k == "attention_mask":
-            lists_to_pad = list(chain(*[[torch.tensor(t) for t in ex[k]] for ex in examples])) \
-                if isinstance(examples[0][k][0], list) else [torch.tensor(ex[k]) for ex in examples]
-            result_dict[k] = pad_func(lists_to_pad, batch_first=True, padding_value=0)
-        elif k == "labels":
-            lists_to_pad = list(chain(*[[torch.tensor(t) for t in ex[k]] for ex in examples])) \
-                if isinstance(examples[0][k][0], list) else [torch.tensor(ex[k]) for ex in examples]
-            result_dict[k] = pad_func(lists_to_pad, batch_first=True, padding_value=-100)
-        else:
-            raise ValueError(f"Unknown key {k} in example instance")
+        if instruction is not None:
+            self.instruction = instruction
+        if example_io_sep is not None:
+            self.example_io_sep = example_io_sep
+        if between_example_sep is not None:
+            self.between_example_sep = between_example_sep
 
-    return result_dict
+        if self.use_chat_format:
+            self.example_io_sep = CHAT_SEP_TOKEN + self.example_io_sep 
+            self.between_example_sep = CHAT_SEP_TOKEN + self.between_example_sep
 
-class NL2CodeDataModule(LightningDataModule):
-    def __init__(self, 
-                transformer_model_name: str,
-                batch_size: int = 1, 
-                val_batch_size: int = 1,
-                train_set_init_args: Dict[str, Any] = {},
-                val_set_init_args: Dict[str, Any] = {},
-                set_common_init_args: Dict[str, Any] = {},
-                train_max_instances: int = None,
-                val_max_instances: int = None,
-                ):
-        super().__init__()
-        self.transformer_model_name = transformer_model_name
-        self.batch_size = batch_size
-        self.val_batch_size = val_batch_size
+        # read the exemplar file and 
+        with open(exemplar_file_path, 'r') as f:
+            all_exemplars = [json.loads(s) for s in f.readlines()]
+        self.exemplar_nl_code_pairs: List[Tuple[str, str]] = \
+            [self.promptify_example(example, add_code=True, **self.additional_prompt_args) for example in all_exemplars]
 
-        # delegate the initialization of the train and val datasets to the dataset classes
-        self.train_set_init_args = train_set_init_args
-        self.train_set_init_args.update(set_common_init_args)
-        self.val_set_init_args = val_set_init_args
-        self.val_set_init_args.update(set_common_init_args) 
-
-        if train_max_instances is not None:
-            self.train_set_init_args["max_instances"] = train_max_instances
-        if val_max_instances is not None:
-            self.val_set_init_args["max_instances"] = val_max_instances
-
-        self.train_data = None
-        self.val_data = None
-
-    # OPTIONAL, called for every GPU/machine (assigning state is OK)
-    def setup(self, stage: Optional[str] = None):
-        raise NotImplementedError("the base class should not be used directly")
-
-    def train_dataloader(self):
-        if self.train_data is None:
-            self.setup(stage="fit")
+        if self.fixed_exemplars:
+            # we pre-select the exemplars
+            if self.exemplar_selection_method == "first":
+                self.exemplar_nl_code_pairs = self.exemplar_nl_code_pairs[:self.num_exemplars]
+            elif self.exemplar_selection_method == "random":
+                random.shuffle(self.exemplar_nl_code_pairs)
+                self.exemplar_nl_code_pairs = self.exemplar_nl_code_pairs[:self.num_exemplars]
+            else:
+                raise ValueError(f"Unknown exemplar_selection_method: {self.exemplar_selection_method}")
         
-        collate_fn = customized_collate_fn_gpt if is_model_gpt_style(self.transformer_model_name) \
-                                                else customized_collate_fn_enc_dec
+        super().__init__(mode=mode, **kwargs)
 
-        dtloader = DataLoader(self.train_data, batch_size=self.batch_size, 
-                               shuffle=True, drop_last=True, collate_fn=collate_fn)
-        return dtloader
+    def get_prompt_for_example(self, example: Dict[str, Any]) -> str:
+        """ with the instruction, connect the components of the example, and then connect the examples """
+        # promptify the current example
+        nl_input, _ = self.promptify_example(example, add_code=False, **self.additional_prompt_args)
 
-    def val_dataloader(self):
-        if self.val_data is None:
-            self.setup(stage="validate")
+        if self.fixed_exemplars or self.exemplar_selection_method == "first":
+            example_exemplars = self.exemplar_nl_code_pairs[:self.num_exemplars]
+        elif self.exemplar_selection_method == "random":
+            random.shuffle(self.exemplar_nl_code_pairs)
+            example_exemplars = self.exemplar_nl_code_pairs[:self.num_exemplars]
+        else:
+            raise ValueError(f"Unknown exemplar_selection_method: {self.exemplar_selection_method}")
+        
+        # construct the actual prompt
+        prompt = self.instruction + self.between_example_sep if self.add_instruction else ""
+        for nl, code in example_exemplars:
+            prompt += nl + self.example_io_sep + code + self.between_example_sep
+        prompt += nl_input # the model needs to learn to generate the separator by itself
 
-        collate_fn = customized_collate_fn_gpt if is_model_gpt_style(self.transformer_model_name) \
-                                                else customized_collate_fn_enc_dec
+        return prompt
 
-        dtloader = DataLoader(self.val_data, batch_size=self.val_batch_size, 
-                               shuffle=False, drop_last=True, collate_fn=collate_fn)
-        return dtloader
+    def promptify_example(self, example: Dict[str, Any], add_code: bool = True, **kwargs) -> Tuple[str, str]:
+        """ given an example json dict, return the input (program_context, nl) and output (code) """
+        raise NotImplementedError("promptify_example must be implemented by the subclass")
 
-    def test_dataloader(self):
-        raise NotImplementedError
-    
-    def get_gold_program_func(self, example_dict: Dict[str, Any]):
-        raise NotImplementedError
-    
-    def get_gold_answer_func(self, example_dict: Dict[str, Any]):
-        raise NotImplementedError
+    @overrides
+    def get_train_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:
+        raise ValueError("FewShotNL2CodeDataset does not support training")
