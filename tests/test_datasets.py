@@ -20,9 +20,11 @@ from torch.utils.data import DataLoader
 
 class TestDatasets(unittest.TestCase):
     # TODO: NotImplemented error testing
-    # def test_few_shot_datasets(self):
-    #     for few_shot_dataset_cls, few_shot_dataset_init_kwargs in FEW_SHOT_DATASETS:
-    #         few_shot_dataset = few_shot_dataset_cls(**few_shot_dataset_init_kwargs)
+    def test_few_shot_datasets(self):
+        for few_shot_dataset_cls, few_shot_dataset_init_kwargs in FEW_SHOT_DATASETS:
+            few_shot_dataset = few_shot_dataset_cls(
+                **few_shot_dataset_init_kwargs,
+            )
 
     def test_finetune_datasets(self):
         for finetune_dataset_cls, finetune_dataset_init_kwargs in DATASETS:

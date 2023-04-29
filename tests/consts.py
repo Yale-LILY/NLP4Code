@@ -32,36 +32,41 @@ from finetuning.lightning_modules.datasets.spider_reader import (
     # Text2SqlDataModule,
 )
 
-# TODO: use special test string for test transformer model name?
+# TODO: use special test string for test transformer model name? (don't load model)
 TEST_TRANSFORMER_MODEL_NAME = "EleutherAI/gpt-neo-125M"
 
 # ======== datasets ========
 
 # TODO: better way to do this? (custom types for each kwargs?)
+# TODO: make sure to keep dataset files up to date here
 # list of (dataset, **init_kwargs) tuples
 FEW_SHOT_DATASETS: List[Tuple[NL2CodeDataset, Dict]] = [
     (
         FewShotMathQADataset,
         {
-            "prompt_file": "prompt_files/mathqa_non_idiomatic_code_init_val.txt",
+            "exemplar_file_path": "prompt_files/mathqa-non_idiomatic_code-annotated-8_exemplars.jsonl",
             "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
             "file_path": f"{NLP4CODE_TEST_DATA_PATH}/mathqa/val_dedup_init_val.jsonl",
-            "mode": "test_few_shot",
+            "mode": "test",
         },
     ),
     (
         FewShotMBPPDataset,
         {
-            "prompt_file": "prompt_files/mbpp_prompt_1_test.txt",
-            "add_assertion_n": 1,
-            "mode": "test_few_shot",
+            "exemplar_file_path": "prompt_files/mbpp-official_first_3-10_exemplars.jsonl",
+            # "add_assertion_n": 1,
+            "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
+            "file_path": f"{NLP4CODE_TEST_DATA_PATH}/mbpp/mbpp_prompt.jsonl",
+            "mode": "test",
         },
     ),
     (
         FewShotSpiderDataset,
         {
-            "prompt_file": "prompt_files/spider_codex_cot_sql_prompt_baseline_very_short.txt",
-            "mode": "test_few_shot",
+            "exemplar_file_path": "prompt_files/spider-8_exemplars.jsonl",
+            "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
+            "file_path": f"{NLP4CODE_TEST_DATA_PATH}/spider/train_spider_processed_v2.jsonl",
+            "mode": "test",
         },
     ),
 ]
@@ -78,14 +83,15 @@ DATASETS: List[Tuple[NL2CodeDataset, Dict]] = [
             "mode": "train",
         },
     ),
-    (
-        SpiderDataset,
-        {
-            "file_path": f"{NLP4CODE_TEST_DATA_PATH}/spider/train_spider_processed_v2.jsonl",
-            "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
-            "mode": "train",
-        },
-    ),
+    # TODO: SpiderDataset prompt_function
+    # (
+    #     SpiderDataset,
+    #     {
+    #         "file_path": f"{NLP4CODE_TEST_DATA_PATH}/spider/train_spider_processed_v2.jsonl",
+    #         "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
+    #         "mode": "train",
+    #     },
+    # ),
 ]
 
 # FEW_SHOT_DATA_MODULES: List[NL2CodeDataModule] = [
