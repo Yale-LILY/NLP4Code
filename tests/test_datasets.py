@@ -12,6 +12,11 @@ from tests.consts import DATASETS, FEW_SHOT_DATASETS
 
 from torch.utils.data import DataLoader
 
+from finetuning.lightning_modules.datasets.base_datamodule import (
+    NL2CodeDataModule,
+    FewShotNL2CodeDataModule,
+)
+
 
 # test cases to add:
 # - test base_reader classes are abstract
@@ -36,12 +41,28 @@ class TestDataModules(unittest.TestCase):
         # TODO: this is dummy test
         self.assertTrue(True)
 
-    # def test_finetune_data_modules(self):
-    #     for finetune_data_module_cls, finetune_data_module_init_kwargs in DATA_MODULES:
-    #         finetune_data_module = finetune_data_module_cls(
-    #             **finetune_data_module_init_kwargs
-    #         )
-    #         train_dl = finetune_data_module.train_dataloader()
-    #         self.assertTrue(isinstance(train_dl, DataLoader))
-    #         val_dl = finetune_data_module.val_dataloader()
-    #         self.assertTrue(isinstance(val_dl, DataLoader))
+    def test_few_shot_data_modules(self):
+        for few_shot_dataset_cls, few_shot_dataset_init_kwargs in FEW_SHOT_DATASETS:
+            few_shot_dataset_cls_str = few_shot_dataset_cls.__name__
+
+            few_shot_dataset_init_kwargs = few_shot_dataset_init_kwargs.copy()
+            few_shot_dataset_init_kwargs[
+                "val_file_path"
+            ] = few_shot_dataset_init_kwargs["file_path"]
+            few_shot_dataset_init_kwargs["batch_size"] = 1
+            few_shot_dataset_init_kwargs["val_batch_size"] = 1
+
+            del few_shot_dataset_init_kwargs["file_path"]
+            del few_shot_dataset_init_kwargs["mode"]
+
+            few_shot_data_module = FewShotNL2CodeDataModule(
+                # dataset_cls=f"finetuning.lightning_modules.datasets.{few_shot_dataset_cls_str}",
+                dataset_cls=few_shot_dataset_cls_str,
+                **few_shot_dataset_init_kwargs,
+            )
+
+            # no train_dataloader on few shot data module
+            with self.assertRaises(NotImplementedError):
+                train_dl = few_shot_data_module.train_dataloader()
+            val_dl = few_shot_data_module.val_dataloader()
+            self.assertTrue(isinstance(val_dl, DataLoader))
