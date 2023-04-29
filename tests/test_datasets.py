@@ -36,33 +36,59 @@ class TestDatasets(unittest.TestCase):
             finetune_dataset = finetune_dataset_cls(**finetune_dataset_init_kwargs)
 
 
-class TestDataModules(unittest.TestCase):
-    def test_gsmath(self):
-        # TODO: this is dummy test
-        self.assertTrue(True)
+def create_data_module_init_kwargs(
+    dataset_init_kwargs: Dict, is_few_shot: bool
+) -> Dict:
+    data_module_init_kwargs = dataset_init_kwargs.copy()
 
+    data_module_init_kwargs["batch_size"] = 1
+
+    data_module_init_kwargs["val_file_path"] = data_module_init_kwargs["file_path"]
+    data_module_init_kwargs["val_batch_size"] = 1
+    if not is_few_shot:
+        data_module_init_kwargs["train_file_path"] = data_module_init_kwargs[
+            "file_path"
+        ]
+
+    del data_module_init_kwargs["file_path"]
+    del data_module_init_kwargs["mode"]
+    return data_module_init_kwargs
+
+
+class TestDataModules(unittest.TestCase):
     def test_few_shot_data_modules(self):
+        # instantiate each few shot dataset as part of a data module
         for few_shot_dataset_cls, few_shot_dataset_init_kwargs in FEW_SHOT_DATASETS:
             few_shot_dataset_cls_str = few_shot_dataset_cls.__name__
-
-            few_shot_dataset_init_kwargs = few_shot_dataset_init_kwargs.copy()
-            few_shot_dataset_init_kwargs[
-                "val_file_path"
-            ] = few_shot_dataset_init_kwargs["file_path"]
-            few_shot_dataset_init_kwargs["batch_size"] = 1
-            few_shot_dataset_init_kwargs["val_batch_size"] = 1
-
-            del few_shot_dataset_init_kwargs["file_path"]
-            del few_shot_dataset_init_kwargs["mode"]
+            few_shot_data_module_init_kwargs = create_data_module_init_kwargs(
+                few_shot_dataset_init_kwargs, True
+            )
 
             few_shot_data_module = FewShotNL2CodeDataModule(
-                # dataset_cls=f"finetuning.lightning_modules.datasets.{few_shot_dataset_cls_str}",
                 dataset_cls=few_shot_dataset_cls_str,
-                **few_shot_dataset_init_kwargs,
+                **few_shot_data_module_init_kwargs,
             )
 
             # no train_dataloader on few shot data module
             with self.assertRaises(NotImplementedError):
                 train_dl = few_shot_data_module.train_dataloader()
             val_dl = few_shot_data_module.val_dataloader()
+            self.assertTrue(isinstance(val_dl, DataLoader))
+
+    def test_finetune_data_modules(self):
+        # instantiate each few shot dataset as part of a data module
+        for finetune_dataset_cls, finetune_dataset_init_kwargs in DATASETS:
+            finetune_dataset_cls_str = finetune_dataset_cls.__name__
+            finetune_data_module_init_kwargs = create_data_module_init_kwargs(
+                finetune_dataset_init_kwargs, False
+            )
+
+            finetune_data_module = NL2CodeDataModule(
+                dataset_cls=finetune_dataset_cls_str,
+                **finetune_data_module_init_kwargs,
+            )
+
+            train_dl = finetune_data_module.train_dataloader()
+            self.assertTrue(isinstance(train_dl, DataLoader))
+            val_dl = finetune_data_module.val_dataloader()
             self.assertTrue(isinstance(val_dl, DataLoader))
