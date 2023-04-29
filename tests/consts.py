@@ -5,6 +5,7 @@ NLP4CODE_TEST_DATA_PATH = os.environ["NLP4CODE_TEST_DATA_PATH"]
 
 
 from finetuning.lightning_modules.datasets.base_reader import (
+    FewShotNL2CodeDataset,
     NL2CodeDataset,
 )
 from finetuning.lightning_modules.datasets.mathqa_reader import (
@@ -25,88 +26,94 @@ TEST_TRANSFORMER_MODEL_NAME = "EleutherAI/gpt-neo-125M"
 # ======== datasets ========
 
 
-class TestFewShotDatasetInitKwargs:
-    exemplar_file_path: str
+# defines kwargs needed to initialize NL2CodeDataset
+class TestDatasetInitKwargs:
     transformer_model_name: str
     file_path: str
+    mode: str
+
+    def __init__(
+        self,
+        file_path: str,
+        mode: Optional[str] = "train",  # default to train
+        transformer_model_name: Optional[str] = TEST_TRANSFORMER_MODEL_NAME,
+    ):
+        self.file_path = file_path
+        self.mode = mode
+        self.transformer_model_name = transformer_model_name
+
+
+DATASETS: List[Tuple[NL2CodeDataset, TestDatasetInitKwargs]] = [
+    (
+        MathQADataset,
+        TestDatasetInitKwargs(
+            file_path=f"{NLP4CODE_TEST_DATA_PATH}/mathqa/train_dedup.jsonl",
+        ),
+    ),
+    # TODO: SpiderDataset prompt_function
+    # (
+    #     SpiderDataset,
+    #     TestDatasetInitKwargs(
+    #         file_path=f"{NLP4CODE_TEST_DATA_PATH}/spider/train_spider_processed_v2.jsonl",
+    #     ),
+    # ),
+]
+
+
+# defines kwargs needed to instantiate FewShotNL2CodeDataset
+class TestFewShotDatasetInitKwargs(TestDatasetInitKwargs):
+    transformer_model_name: str
+    file_path: str
+    exemplar_file_path: str
     mode: str = "test"
 
     def __init__(
         self,
-        exemplar_file_path: str,
         file_path: str,
+        exemplar_file_path: str,
         transformer_model_name: Optional[str] = TEST_TRANSFORMER_MODEL_NAME,
     ):
+        super().__init__(
+            file_path=file_path,
+            transformer_model_name=transformer_model_name,
+            mode="test",
+        )
         self.exemplar_file_path = exemplar_file_path
-        self.file_path = file_path
-        self.transformer_model_name = transformer_model_name
 
 
 # TODO: better way to do this? (custom types for each kwargs?)
 # TODO: make sure to keep dataset files up to date here
 # list of (dataset, **init_kwargs) tuples
-FEW_SHOT_DATASETS: List[Tuple[NL2CodeDataset, Dict]] = [
+FEW_SHOT_DATASETS: List[Tuple[FewShotNL2CodeDataset, TestFewShotDatasetInitKwargs]] = [
     (
         FewShotMathQADataset,
-        {
-            "exemplar_file_path": "prompt_files/mathqa-non_idiomatic_code-annotated-8_exemplars.jsonl",
-            "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
-            "file_path": f"{NLP4CODE_TEST_DATA_PATH}/mathqa/val_dedup_init_val.jsonl",
-            "mode": "test",
-        },
+        TestFewShotDatasetInitKwargs(
+            exemplar_file_path="prompt_files/mathqa-non_idiomatic_code-annotated-8_exemplars.jsonl",
+            file_path=f"{NLP4CODE_TEST_DATA_PATH}/mathqa/val_dedup_init_val.jsonl",
+        ),
     ),
     (
         FewShotMBPPDataset,
-        {
-            "exemplar_file_path": "prompt_files/mbpp-official_first_3-10_exemplars.jsonl",
-            # "add_assertion_n": 1,
-            "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
-            "file_path": f"{NLP4CODE_TEST_DATA_PATH}/mbpp/mbpp_test.jsonl",
-            "mode": "test",
-        },
+        TestFewShotDatasetInitKwargs(
+            exemplar_file_path="prompt_files/mbpp-official_first_3-10_exemplars.jsonl",
+            file_path=f"{NLP4CODE_TEST_DATA_PATH}/mbpp/mbpp_test.jsonl",
+        ),
     ),
     (
         FewShotSpiderDataset,
-        {
-            "exemplar_file_path": "prompt_files/spider-8_exemplars.jsonl",
-            "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
-            "file_path": f"{NLP4CODE_TEST_DATA_PATH}/spider/dev_processed_db_path.jsonl",
-            "mode": "test",
-        },
+        TestFewShotDatasetInitKwargs(
+            exemplar_file_path="prompt_files/spider-8_exemplars.jsonl",
+            file_path=f"{NLP4CODE_TEST_DATA_PATH}/spider/dev_processed_db_path.jsonl",
+        ),
     ),
     (
         FewShotSpiderDataset,
-        {
-            "exemplar_file_path": "prompt_files/wtq-8_exemplars.jsonl",
-            "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
+        TestFewShotDatasetInitKwargs(
+            exemplar_file_path="prompt_files/wtq-8_exemplars.jsonl",
             # TODO: why does wtq_restored_dev.jsonl error
-            "file_path": f"{NLP4CODE_TEST_DATA_PATH}/squall/wtq_restored_test.jsonl",
-            "mode": "test",
-        },
+            file_path=f"{NLP4CODE_TEST_DATA_PATH}/squall/wtq_restored_test.jsonl",
+        ),
     ),
-]
-
-
-DATASETS: List[Tuple[NL2CodeDataset, Dict]] = [
-    (
-        MathQADataset,
-        {
-            # "file_path": "data/mathqa/train-python.jsonl",
-            "file_path": f"{NLP4CODE_TEST_DATA_PATH}/mathqa/train_dedup.jsonl",
-            "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
-            # TODO: test different modes
-            "mode": "train",
-        },
-    ),
-    # TODO: SpiderDataset prompt_function
-    # (
-    #     SpiderDataset,
-    #     {
-    #         "file_path": f"{NLP4CODE_TEST_DATA_PATH}/spider/train_spider_processed_v2.jsonl",
-    #         "transformer_model_name": TEST_TRANSFORMER_MODEL_NAME,
-    #         "mode": "train",
-    #     },
-    # ),
 ]
 
 # ======== models ========
