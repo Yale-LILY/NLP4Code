@@ -29,6 +29,8 @@ class TestExecutors(unittest.TestCase):
                 self.assertIsInstance(exec_match, int)
                 print(exec_results)
 
+    # custom tests for specific executors
+
     def test_math_executor(self):
         executor = MathExecutor()
 

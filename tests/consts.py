@@ -183,3 +183,29 @@ TEST_EXECUTORS: List[Tuple[BaseExecutor, str, Dict]] = [
         },
     ),
 ]
+
+
+# ======== integration ========
+
+TEST_PIPELINE_YAML_CONFIG_FILE = "tests/test_configs/few_shot-pipeline.yaml"
+
+# TODO: more datasets (see SummerTime matrix)
+# each tuple contains model_name, Pytorch Lightning config YAML file, val_file_path
+TEST_PIPELINE_INFO: List[Tuple[str, str, str]] = [
+    (
+        "EleutherAI/gpt-neo-125M",
+        TEST_PIPELINE_YAML_CONFIG_FILE,
+        "$NLP4CODE_TEST_DATA_PATH/gsmath/split_dev.jsonl",
+    ),
+    # TODO: tensor dimension mismatch error for codet5-small (probably config file problem)
+    # (
+    #     "Salesforce/codet5-small",
+    #     TEST_PIPELINE_YAML_CONFIG_FILE,
+    #     "$NLP4CODE_TEST_DATA_PATH/gsmath/split_dev.jsonl",
+    # ),
+    (
+        "Salesforce/codegen-350M-multi",
+        TEST_PIPELINE_YAML_CONFIG_FILE,
+        "$NLP4CODE_TEST_DATA_PATH/gsmath/split_dev.jsonl",
+    ),
+]
