@@ -20,11 +20,20 @@ from finetuning.lightning_modules.datasets.spider_reader import (
     SpiderDataset,
 )
 
+from execution.executors import (
+    BaseExecutor,
+    MathExecutor,
+    MBPPExecutor,
+    SpiderExecutor,
+    WTQExecutor,
+)
+
+
 # TODO: use special test string for test transformer model name? (don't load model)
 TEST_TRANSFORMER_MODEL_NAME = "EleutherAI/gpt-neo-125M"
 
-# ======== datasets ========
 
+# ======== datasets ========
 
 # defines kwargs needed to initialize NL2CodeDataset
 class TestDatasetInitKwargs:
@@ -116,12 +125,61 @@ FEW_SHOT_DATASETS: List[Tuple[FewShotNL2CodeDataset, TestFewShotDatasetInitKwarg
     ),
 ]
 
+
 # ======== models ========
 
-TEST_MODEL_TRANSFORMER_MODEL_NAMES = [
+TEST_MODEL_TRANSFORMER_MODEL_NAMES: List[str] = [
     "EleutherAI/gpt-neo-125M",
     "Salesforce/codet5-small",
     "Salesforce/codegen-350M-multi",
 ]
 
 TEST_MODEL_EXECUTOR_CLS = "execution.executors.MathExecutor"
+
+
+# ======== executors ========
+
+TEST_PROGRAM = "answer = 5"
+
+# Tuple[ExecutorCls, program, example]
+TEST_EXECUTORS: List[Tuple[BaseExecutor, str, Dict]] = [
+    (
+        MathExecutor,
+        TEST_PROGRAM,
+        {
+            "question": "some question",
+            "answer": 5,
+        },
+    ),
+    (
+        MBPPExecutor,
+        TEST_PROGRAM,
+        {
+            "question": "some question",
+            "answer": 5,
+            "code": "return 5",
+            "task_id": "xyz",
+            "test_setup_code": 'print("setup")',
+            "test_list": ["assert 1+1 == 2", "assert 1+1 != 3"],
+        },
+    ),
+    (
+        SpiderExecutor,
+        TEST_PROGRAM,
+        {
+            "question": "some question",
+            "db_id": "my_db_id",
+            "query": "SELECT * FROM table",
+        },
+    ),
+    (
+        WTQExecutor,
+        TEST_PROGRAM,
+        {
+            "question": "some question",
+            "db_id": "my_db_id",
+            "db_path": "path/to/my/db",
+            "original_answer": 5,
+        },
+    ),
+]
