@@ -170,7 +170,7 @@ class SpiderExecutor(BaseExecutor):
     def process_output(self, output: str, tokenizer_eos_token: str) -> str:
         if not tokenizer_eos_token:
             # for llama-based model
-            return output.lstrip().split()[0].split("\n\n")[0].split(";")[0].strip()
+            return output.lstrip().split("\n\n")[0].split(";")[0].strip()
         else:
             return output.lstrip().split(tokenizer_eos_token)[0].split("\n\n")[0].split(";")[0].strip()
 
