@@ -156,7 +156,7 @@ class Seq2SeqModel(LightningModule):
             temp = temperature
 
         # https://github.com/THUDM/ChatGLM-6B/issues/31
-        if "santacoder" in self.transformer_model_name:
+        if "santacoder" in self.transformer_model_name or "gpt-neox-20b" in self.transformer_model_name:
             use_sample = False
 
         generation_results = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=use_sample, 

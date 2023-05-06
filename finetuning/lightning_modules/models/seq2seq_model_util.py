@@ -56,13 +56,21 @@ def get_model(model_name: str,
             model = GPT2LMHeadModel.from_pretrained(model_name, pad_token_id=tokenizer.eos_token_id)
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
-    elif model_name == "EleutherAI/gpt-j-6B":
+    elif model_name == "EleutherAI/gpt-j-6b":
         tokenizer = GPT2Tokenizer.from_pretrained(model_name)
         tokenizer.pad_token = tokenizer.eos_token
 
         if not tokenizer_only:
             model = GPTJForCausalLM.from_pretrained(model_name, pad_token_id=tokenizer.eos_token_id,
                                                         gradient_checkpointing=gradient_ckpt, use_cache=not gradient_ckpt)
+            if len(additional_special_tokens) > 0:
+                model.resize_token_embeddings(len(tokenizer))
+    elif model_name == "EleutherAI/gpt-neox-20b":
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer.pad_token = tokenizer.eos_token
+
+        if not tokenizer_only:
+            model = AutoModelForCausalLM.from_pretrained(model_name, pad_token_id=tokenizer.eos_token_id)
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
     elif model_name in ["EleutherAI/gpt-neo-1.3B", "EleutherAI/gpt-neo-125M", "EleutherAI/gpt-neo-2.7B"]:
@@ -148,7 +156,7 @@ def get_model(model_name: str,
                                                     torch_dtype=torch.float16)
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
-    elif "santacoder" in model_name:
+    elif model_name in ["bigcode/starcoder", "bigcode/santacoder"]:
         tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                     additional_special_tokens=additional_special_tokens)
         tokenizer.pad_token = tokenizer.eos_token
