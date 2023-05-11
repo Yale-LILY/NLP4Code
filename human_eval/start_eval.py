@@ -48,10 +48,13 @@ def main():
             same_example = False
 
         else:
+            # print(example['metadata']['answer'])
+            # print(example['generated_program']['exec_result'])
+
             print("\033[1;31m" +  " Reason for failure: " + "\033[0m")
             print("\tMissing something: 0")
             print("\tSomething extra: 1")
-            print("\tSubtle difference: 2")
+            print("\tWrong steps: 2")
             print("\tUnclear question: 3")
             print("\tOther reason (to be reevaluated): 4")
             reason = input("Enter the number corresponding to the reason for failure: ")

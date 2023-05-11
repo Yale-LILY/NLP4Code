@@ -81,6 +81,7 @@ class EvaluationTask:
         # future work can add check if the dataset is squall/spider, and print the tables depending on that.
 
         # gsmath and squall/Spider have different keys for execution accuracy, so we check both
+        # print(example)
         compiled = example['generated_program'].get('exec_result', False)
         if compiled == 'ERROR: program failed to execute' or compiled == 'ERROR: no answer variable':
             print("\033[1;36m" + "Execution Failed" + "\033[0m")
@@ -92,28 +93,51 @@ class EvaluationTask:
         else:
             print("\033[1;31m" + "Execution Accuracy: False" + "\033[0m")
 
-        print(f"\033[1;33mQuestion:\033[0m\n{example['metadata']['question']}")
+        question = example['metadata'].get('question', example['metadata'].get('text', False))      # mbpp uses 'text' instead of 'question'
+        print(f"\033[1;33mQuestion:\033[0m\n{question}")
 
-        original_answer = example['metadata'].get('original_answer', False)
-        if original_answer:
-            print(f"\033[1;33mOriginal Answer:\033[0m\n{original_answer}")
+        # print(example['generated_program'])
 
-        # similar to the accuract, gsmath and squall/Spider have different keys for the generated program
-        generated_program = example['generated_program'].get('program', example['generated_program'].get('code', None))
-        print(f"\033[1;33mGenerated Program:\033[0m\n{generated_program}")
+        # print("keys in example: ", example.keys())
+        gold_program = example.get('gold_program', False)
+        if gold_program:                                                # gold program exists in the case of wtq
+            gold_code = gold_program.get('code', False)                 # gold code exists in the case of mbpp
+            # print("in here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            # print(example)
+            if gold_code:
+                print(f"\033[1;33mGold Program:\033[0m\n{gold_code}")
+            else:
+                print(f"\033[1;33mGold Program:\033[0m\n{gold_program}")
 
-        # prints the solution from gsmath if it exists
-        exec_result = example['generated_program'].get('exec_result', False)
-        if exec_result:
-            print(exec_result)
-            print(f"\033[1;33mGenerated Answer:\033[0m\n{exec_result.get('answer', False)}")
+            generated_program = example['generated_program'].get('code', False)
+            if generated_program:
+                print(f"\033[1;33mGenerated Program:\033[0m\n{generated_program}")
+            else:
+                print("cant find generated program, likely due to a key mismatch")
 
-        # you can check the dataset sort of by checking if the db_table_headers row exists.
-        table_exists = example['metadata'].get('db_table_headers', False)
-        # print(example)
-        if table_exists:
-            print("\033[1;33mTables:\033[0m\n")
-            for header in example['metadata']['db_table_headers']:
-                print("Table: ", header)
-                for row in example['metadata']['db_table_headers'][header]:
-                    print("\t" + row)
+        else:
+            original_answer = example['metadata'].get('original_answer', False)
+            if original_answer:
+                print(f"\033[1;33mOriginal Answer:\033[0m\n{original_answer}")
+
+            # similar to the accuract, gsmath and squall/Spider have different keys for the generated program
+            generated_program = example['generated_program'].get('program', example['generated_program'].get('code', None))
+            print(f"\033[1;33mGenerated Program:\033[0m\n{generated_program}")
+
+            # prints the solution from gsmath if it exists
+            exec_result = example['generated_program'].get('exec_result', False)
+            if exec_result:
+                print(exec_result)
+                print(f"\033[1;33mGenerated Answer:\033[0m\n{exec_result.get('answer', False)}")
+            else:
+                print("cant find generated solution, likely due to a key mismatch")
+
+            # you can check the dataset sort of by checking if the db_table_headers row exists.
+            table_exists = example['metadata'].get('db_table_headers', False)
+            # print(example)
+            if table_exists:
+                print("\033[1;33mTables:\033[0m\n")
+                for header in example['metadata']['db_table_headers']:
+                    print("Table: ", header)
+                    for row in example['metadata']['db_table_headers'][header]:
+                        print("\t" + row)
