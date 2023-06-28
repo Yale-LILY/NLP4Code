@@ -1,0 +1,25 @@
+import argparse
+import pickle
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--test_case", type=int, default="1")
+args = parser.parse_args()
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+
+# features_dataframe = pickle.load(open(f"input/input{args.test_case}.pkl", "rb"))
+myData = pd.DataFrame({
+    'Month': [3, 3, 3, 3, 3, 3, 8, 8, 8, 8, 8, 8, 8],
+    'A1': [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2],
+    'A2': [31, 13, 13, 13, 33, 33, 81, 38, 18, 38, 18, 18, 118],
+    'A3': [81, 38, 18, 38, 18, 18, 118, 31, 13, 13, 13, 33, 33],
+    'A4': [1, 1, 1, 1, 1, 1, 8, 8, 8, 8, 8, 8, 8],
+})
+scaler = MinMaxScaler()
+### BEGIN SOLUTION
+[insert]
+### END SOLUTION
+with open('result/result_{}.pkl'.format(args.test_case), 'wb') as f:
+    pickle.dump(myData, f)

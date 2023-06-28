@@ -1,0 +1,26 @@
+
+import pickle
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--test_case", type=int, default=1)
+args = parser.parse_args()
+
+from scipy import stats
+import random
+import numpy as np
+def poisson_simul(rate, T):
+    time = random.expovariate(rate)
+    times = [0]
+    while (times[-1] < T):
+        times.append(time+times[-1])
+        time = random.expovariate(rate)
+    return times[1:]
+    
+rate, T, times = pickle.load(open(f"input/input{args.test_case}.pkl", "rb"))
+[insert]
+#print(result)
+
+
+with open('result/result_{}.pkl'.format(args.test_case), 'wb') as f:
+    pickle.dump(result, f)

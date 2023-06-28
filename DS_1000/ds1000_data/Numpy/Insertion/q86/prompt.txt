@@ -1,0 +1,16 @@
+Problem:
+How do I convert a torch tensor to numpy?
+A:
+<code>
+import torch
+import numpy as np
+a = torch.ones(5)
+</code>
+BEGIN SOLUTION
+<code>
+[insert]
+</code>
+END SOLUTION
+<code>
+print(a_np)
+</code>

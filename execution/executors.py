@@ -1,6 +1,7 @@
 import os
 import time
 import ast
+import sys
 
 from overrides import overrides
 from func_timeout import func_timeout, FunctionTimedOut
@@ -13,6 +14,8 @@ from execution.spider_execution import spider_execution_pd_sql, pd_df_to_dict, p
 from execution.spider_execution import post_process_wtq_exec_result, wtq_answer_eq, spider_answer_eq
 from execution.safe_execution_util import execute
 from execution.program_tracing import get_function_final_state
+
+from DS_1000.ds1000 import DS1000Dataset
 
 """
 From the models' perspective, the model would only want two things: 
@@ -356,3 +359,44 @@ class MathExecutor(BaseExecutor):
             exec_match = -1
 
         return exec_match, executed_answer
+    
+class DS1000Executor(BaseExecutor):
+    
+    ds_data = DS1000Dataset("DS_1000/ds1000_data", mode="Completion")
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @overrides
+    def cache_key_func(self, program: str, example: Dict[str, Any]) -> str:
+        return example["prompt"] + " | "  +  program
+
+    @overrides
+    def program_len(self, program: str) -> int:
+        return python_program_len(program)
+
+    @overrides
+    def gold_program_len(self, example: Dict[str, Any]) -> int:
+        return self.program_len(example["reference_code"])
+
+    # TODO: modify this later based on generated programs
+    @overrides
+    def process_output(self, output: str, tokenizer_eos_token: str) -> str:
+        index = output.rfind("</code>")
+        if index != -1:
+            processed_output = output[:index]
+        else:
+            processed_output = output
+        return processed_output
+
+    @overrides
+    def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:
+        return (program_dict_1['exec_result'] and (program_dict_1['exec_result'] == program_dict_2['exec_result']))
+
+    @classmethod
+    def real_exec_program(cls, program: str, example: Dict[str, Any]) -> Tuple[int, Union[str, List, Dict]]:
+        lib = example["metadata"]["lib"]
+        id = example["metadata"]["id"]
+        exec_match = int(cls.ds_data[lib][id].test(program))
+
+        return exec_match

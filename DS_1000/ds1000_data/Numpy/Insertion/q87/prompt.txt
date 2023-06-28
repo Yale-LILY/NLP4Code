@@ -1,0 +1,16 @@
+Problem:
+How do I convert a numpy array to pytorch tensor?
+A:
+<code>
+import torch
+import numpy as np
+a = np.ones(5)
+</code>
+BEGIN SOLUTION
+<code>
+[insert]
+</code>
+END SOLUTION
+<code>
+print(a_pt)
+</code>

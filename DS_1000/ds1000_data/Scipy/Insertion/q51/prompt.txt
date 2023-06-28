@@ -1,0 +1,16 @@
+Problem:
+How to calculate kurtosis (according to Fisher’s definition) without bias correction?
+A:
+<code>
+import numpy as np
+import scipy.stats
+a = np.array([   1. ,    2. ,    2.5,  400. ,    6. ,    0. ])
+</code>
+BEGIN SOLUTION
+<code>
+[insert]
+</code>
+END SOLUTION
+<code>
+print(kurtosis_result)
+</code>

@@ -1,0 +1,49 @@
+import argparse
+import pickle
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--test_case", type=int, default="1")
+args = parser.parse_args()
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+
+
+# np_array = pickle.load(open(f"input/input{args.test_case}.pkl", "rb"))
+def creat_data():
+    df = pd.DataFrame(
+        {"Name": ["T-Rex", "Crocodile", "Lion", "Bear", "Tiger", "Hyena", "Jaguar", "Cheetah", "KomodoDragon"],
+         "teethLength": [12, 4, 2.7, 3.6, 3, 0.27, 2, 1.5, 0.4],
+         "weight": [15432, 2400, 416, 600, 260, 160, 220, 154, 150],
+         "length": [40, 23, 9.8, 7, 12, 5, 5.5, 4.9, 8.5],
+         "hieght": [20, 1.6, 3.9, 3.35, 3, 2, 2.5, 2.9, 1],
+         "speed": [33, 8, 50, 40, 40, 37, 40, 70, 13],
+         "Calorie Intake": [40000, 2500, 7236, 20000, 7236, 5000, 5000, 2200, 1994],
+         "Bite Force": [12800, 3700, 650, 975, 1050, 1100, 1350, 475, 240],
+         "Prey Speed": [20, 30, 35, 0, 37, 20, 15, 56, 24],
+         "PreySize": [19841, 881, 1300, 0, 160, 40, 300, 185, 110],
+         "EyeSight": [0, 0, 0, 0, 0, 0, 0, 0, 0],
+         "Smell": [0, 0, 0, 0, 0, 0, 0, 0, 0],
+         "Class": ["Primary Hunter", "Primary Hunter", "Primary Hunter", "Primary Scavenger", "Primary Hunter",
+                   "Primary Scavenger", "Primary Hunter", "Primary Hunter", "Primary Scavenger"]})
+
+    filename = "animalData.csv"
+    df.to_csv(filename, index=False, sep=",")
+
+
+creat_data()
+filename = "animalData.csv"
+dataframe = pd.read_csv(filename, dtype='category')
+# dataframe = df
+# Git rid of the name of the animal
+# And change the hunter/scavenger to 0/1
+dataframe = dataframe.drop(["Name"], axis=1)
+cleanup = {"Class": {"Primary Hunter": 0, "Primary Scavenger": 1}}
+dataframe.replace(cleanup, inplace=True)
+### BEGIN SOLUTION
+[insert]
+### END SOLUTION
+predict = logReg.predict(X)
+with open('result/result_{}.pkl'.format(args.test_case), 'wb') as f:
+    pickle.dump(predict, f)
