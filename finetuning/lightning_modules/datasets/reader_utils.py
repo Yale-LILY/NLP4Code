@@ -8,6 +8,8 @@ from typing import List, Any, Union, Dict, Tuple
 
 from tree_sitter import Parser, Language
 
+CHAT_SEP_TOKEN = "##<chat-sep>##"
+
 # TODO: add those tokens to the vocab of whatever transformer models
 INDENT_TOKEN = "@@INDENT@@"
 NEWLINE_TOKEN = "@@NEWLINE@@"

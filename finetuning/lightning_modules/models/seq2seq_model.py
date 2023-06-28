@@ -39,7 +39,7 @@ class Seq2SeqModel(LightningModule):
                  max_gen_len: int = 100,
                  sampling_temp: float = 0.2,
                  sampling_temp_at_k: float = 0.8,
-                 beam_size: int = 1,
+                 beam_size: int = -1,
                  gradient_ckpt: bool = False,
                  pass_at_k: int = 1,
                  eval_pass_at_k_every_n_epochs: int = 1,
@@ -47,6 +47,7 @@ class Seq2SeqModel(LightningModule):
                  save_raw_generation_results: bool = False,
                  use_chat_format: bool = False,
                  print_eval_every_n_batches: int = -1,
+                 print_generation_results: bool = False,
                  max_generation_batches: int = 100,
                  max_steps: int = -1,
                  warmup_steps: int = 0,
@@ -66,6 +67,7 @@ class Seq2SeqModel(LightningModule):
         self.eval_pass_at_k_every_n_epochs = eval_pass_at_k_every_n_epochs
         self.max_generation_batches = max_generation_batches
         self.print_eval_every_n_batches = print_eval_every_n_batches
+        self.print_generation_results = print_generation_results
         self.beam_size = beam_size
         self.save_raw_generation_results = save_raw_generation_results
         self.use_chat_format = use_chat_format
@@ -73,6 +75,10 @@ class Seq2SeqModel(LightningModule):
         # We only instantiate this when we need it.
         self.transformer_model_name = transformer_model_name
         if "openai" in self.transformer_model_name:
+            if self.transformer_model_name.startswith("openai/gpt-3.5-turbo"):
+                if self.save_raw_generation_results:
+                    print("get_raw_generation_results is not supported for gpt-3.5-turbo, set to False instead")
+                self.save_raw_generation_results = False
             transformer_model_init_args["save_raw_generation_results"] = self.save_raw_generation_results
             transformer_model_init_args["use_chat_format"] = self.use_chat_format
         else:
@@ -203,7 +209,7 @@ class Seq2SeqModel(LightningModule):
             Dict[str, Any]: results saved in a `Dict` object.
         """        
         generated_programs, generation_probs, generation_tokens = \
-            self.generate_and_post_process(input_ids, attention_mask, self.sampling_temp, beam_search=(self.beam_size > 1))
+            self.generate_and_post_process(input_ids, attention_mask, self.sampling_temp, beam_search=(self.beam_size > 0))
 
         # construct the output dict with the basic information
         output_dicts = []
@@ -304,6 +310,12 @@ class Seq2SeqModel(LightningModule):
             self.category_metrics.update(program_dict["exec_acc"], metadata) # note that this can't be forward as compute will be called
         
         if self.print_eval_every_n_batches > 0:
+            # print the programs
+            if self.print_generation_results:
+                for output_dict in outputs:
+                    print("prompt: ", output_dict["metadata"]["prompt"])
+                    print("generated program: ", output_dict["generated_program"]["program"])
+
             # compute the metrics
             eval_metrics_dict = {}
             for k in self.metrics_dict.keys():
