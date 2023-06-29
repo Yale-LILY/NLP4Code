@@ -386,7 +386,12 @@ class DS1000Executor(BaseExecutor):
         if index != -1:
             processed_output = output[:index]
         else:
-            processed_output = output
+            index = output.rfind("# SOLUTION END")
+            if index != -1:
+                processed_output = output[:index]
+            else:
+                processed_output = output
+                
         return processed_output
 
     @overrides

@@ -135,3 +135,6 @@ debug-tmp/
 wandb/
 results/
 .vscode/
+
+# defined by Rui
+.DS_Store
