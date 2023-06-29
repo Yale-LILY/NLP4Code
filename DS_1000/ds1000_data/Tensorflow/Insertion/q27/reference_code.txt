@@ -1,1 +1,0 @@
-    result = tf.gather_nd(x, [y, z])

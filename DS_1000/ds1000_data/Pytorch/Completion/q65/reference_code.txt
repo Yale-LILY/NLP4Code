@@ -1,1 +1,0 @@
-result = torch.nn.functional.pad(t, (1, 1, 1, 1))

@@ -1,2 +1,0 @@
-import numpy as np
-df['#1'] = np.roll(df['#1'], shift=-1)

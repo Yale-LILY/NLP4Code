@@ -1,1 +1,0 @@
-cnt_equal = int((A[int(len(A) / 2):] == B[int(len(A) / 2):]).sum())

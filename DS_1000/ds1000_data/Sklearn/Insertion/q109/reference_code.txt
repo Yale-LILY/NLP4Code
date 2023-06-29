@@ -1,3 +1,0 @@
-count = CountVectorizer(lowercase=False, token_pattern='[a-zA-Z0-9$&+:;=@#|<>^*()%-]+')
-vocabulary = count.fit_transform([words])
-feature_names = count.get_feature_names_out()

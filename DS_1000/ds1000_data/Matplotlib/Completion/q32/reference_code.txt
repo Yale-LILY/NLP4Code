@@ -1,2 +1,0 @@
-ax = plt.gca()
-ax.set_yticks([-1, 1])

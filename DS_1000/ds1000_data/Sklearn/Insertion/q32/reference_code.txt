@@ -1,2 +1,0 @@
-clf = GridSearchCV(bc, param_grid)
-clf.fit(X_train, y_train)

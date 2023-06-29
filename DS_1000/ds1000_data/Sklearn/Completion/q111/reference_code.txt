@@ -1,1 +1,0 @@
-full_results = pd.DataFrame(GridSearch_fitted.cv_results_)

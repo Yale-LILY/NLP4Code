@@ -1,5 +1,0 @@
-def preprocess(s):
-    return s.upper()
-
-
-tfidf = TfidfVectorizer(preprocessor=preprocess)

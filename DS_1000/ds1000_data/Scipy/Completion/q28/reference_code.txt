@@ -1,4 +1,0 @@
-    blobs = img > threshold
-    labels, result = ndimage.label(blobs)
-
-    return result

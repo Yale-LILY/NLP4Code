@@ -1,1 +1,0 @@
-plt.hist(x, bins=np.arange(0, 11, 2))

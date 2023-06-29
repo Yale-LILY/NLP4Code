@@ -1,1 +1,0 @@
-cnt_not_equal = int(len(A)) - int((A == B).sum())

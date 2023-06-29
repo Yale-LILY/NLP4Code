@@ -1,2 +1,0 @@
-    norm = (x-u)/o2
-    prob = scipy.integrate.quad(NDfx, -np.inf, norm)[0]

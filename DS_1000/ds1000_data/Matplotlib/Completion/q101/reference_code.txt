@@ -1,1 +1,0 @@
-plt.scatter(x, y, hatch="*|", s=500)

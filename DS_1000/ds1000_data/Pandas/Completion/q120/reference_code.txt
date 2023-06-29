@@ -1,3 +1,0 @@
-    result = df.loc[df.index.isin(test)]
-
-    return result

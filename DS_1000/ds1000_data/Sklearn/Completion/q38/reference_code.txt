@@ -1,1 +1,0 @@
-df_out = pd.DataFrame(preprocessing.scale(data), index=data.index, columns=data.columns)

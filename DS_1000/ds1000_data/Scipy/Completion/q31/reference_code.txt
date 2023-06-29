@@ -1,4 +1,0 @@
-    rows, cols = sA.nonzero()
-    sA[cols, rows] = sA[rows, cols]
-
-    return sA

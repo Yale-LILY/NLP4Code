@@ -1,1 +1,0 @@
-plt.pie(sizes, colors=colors, labels=labels, textprops={"weight": "bold"})

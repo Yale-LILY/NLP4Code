@@ -1,1 +1,0 @@
-plt.yticks(alpha=0.5)

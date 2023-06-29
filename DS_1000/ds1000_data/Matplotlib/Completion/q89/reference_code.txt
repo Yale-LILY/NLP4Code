@@ -1,2 +1,0 @@
-plt.plot(y, x, label=r"$\lambda$")
-plt.legend()

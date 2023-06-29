@@ -1,2 +1,0 @@
-matfig = plt.figure(figsize=(8, 8))
-plt.matshow(d, fignum=matfig.number)

@@ -1,1 +1,0 @@
-result = sparse.hstack((sa, sb)).tocsr()

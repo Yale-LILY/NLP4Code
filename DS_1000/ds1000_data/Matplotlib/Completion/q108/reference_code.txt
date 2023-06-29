@@ -1,2 +1,0 @@
-plt.plot(y, x)
-plt.grid(color="blue", linestyle="dashed")

@@ -1,1 +1,0 @@
-    result = sA.multiply(sB)

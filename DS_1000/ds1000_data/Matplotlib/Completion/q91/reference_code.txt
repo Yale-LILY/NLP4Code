@@ -1,2 +1,0 @@
-plt.xticks(rotation=-60)
-plt.xticks(ha="left")

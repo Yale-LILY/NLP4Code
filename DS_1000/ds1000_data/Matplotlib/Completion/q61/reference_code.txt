@@ -1,2 +1,0 @@
-plt.plot(y, x)
-plt.xticks(fontsize=10, rotation=90)

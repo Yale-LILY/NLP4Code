@@ -1,2 +1,0 @@
-ax = plt.gca()
-ax.set_xticks([0, 1.5])

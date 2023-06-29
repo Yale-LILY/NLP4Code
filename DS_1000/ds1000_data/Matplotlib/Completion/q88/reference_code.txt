@@ -1,3 +1,0 @@
-a = ax.get_xticks().tolist()
-a[1] = "second"
-ax.set_xticklabels(a)

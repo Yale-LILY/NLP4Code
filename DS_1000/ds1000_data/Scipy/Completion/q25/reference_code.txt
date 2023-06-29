@@ -1,4 +1,0 @@
-b = sparse.csr_matrix(a)
-b.setdiag(0)
-b.eliminate_zeros()
-

@@ -1,7 +1,0 @@
-V = V.copy()
-V.data += x
-V.eliminate_zeros()
-V.data += y
-V.eliminate_zeros()
-
-

@@ -1,1 +1,0 @@
-result = tf.version.VERSION

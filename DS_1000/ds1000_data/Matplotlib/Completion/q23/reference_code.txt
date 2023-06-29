@@ -1,3 +1,0 @@
-minx = x.min()
-maxx = x.max()
-plt.xticks(np.arange(minx, maxx, step=2))

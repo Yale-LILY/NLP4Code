@@ -1,1 +1,0 @@
-Max, Min = col.max(), col.min()

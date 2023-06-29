@@ -1,4 +1,0 @@
-def g(df):
-    return df.col1.sum()
-
-result = g(df.copy())

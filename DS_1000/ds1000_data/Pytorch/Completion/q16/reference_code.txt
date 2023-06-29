@@ -1,1 +1,0 @@
-x_tensor = torch.from_numpy(x_array.astype(float))

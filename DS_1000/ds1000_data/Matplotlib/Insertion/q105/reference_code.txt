@@ -1,2 +1,0 @@
-plt.axvline(x=3, label="cutoff")
-plt.legend()

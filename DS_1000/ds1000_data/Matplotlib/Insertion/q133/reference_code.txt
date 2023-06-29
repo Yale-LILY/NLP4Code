@@ -1,2 +1,0 @@
-plt.plot(x, y, "k-")
-plt.fill_between(x, y - error, y + error)

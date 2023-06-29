@@ -1,2 +1,0 @@
-plt.plot(x, y)
-plt.title(r"$\bf{Figure}$ 1")

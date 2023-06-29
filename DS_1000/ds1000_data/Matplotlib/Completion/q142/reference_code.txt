@@ -1,2 +1,0 @@
-plt.plot(x, y)
-plt.tick_params(bottom=False, labelbottom=True)
