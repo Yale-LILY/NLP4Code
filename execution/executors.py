@@ -171,7 +171,11 @@ class SpiderExecutor(BaseExecutor):
 
     @overrides
     def process_output(self, output: str, tokenizer_eos_token: str) -> str:
-        return output.lstrip().split(tokenizer_eos_token)[0].split("\n\n")[0].split(";")[0].strip()
+        if not tokenizer_eos_token:
+            # for llama-based model
+            return output.lstrip().split("\n\n")[0].split(";")[0].strip()
+        else:
+            return output.lstrip().split(tokenizer_eos_token)[0].split("\n\n")[0].split(";")[0].strip()
 
     @overrides
     def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:
@@ -317,7 +321,11 @@ class MathExecutor(BaseExecutor):
 
     @overrides
     def process_output(self, output: str, tokenizer_eos_token: str) -> str:
-        return output.lstrip().split(tokenizer_eos_token)[0].split("\n\n")[0].strip()
+        if not tokenizer_eos_token:
+            # for llama-based model
+            return output.lstrip().split("\n\n")[0].strip()
+        else:
+            return output.lstrip().split(tokenizer_eos_token)[0].split("\n\n")[0].strip()
 
     @overrides
     def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:

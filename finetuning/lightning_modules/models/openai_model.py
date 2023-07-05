@@ -80,10 +80,10 @@ def openai_call(prompts: List[str], engine: str, use_chat_format: bool = False, 
                                             temperature=temperature, top_p=top_p, n=n, best_of=best_of, 
                                             stop=stop, **kwargs)
             
-            if engine.startswith("gpt-3.5-turbo"):
+            if engine.startswith("gpt-3.5-turbo") or engine.startswith("gpt-4"):
                 non_none_args.pop("prompt")
                 non_none_args.pop("engine")
-                assert len(prompts) == 1, "gpt-3.5-turbo only supports one prompt at a time"
+                assert len(prompts) == 1, "gpt-3.5-turbo or gpt-4 only supports one prompt at a time"
                 if use_chat_format:
                     non_none_args["messages"] = prompt_to_chatgpt_format(prompts[0])
                 else:
@@ -115,7 +115,7 @@ def openai_call(prompts: List[str], engine: str, use_chat_format: bool = False, 
             time.sleep(60 * 5)
 
     # get the text from the returned results and slice the completions to input_n * completion_n
-    if engine.startswith("gpt-3.5-turbo"):
+    if engine.startswith("gpt-3.5-turbo") or engine.startswith("gpt-4"):
         completion_texts = [x['message']['content'] for x in completion.choices]
     else:
         completion_texts = [x.text for x in completion.choices]
@@ -141,7 +141,7 @@ class OpenAIModel(GenerationMixin):
                  ) -> None:
         SUPPORTED_OPENAI_MODELS = ["code-davinci-002", "code-cushman-002", 
                                    "code-cushman-001", "code-davinci-001", 
-                                   "gpt-3.5-turbo"]
+                                   "gpt-3.5-turbo", "text-davinci-003", "text-davinci-002","gpt-4"]
         assert engine in SUPPORTED_OPENAI_MODELS, f"OpenAIModel only supports {SUPPORTED_OPENAI_MODELS}"
 
         self.engine = engine
