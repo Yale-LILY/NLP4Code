@@ -409,12 +409,9 @@ class DS1000Executor(BaseExecutor):
 
     @classmethod
     def real_exec_program(cls, program: str, example: Dict[str, Any]) -> Tuple[int, Union[str, List, Dict]]:
-        try:
-            lib = example["metadata"]["lib"]
-            id = example["metadata"]["id"]
-        except:
-            print(example["metadata"].keys())
-            exit()
+        lib = example["metadata"]["lib"]
+        id = example["metadata"]["id"]
+
         exec_match = int(cls.ds_data[lib][id].test(program))
 
         return exec_match, ''
