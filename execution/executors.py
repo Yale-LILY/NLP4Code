@@ -362,10 +362,11 @@ class MathExecutor(BaseExecutor):
     
 class DS1000Executor(BaseExecutor):
     
-    ds_data = DS1000Dataset("DS_1000/ds1000_data", mode="Completion")
+    ds_data = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        ds_data = DS1000Dataset("DS_1000/ds1000_data", mode="Completion")
 
     @overrides
     def cache_key_func(self, program: str, example: Dict[str, Any]) -> str:
