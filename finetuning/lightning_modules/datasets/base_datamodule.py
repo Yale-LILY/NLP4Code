@@ -10,6 +10,7 @@ from pytorch_lightning import LightningDataModule
 from finetuning.lightning_modules.datasets.spider_reader import FewShotSpiderDataset, SpiderDataset
 from finetuning.lightning_modules.datasets.mathqa_reader import FewShotMathQADataset, MathQADataset
 from finetuning.lightning_modules.datasets.mbpp_reader import FewShotMBPPDataset
+from finetuning.lightning_modules.datasets.ds1000_reader import FewShotDS1000Dataset
 
 from finetuning.lightning_modules.models.seq2seq_model_util import is_model_gpt_style
 from finetuning.lightning_modules.models.seq2seq_model_util import left_pad_sequences, right_pad_sequences
