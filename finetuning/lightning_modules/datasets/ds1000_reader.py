@@ -17,11 +17,19 @@ class FewShotDS1000Dataset(FewShotNL2CodeDataset):
     @overrides
     def get_test_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:
         context = self.get_prompt_for_example(example)
-
+        
         return [self.get_example_dict(example, context, train_mode=False)]
 
     # @overrides
     def promptify_example(self, example: Dict[str, Any], add_code: bool = True, 
                           add_assertion_n: int = 0, test_input_only: bool = False) -> Tuple[str, str]:
 
-        return example["prompt"], ''
+        if example["metadata"]["lib"] == "Matplotlib":
+            end = "\n# SOLUTION END\n"
+        else:
+            end = "\n</code>\n"
+
+        if add_code:
+            return example["prompt"], example["reference_code"] + end
+        else:
+            return example["prompt"], ''
