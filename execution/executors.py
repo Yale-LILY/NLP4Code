@@ -285,14 +285,20 @@ class MBPPExecutor(BaseExecutor):
             return -1, "ERROR: program is not parsable"
 
         # then reconstruct the whole function with assertions and execute the program
-        program_with_assertions = program + "\n\n" + example["test_setup_code"] + "\n\n" + "\n".join(example["test_list"])
+        test_setup_code = (example["test_setup_code"] + "\n\n") if "test_setup_code" in example else ""
+        program_with_assertions = program + "\n\n" + test_setup_code + "\n".join(example["test_list"])
         exec_result_with_assertions = execute(program_with_assertions, timeout=10)
 
         # finally check if the program passes all the tests and append the exec results
         test_exec_results = []
         for t in example["test_list"]:
-            program_with_calls = program + "\n\n" + example["test_setup_code"] + "\n\n" + assertion_to_test(t)
+            program_with_calls = program + "\n\n" + test_setup_code + assertion_to_test(t)
             tracing_result = get_function_final_state(program_with_calls.strip())
+
+            # add the assertion result
+            program_with_single_assertion = program + "\n\n" + test_setup_code + t
+            exec_result_with_single_assertion = execute(program_with_single_assertion, timeout=10)
+            tracing_result["assertion_result"] = exec_result_with_single_assertion["result"]
             test_exec_results.append(tracing_result)
 
         if exec_result_with_assertions["result"] == "passed":

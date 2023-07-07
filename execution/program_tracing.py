@@ -143,7 +143,7 @@ def assertion_to_test(assertion: str) -> str:
     # assert len(assert_stmt.children) == 2 # NOTE: it might break if something like "assert a == b,c"
 
     comparison_stmt = assert_stmt.children[1]
-    assert comparison_stmt.type == "comparison_operator"
+    assert comparison_stmt.type == "comparison_operator", f"unparseable assertion: {assertion}"
     assert len(comparison_stmt.children) == 3
 
     call_stmt = comparison_stmt.children[0]

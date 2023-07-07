@@ -30,11 +30,12 @@ model:
   class_path: lightning_modules.models.seq2seq_model.Seq2SeqModel
   init_args:
     transformer_model_name: bigcode/starcoder
+    # transformer_model_name: t5-small
     executor_cls: execution.executors.MBPPExecutor
     max_gen_len: 256
     sampling_temp: 0.001
-    sampling_temp_at_k: 0.6
-    pass_at_k: 10
+    sampling_temp_at_k: 0.8
+    pass_at_k: 2
     max_generation_batches: 2
     gradient_ckpt: false
     save_raw_generation_results: true
@@ -44,6 +45,7 @@ data:
   class_path: lightning_modules.datasets.base_datamodule.FewShotNL2CodeDataModule
   init_args:
     transformer_model_name: bigcode/starcoder
+    # transformer_model_name: t5-small
     dataset_cls: FewShotMBPPDataset
     batch_size: 1
     val_batch_size: 4
@@ -59,4 +61,4 @@ data:
       add_assertion_n: 1
       test_input_only: false
     val_set_init_args:
-      file_path: data/mbpp/mbpp_prompt.jsonl
+      file_path: data/mbpp/mbpp_sanitized_all.jsonl

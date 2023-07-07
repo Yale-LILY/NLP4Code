@@ -51,7 +51,11 @@ class FewShotMBPPDataset(FewShotNL2CodeDataset):
                 assertion_header += assertion_to_test(test_case) + '\n'
 
         # construct the example prompt
-        func_comment = f'""" {example["text"]} """'
+        if 'text' in example:
+            func_comment = f'""" {example["text"]} """'
+        else:
+            assert 'prompt' in example, "key 'text' or 'prompt' must be in the example!"
+            func_comment = f'""" {example["prompt"]} """'
 
         header = assertion_header + '\n' + func_comment if add_assertion_n > 0 else func_comment
 
