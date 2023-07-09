@@ -135,3 +135,7 @@ debug-tmp/
 wandb/
 results/
 .vscode/
+
+# defined by rui
+DS_1000/
+.DS_Store
