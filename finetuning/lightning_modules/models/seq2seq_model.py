@@ -75,9 +75,9 @@ class Seq2SeqModel(LightningModule):
         # We only instantiate this when we need it.
         self.transformer_model_name = transformer_model_name
         if "openai" in self.transformer_model_name:
-            if self.transformer_model_name.startswith("openai/gpt-3.5-turbo"):
+            if self.transformer_model_name.startswith("openai/gpt-3.5-turbo") or self.transformer_model_name.startswith("openai/gpt-4"):
                 if self.save_raw_generation_results:
-                    print("get_raw_generation_results is not supported for gpt-3.5-turbo, set to False instead")
+                    print("get_raw_generation_results is not supported for gpt-3.5-turbo and gpt-4, set to False instead")
                 self.save_raw_generation_results = False
             transformer_model_init_args["save_raw_generation_results"] = self.save_raw_generation_results
             transformer_model_init_args["use_chat_format"] = self.use_chat_format
@@ -154,6 +154,10 @@ class Seq2SeqModel(LightningModule):
             use_sample = True
             num_beam = 1
             temp = temperature
+
+        # https://github.com/THUDM/ChatGLM-6B/issues/31
+        if "santacoder" in self.transformer_model_name or "gpt-neox-20b" in self.transformer_model_name or "replit" in self.transformer_model_name:
+            use_sample = False
 
         generation_results = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=use_sample, 
                                                   max_new_tokens=self.max_gen_len, num_beams=num_beam,
