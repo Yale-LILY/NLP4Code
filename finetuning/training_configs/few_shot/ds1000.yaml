@@ -50,7 +50,7 @@ data:
     ## prompting settings
     prompting_init_args:
       exemplar_file_path: prompt_files/ds1000-7_exemplars.jsonl
-      num_exemplars: 8
+      num_exemplars: 7
       fixed_exemplars: true
       exemplar_selection_method: first
       add_instruction: true
