@@ -50,7 +50,7 @@ data:
     ## prompting settings
     prompting_init_args:
       exemplar_file_path: prompt_files/humaneval-8_exemplars.jsonl
-      num_exemplars: 3
+      num_exemplars: 8
       fixed_exemplars: true
       exemplar_selection_method: first
       add_instruction: true
