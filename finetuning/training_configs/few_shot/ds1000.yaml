@@ -49,7 +49,7 @@ data:
     val_batch_size: 4
     ## prompting settings
     prompting_init_args:
-      exemplar_file_path: prompt_files/ds1000-7_exemplars.jsonl
+      exemplar_file_path: prompt_files/ds1000-4_exemplars.jsonl
       num_exemplars: 7
       fixed_exemplars: true
       exemplar_selection_method: first
