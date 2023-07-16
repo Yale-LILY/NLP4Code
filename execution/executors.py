@@ -412,6 +412,12 @@ class DS1000Executor(BaseExecutor):
         lib = example["metadata"]["lib"]
         id = example["metadata"]["id"]
 
-        exec_match = int(cls.ds_data[lib][id].test(program))
+        exec_match = 0
+        exec_result = ''
+        
+        try:
+            exec_match = int(cls.ds_data[lib][id].test(program))
+        except Exception as e:
+            exec_result = str(e)
 
-        return exec_match, ''
+        return exec_match, exec_result
