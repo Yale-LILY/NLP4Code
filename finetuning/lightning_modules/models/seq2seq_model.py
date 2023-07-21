@@ -156,14 +156,13 @@ class Seq2SeqModel(LightningModule):
             temp = temperature
 
         # https://github.com/THUDM/ChatGLM-6B/issues/31
-        if "santacoder" in self.transformer_model_name or "gpt-neox-20b" in self.transformer_model_name or "replit" in self.transformer_model_name:
+        if "incoder" in self.transformer_model_name or "santacoder" in self.transformer_model_name or "gpt-neox-20b" in self.transformer_model_name or "replit" in self.transformer_model_name:
             use_sample = False
 
         generation_results = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=use_sample, 
-                                                  max_new_tokens=self.max_gen_len, num_beams=num_beam,
-                                                  temperature=temp, num_return_sequences=num_return_sequences,
-                                                  return_dict_in_generate=True, output_scores=True)
-        
+                                                max_new_tokens=self.max_gen_len, num_beams=num_beam,
+                                                temperature=temp, num_return_sequences=num_return_sequences,
+                                                return_dict_in_generate=True, output_scores=True)
         # unpack the results
         generated_token_ids = generation_results["sequences"]
         generated_scores = generation_results["scores"]
@@ -391,6 +390,7 @@ class Seq2SeqModel(LightningModule):
         # save the predictions
         save_pred_file_path = os.path.join(self.trainer.log_dir,
                                 f'predictions_step_{self.trainer.global_step}_rank_{self.trainer.global_rank}.jsonl')
+        os.makedirs(os.path.dirname(save_pred_file_path), exist_ok=True)
         with open(save_pred_file_path, 'w+') as f:
             for prediction in self.predictions:
                 f.write(json.dumps(prediction)+'\n')
