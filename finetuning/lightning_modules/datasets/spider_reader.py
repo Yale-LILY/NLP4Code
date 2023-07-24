@@ -9,6 +9,11 @@ from typing import Dict, Iterable, List, Any, Optional, Union, Tuple
 
 from finetuning.lightning_modules.datasets.base_reader import NL2CodeDataset, FewShotNL2CodeDataset
 
+# DB_INFO_FILE = os.path.join(os.path.dirname(__file__), '../../../data/squall/db_info_wtq.json')
+DB_INFO_FILE = os.path.join(os.path.dirname(__file__), f"{os.environ['NLP4CODE_TEST_DATA_PATH']}/squall/db_info_wtq.json")
+with open(DB_INFO_FILE, "r") as f:
+    full_db_info = json.load(f)
+
 
 class FewShotSpiderDataset(FewShotNL2CodeDataset):
 

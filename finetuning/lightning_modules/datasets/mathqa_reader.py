@@ -13,7 +13,8 @@ class MathQADataset(NL2CodeDataset):
     def get_test_instance(self, example: Dict[str, Any]) -> List[Dict[str, Any]]:
         # parse the answer and add the field
         example["original_answer"] = example["answer"]
-        example["answer"] = example["answer"].split("\n####")[-1].strip()
+        # TODO: in data/mathqa/val_dedup.jsonl, example["answer"] are floats
+        # example["answer"] = example["answer"].split("\n####")[-1].strip()
 
         return [self.get_example_dict(example, example["text"], "", train_mode=False)]
 
