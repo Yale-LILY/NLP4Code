@@ -390,7 +390,6 @@ class Seq2SeqModel(LightningModule):
         # save the predictions
         save_pred_file_path = os.path.join(self.trainer.log_dir,
                                 f'predictions_step_{self.trainer.global_step}_rank_{self.trainer.global_rank}.jsonl')
-        os.makedirs(os.path.dirname(save_pred_file_path), exist_ok=True)
         with open(save_pred_file_path, 'w+') as f:
             for prediction in self.predictions:
                 f.write(json.dumps(prediction)+'\n')

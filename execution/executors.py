@@ -388,7 +388,6 @@ class DS1000Executor(BaseExecutor):
     def gold_program_len(self, example: Dict[str, Any]) -> int:
         return self.program_len(example["reference_code"])
 
-    # TODO: modify this later based on generated programs
     @overrides
     def process_output(self, output: str, tokenizer_eos_token: str) -> str:
         index = output.rfind("</code>")
