@@ -404,7 +404,7 @@ class HumanEvalExecutor(BaseExecutor):
         exec_match = result_dict['passed']
         exec_result = result_dict['result']
         
-        if exec_match < 1 and exec_result.strip() == "failed:":
+        if exec_match < 1 and exec_result.strip() != "failed:":
             exec_match = -1
 
         return exec_match, exec_result
