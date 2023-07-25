@@ -403,5 +403,8 @@ class HumanEvalExecutor(BaseExecutor):
         result_dict = check_correctness(eval_dict, program, timeout=5)
         exec_match = result_dict['passed']
         exec_result = result_dict['result']
+        
+        if exec_match < 1 and exec_result.strip() == "failed:":
+            exec_match = -1
 
         return exec_match, exec_result

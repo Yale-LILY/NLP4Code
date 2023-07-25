@@ -4,17 +4,17 @@ trainer:
   # progress_bar_refresh_rate: 1
   num_sanity_val_steps: 0
   log_every_n_steps: 1
-  # logger+:
-  #   - class_path: finetuning.lightning_modules.patches.patched_loggers.PatchedWandbLogger
-  #     init_args:
-  #       entity: yale-lily
-  #       project: unified-codegen
-  #       save_dir: *exp_name
-  #       name: *exp_name
-  #       log_model: False
-  #       save_code: True
-  #       offline: False
-  #       # offline: True
+  logger+:
+    - class_path: finetuning.lightning_modules.patches.patched_loggers.PatchedWandbLogger
+      init_args:
+        entity: yale-lily
+        project: unified-codegen
+        save_dir: *exp_name
+        name: *exp_name
+        log_model: False
+        save_code: True
+        offline: False
+        # offline: True
   callbacks+:
     - class_path: pytorch_lightning.callbacks.progress.TQDMProgressBar
       init_args:
