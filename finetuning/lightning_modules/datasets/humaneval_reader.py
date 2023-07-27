@@ -14,7 +14,7 @@ from human_eval.data import write_jsonl, read_problems
 
 class FewShotHumanEvalDataset(FewShotNL2CodeDataset):
 
-    instruction: str = "## Given the function header description, complete the python function."
+    instruction: str = ""
     example_io_sep: str = "\n"
 
     @overrides
@@ -30,6 +30,6 @@ class FewShotHumanEvalDataset(FewShotNL2CodeDataset):
         header = example["prompt"]
 
         if add_code:
-            return f'### Task Start ###\n{header}', f'{example["canonical_solution"]}\n### Task End ###'
+            return header, f'{example["canonical_solution"]}\n\n'
         else:
-            return f'### Task Start ###\n{header}', ''
+            return header, ''

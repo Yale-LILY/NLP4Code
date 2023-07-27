@@ -388,7 +388,17 @@ class HumanEvalExecutor(BaseExecutor):
     # TODO: modify this later based on generated programs
     @overrides
     def process_output(self, output: str, tokenizer_eos_token: str) -> str:
-        return output.split("### Task End ###")[0]
+        stop_sequence = [ '\nclass', '\ndef', '\n#', '\nif', '\nprint']
+        min_index = len(output)  # Initialize with a large value
+        for substring in stop_sequence:
+            index = output.find(substring)
+            if index != -1 and index < min_index:
+                min_index = index
+        
+        if min_index < len(output):
+            return output[:min_index]
+        else:
+            return output
 
     @overrides
     def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:
