@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import time
 import ast
@@ -390,18 +391,18 @@ class DS1000Executor(BaseExecutor):
 
     @overrides
     def process_output(self, output: str, tokenizer_eos_token: str) -> str:
-        index = output.rfind("</code>")
-        if index != -1:
-            processed_output = output[:index]
+        stop_sequence = [ '\n# SOLUTION END', '\n</code>']
+        min_index = len(output)
+        for substring in stop_sequence:
+            index = output.find(substring)
+            if index != -1 and index < min_index:
+                min_index = index
+        
+        if min_index < len(output):
+            return output[:min_index]
         else:
-            index = output.rfind("# SOLUTION END")
-            if index != -1:
-                processed_output = output[:index]
-            else:
-                processed_output = output
-                
-        return processed_output
-
+            return output
+        
     @overrides
     def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:
         return (program_dict_1['exec_result'] and (program_dict_1['exec_result'] == program_dict_2['exec_result']))
@@ -413,10 +414,28 @@ class DS1000Executor(BaseExecutor):
 
         exec_match = 0
         exec_result = ''
-        
-        try:
-            exec_match = int(cls.ds_data[lib][id].test(program))
-        except Exception as e:
-            exec_result = str(e)
+
+        def ds1000_execute(program, result):
+            try:
+                result['match'] = int(cls.ds_data[lib][id].test(program))
+                result['result'] = ''
+            except Exception as e:
+                result['result'] = str(e)
+
+        manager = multiprocessing.Manager()
+        result = manager.dict()
+
+        p = multiprocessing.Process(target=ds1000_execute, args=(program, result))
+        p.start()
+        p.join(timeout=10)
+        if p.is_alive():
+            p.kill()
+
+        if len(result) == 0:
+            exec_result = 'Execution exceeded time limit of 10 seconds.'
+            exec_match = 0
+        else:
+            exec_result = result['result']
+            exec_match = result['match']
 
         return exec_match, exec_result
