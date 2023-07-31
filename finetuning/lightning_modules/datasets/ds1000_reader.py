@@ -28,7 +28,7 @@ class FewShotDS1000Dataset(FewShotNL2CodeDataset):
             end = "\n# SOLUTION END\n"
         else:
             end = "\n</code>\n"
-
+        
         if add_code:
             return example["prompt"], example["reference_code"] + end
         else:

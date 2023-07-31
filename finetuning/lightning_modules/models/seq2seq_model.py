@@ -406,20 +406,20 @@ class Seq2SeqModel(LightningModule):
     def test_step(self, batch: torch.Tensor, batch_idx: int) -> Dict[str, torch.Tensor]:
         raise NotImplementedError
 
-    def configure_optimizers(self):
-        optimizer = AdamW(self.parameters(), **self.opt_params)
-        if self.lrs_params["name"] == "cosine":
-            lr_scheduler = get_cosine_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
-        elif self.lrs_params["name"] == "linear":
-            lr_scheduler = get_linear_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
-        elif self.lrs_params["name"] == "constant":
-            lr_scheduler = get_constant_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
-        else:
-            raise ValueError(f"lr_scheduler {self.lrs_params} is not supported")
+    # def configure_optimizers(self):
+    #     optimizer = AdamW(self.parameters(), **self.opt_params)
+    #     if self.lrs_params["name"] == "cosine":
+    #         lr_scheduler = get_cosine_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
+    #     elif self.lrs_params["name"] == "linear":
+    #         lr_scheduler = get_linear_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
+    #     elif self.lrs_params["name"] == "constant":
+    #         lr_scheduler = get_constant_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
+    #     else:
+    #         raise ValueError(f"lr_scheduler {self.lrs_params} is not supported")
 
-        return {"optimizer": optimizer, 
-                "lr_scheduler": {
-                    "scheduler": lr_scheduler,
-                    "interval": "step"
-                    }
-                }
+    #     return {"optimizer": optimizer, 
+    #             "lr_scheduler": {
+    #                 "scheduler": lr_scheduler,
+    #                 "interval": "step"
+    #                 }
+    #             }
