@@ -11,7 +11,8 @@ from execution.program_tracing import assertion_to_test
 
 class FewShotDS1000Dataset(FewShotNL2CodeDataset):
 
-    instruction: str = "## Given the natural language description and code context, write lines of python code."
+    # instruction: str = "## Given the natural language description and code context, write lines of python code."
+    instruction: str = ""
     example_io_sep: str = "\n"
 
     @overrides
@@ -28,7 +29,7 @@ class FewShotDS1000Dataset(FewShotNL2CodeDataset):
             end = "\n# SOLUTION END\n"
         else:
             end = "\n</code>\n"
-        
+
         if add_code:
             return example["prompt"], example["reference_code"] + end
         else:
