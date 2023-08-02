@@ -391,18 +391,17 @@ class DS1000Executor(BaseExecutor):
 
     @overrides
     def process_output(self, output: str, tokenizer_eos_token: str) -> str:
-        return output # no cutoff to check raw output
-        # stop_sequence = [ '# SOLUTION END', '</code>']
-        # min_index = len(output)
-        # for substring in stop_sequence:
-        #     index = output.find(substring)
-        #     if index != -1 and index < min_index:
-        #         min_index = index
+        stop_sequence = [ '# SOLUTION END', '</code>']
+        min_index = len(output)
+        for substring in stop_sequence:
+            index = output.find(substring)
+            if index != -1 and index < min_index:
+                min_index = index
         
-        # if min_index < len(output):
-        #     return output[:min_index]
-        # else:
-        #     return output
+        if min_index < len(output):
+            return output[:min_index]
+        else:
+            return output
         
     @overrides
     def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:
