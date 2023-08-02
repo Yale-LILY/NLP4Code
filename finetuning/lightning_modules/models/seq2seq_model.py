@@ -156,14 +156,13 @@ class Seq2SeqModel(LightningModule):
             temp = temperature
 
         # https://github.com/THUDM/ChatGLM-6B/issues/31
-        if "santacoder" in self.transformer_model_name or "gpt-neox-20b" in self.transformer_model_name or "replit" in self.transformer_model_name:
+        if "incoder" in self.transformer_model_name or "santacoder" in self.transformer_model_name or "gpt-neox-20b" in self.transformer_model_name or "replit" in self.transformer_model_name:
             use_sample = False
 
         generation_results = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=use_sample, 
-                                                  max_new_tokens=self.max_gen_len, num_beams=num_beam,
-                                                  temperature=temp, num_return_sequences=num_return_sequences,
-                                                  return_dict_in_generate=True, output_scores=True)
-        
+                                                max_new_tokens=self.max_gen_len, num_beams=num_beam,
+                                                temperature=temp, num_return_sequences=num_return_sequences,
+                                                return_dict_in_generate=True, output_scores=True)
         # unpack the results
         generated_token_ids = generation_results["sequences"]
         generated_scores = generation_results["scores"]
@@ -407,20 +406,20 @@ class Seq2SeqModel(LightningModule):
     def test_step(self, batch: torch.Tensor, batch_idx: int) -> Dict[str, torch.Tensor]:
         raise NotImplementedError
 
-    def configure_optimizers(self):
-        optimizer = AdamW(self.parameters(), **self.opt_params)
-        if self.lrs_params["name"] == "cosine":
-            lr_scheduler = get_cosine_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
-        elif self.lrs_params["name"] == "linear":
-            lr_scheduler = get_linear_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
-        elif self.lrs_params["name"] == "constant":
-            lr_scheduler = get_constant_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
-        else:
-            raise ValueError(f"lr_scheduler {self.lrs_params} is not supported")
+    # def configure_optimizers(self):
+    #     optimizer = AdamW(self.parameters(), **self.opt_params)
+    #     if self.lrs_params["name"] == "cosine":
+    #         lr_scheduler = get_cosine_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
+    #     elif self.lrs_params["name"] == "linear":
+    #         lr_scheduler = get_linear_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
+    #     elif self.lrs_params["name"] == "constant":
+    #         lr_scheduler = get_constant_schedule_with_warmup(optimizer, **self.lrs_params["init_args"])
+    #     else:
+    #         raise ValueError(f"lr_scheduler {self.lrs_params} is not supported")
 
-        return {"optimizer": optimizer, 
-                "lr_scheduler": {
-                    "scheduler": lr_scheduler,
-                    "interval": "step"
-                    }
-                }
+    #     return {"optimizer": optimizer, 
+    #             "lr_scheduler": {
+    #                 "scheduler": lr_scheduler,
+    #                 "interval": "step"
+    #                 }
+    #             }

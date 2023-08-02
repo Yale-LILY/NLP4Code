@@ -1,6 +1,8 @@
+import multiprocessing
 import os
 import time
 import ast
+import sys
 
 from overrides import overrides
 from func_timeout import func_timeout, FunctionTimedOut
@@ -13,6 +15,8 @@ from execution.spider_execution import spider_execution_pd_sql, pd_df_to_dict, p
 from execution.spider_execution import post_process_wtq_exec_result, wtq_answer_eq, spider_answer_eq
 from execution.safe_execution_util import execute
 from execution.program_tracing import get_function_final_state
+
+from DS_1000.ds1000 import DS1000Dataset
 
 """
 From the models' perspective, the model would only want two things: 
@@ -364,3 +368,75 @@ class MathExecutor(BaseExecutor):
             exec_match = -1
 
         return exec_match, executed_answer
+    
+class DS1000Executor(BaseExecutor):
+    
+    ds_data = None
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        DS1000Executor.ds_data = DS1000Dataset("DS_1000/ds1000_data", mode="Completion")
+
+    @overrides
+    def cache_key_func(self, program: str, example: Dict[str, Any]) -> str:
+        return example["prompt"] + " | "  +  program
+
+    @overrides
+    def program_len(self, program: str) -> int:
+        return python_program_len(program)
+
+    @overrides
+    def gold_program_len(self, example: Dict[str, Any]) -> int:
+        return self.program_len(example["reference_code"])
+
+    @overrides
+    def process_output(self, output: str, tokenizer_eos_token: str) -> str:
+        stop_sequence = [ '# SOLUTION END', '</code>']
+        min_index = len(output)
+        for substring in stop_sequence:
+            index = output.find(substring)
+            if index != -1 and index < min_index:
+                min_index = index
+        
+        if min_index < len(output):
+            return output[:min_index]
+        else:
+            return output
+        
+    @overrides
+    def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:
+        return (program_dict_1['exec_result'] and (program_dict_1['exec_result'] == program_dict_2['exec_result']))
+
+    @classmethod
+    def real_exec_program(cls, program: str, example: Dict[str, Any]) -> Tuple[int, Union[str, List, Dict]]:
+        lib = example["metadata"]["lib"]
+        id = example["metadata"]["id"]
+
+        exec_match = 0
+        exec_result = ''
+
+        def ds1000_execute(program, result):
+            try:
+                result['match'] = int(cls.ds_data[lib][id].test(program))
+                result['result'] = ''
+            except Exception as e:
+                result['match'] = 0
+                result['result'] = str(e)
+
+        manager = multiprocessing.Manager()
+        result = manager.dict()
+
+        p = multiprocessing.Process(target=ds1000_execute, args=(program, result))
+        p.start()
+        p.join(timeout=10)
+        if p.is_alive():
+            p.kill()
+
+        if len(result) == 0:
+            exec_result = 'Execution exceeded time limit of 10 seconds.'
+            exec_match = 0
+        else:
+            exec_result = result['result']
+            exec_match = result['match']
+
+        return exec_match, exec_result
