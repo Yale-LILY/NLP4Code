@@ -139,3 +139,6 @@ results/
 # defined by rui
 DS_1000/
 .DS_Store
+NLP4Code_humaneval_outputs
+NLP4Code_ds1000_outputs
+raw_output_evaluation.py
