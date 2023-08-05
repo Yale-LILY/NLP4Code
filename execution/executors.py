@@ -14,6 +14,9 @@ from execution.spider_execution import post_process_wtq_exec_result, wtq_answer_
 from execution.safe_execution_util import execute
 from execution.program_tracing import get_function_final_state
 
+from human_eval.execution import check_correctness
+
+
 """
 From the models' perspective, the model would only want two things: 
     1) if the execution result is right; 
@@ -364,3 +367,60 @@ class MathExecutor(BaseExecutor):
             exec_match = -1
 
         return exec_match, executed_answer
+    
+
+class HumanEvalExecutor(BaseExecutor):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @overrides
+    def cache_key_func(self, program: str, example: Dict[str, Any]) -> str:
+        return example["prompt"] + " | "  +  program
+
+    @overrides
+    def program_len(self, program: str) -> int:
+        return python_program_len(program)
+
+    @overrides
+    def gold_program_len(self, example: Dict[str, Any]) -> int:
+        return self.program_len(example["canonical_solution"])
+
+    # TODO: modify this later based on generated programs
+    @overrides
+    def process_output(self, output: str, tokenizer_eos_token: str) -> str:
+        stop_sequence = [ '\nclass', '\ndef', '\n#', '\nif', '\nprint']
+        min_index = len(output)  # Initialize with a large value
+        for substring in stop_sequence:
+            index = output.find(substring)
+            if index != -1 and index < min_index:
+                min_index = index
+ 
+        if min_index < len(output):
+            processed_output = output[:min_index]
+        else:
+            processed_output = output
+
+        # for llama, gpt4_alpaca_lora, alpaca_lora_7b, the model output may be missing a space
+        if processed_output.startswith("   "):
+            processed_output = " " + processed_output
+
+        return processed_output
+
+    @overrides
+    def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:
+        return (program_dict_1['exec_result'] and (program_dict_1['exec_result'] == program_dict_2['exec_result']))
+
+    @classmethod
+    def real_exec_program(cls, program: str, example: Dict[str, Any]) -> Tuple[int, Union[str, List, Dict]]:
+        eval_dict = example
+        metadata = eval_dict.pop('metadata')
+        eval_dict.update(metadata)
+
+        result_dict = check_correctness(eval_dict, program, timeout=5)
+        exec_match = result_dict['passed']
+        exec_result = result_dict['result']
+        
+        if exec_match < 1 and exec_result.strip() != "failed:":
+            exec_match = -1
+
+        return exec_match, exec_result
