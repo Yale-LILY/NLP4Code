@@ -394,11 +394,17 @@ class HumanEvalExecutor(BaseExecutor):
             index = output.find(substring)
             if index != -1 and index < min_index:
                 min_index = index
-        
+ 
         if min_index < len(output):
-            return output[:min_index]
+            processed_output = output[:min_index]
         else:
-            return output
+            processed_output = output
+
+        # for llama, gpt4_alpaca_lora, alpaca_lora_7b, the model output may be missing a space
+        if processed_output.startswith("   "):
+            processed_output = " " + processed_output
+
+        return processed_output
 
     @overrides
     def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:
