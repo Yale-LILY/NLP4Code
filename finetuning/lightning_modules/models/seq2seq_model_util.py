@@ -65,7 +65,7 @@ def get_model(model_name: str,
                                                         gradient_checkpointing=gradient_ckpt, use_cache=not gradient_ckpt)
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
-    elif model_name in ["EleutherAI/gpt-neox-20b", "EleutherAI/pythia-1.4b-deduped", "EleutherAI/pythia-6.9b-deduped", "EleutherAI/pythia-12b-deduped", "databricks/dolly-v2-7b", "databricks/dolly-v2-12b"]:
+    elif model_name in ["EleutherAI/gpt-neox-20b", "databricks/dolly-v2-7b", "databricks/dolly-v2-12b"] or "EleutherAI/pythia-" in model_name:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -91,16 +91,17 @@ def get_model(model_name: str,
                                                                # gradient_checkpointing=gradient_ckpt, 
                                                                use_cache=not gradient_ckpt,
                                                                **additional_init_args)
-    elif model_name.startswith("Salesforce/codegen-"):
+    elif model_name.startswith("Salesforce/codegen") or model_name.startswith("Salesforce/xgen"):
         tokenizer = AutoTokenizer.from_pretrained(model_name,
-                                                    additional_special_tokens=additional_special_tokens)
+                                                    additional_special_tokens=additional_special_tokens,
+                                                    trust_remote_code=True)
         tokenizer.pad_token = tokenizer.eos_token
 
         if not tokenizer_only:
             model = AutoModelForCausalLM.from_pretrained(model_name, 
                                                     pad_token_id=tokenizer.eos_token_id, 
                                                     torch_dtype=torch.float16, 
-                                                    # device_map="auto",
+                                                    trust_remote_code=True,
                                                     use_cache=True)
     elif model_name.startswith("bigscience/bloom-"):
         tokenizer = AutoTokenizer.from_pretrained(model_name,
@@ -145,17 +146,26 @@ def get_model(model_name: str,
 
         if not tokenizer_only:
             model = BartForSequenceClassification.from_pretrained(model_name, num_labels=2)
-    elif "llama" in model_name.lower() or "alpaca" in model_name.lower():
+    elif "llama" in model_name.lower() or "alpaca" in model_name.lower() or "vicuna" in model_name.lower() or "lemur" in model_name.lower():
         tokenizer = LlamaTokenizer.from_pretrained(model_name,
                                                     additional_special_tokens=additional_special_tokens)
         tokenizer.pad_token = tokenizer.eos_token
 
         if not tokenizer_only:
-            model = LlamaForCausalLM.from_pretrained(model_name, 
-                                                    pad_token_id=tokenizer.eos_token_id, 
-                                                    torch_dtype=torch.float16)
-            if len(additional_special_tokens) > 0:
-                model.resize_token_embeddings(len(tokenizer))
+            if "30" in model_name or "34" in model_name:
+                model = LlamaForCausalLM.from_pretrained(model_name, 
+                                                        pad_token_id=tokenizer.eos_token_id, 
+                                                        load_in_8bit=True)
+            elif "65" in model_name or "70" in model_name or "lemur" in model_name.lower():
+                model = LlamaForCausalLM.from_pretrained(model_name, 
+                                                        pad_token_id=tokenizer.eos_token_id, 
+                                                        load_in_4bit=True,
+                                                        device_map="auto")
+            else:
+                model = LlamaForCausalLM.from_pretrained(model_name, 
+                                                        pad_token_id=tokenizer.eos_token_id)
+            # if len(additional_special_tokens) > 0:
+            #     model.resize_token_embeddings(len(tokenizer))
     elif model_name == "bigcode/santacoder":
         tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                     additional_special_tokens=additional_special_tokens)
@@ -169,7 +179,7 @@ def get_model(model_name: str,
                                                         )
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
-    elif model_name in ["bigcode/starcoder", "HuggingFaceH4/starchat-alpha"]:
+    elif model_name in ["bigcode/starcoder", "HuggingFaceH4/starchat-alpha", "bigcode/starcoderplus", "WizardLM/WizardCoder-15B-V1.0"]:
         tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                     additional_special_tokens=additional_special_tokens)
         tokenizer.pad_token = tokenizer.eos_token
@@ -181,7 +191,7 @@ def get_model(model_name: str,
                                                         trust_remote_code=True)
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
-    elif model_name == "replit/replit-code-v1-3b":
+    elif model_name == "replit/replit-code-v1-3b" or "mpt" in model_name:
         tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                     additional_special_tokens=additional_special_tokens,
                                                     trust_remote_code=True)
@@ -190,7 +200,7 @@ def get_model(model_name: str,
         if not tokenizer_only:
             model = AutoModelForCausalLM.from_pretrained(model_name,        
                                                         pad_token_id=tokenizer.eos_token_id, 
-                                                        torch_dtype=torch.float16,
+                                                        load_in_8bit=True if "30" in model_name else False,
                                                         trust_remote_code=True)
             if len(additional_special_tokens) > 0:
                 model.resize_token_embeddings(len(tokenizer))
@@ -201,11 +211,11 @@ def get_model(model_name: str,
         tokenizer.pad_token = tokenizer.eos_token
 
         # to accomandate the length of openai models and the prompt
-        if engine in ["code-davinci-002", "gpt-4"]:
+        if engine in ["code-davinci-002"] or engine.startswith("gpt-4"):
             model_length = 8001
         elif engine in ["code-cushman-001", "code-cushman-002"]:
             model_length = 1024
-        elif engine in ["text-davinci-002", "text-davinci-003", "gpt-3.5-turbo"]:
+        elif engine in ["text-davinci-002", "text-davinci-003"] or engine.startswith("gpt-3.5-turbo"):
             model_length = 4096
 
         tokenizer.model_max_length = model_length
