@@ -141,7 +141,7 @@ class OpenAIModel(GenerationMixin):
                  ) -> None:
         SUPPORTED_OPENAI_MODELS = ["code-davinci-002", "code-cushman-002", 
                                    "code-cushman-001", "code-davinci-001", 
-                                   "gpt-3.5-turbo", "text-davinci-003", "text-davinci-002","gpt-4"]
+                                   "gpt-3.5-turbo", "text-davinci-003", "text-davinci-002","gpt-4", "gpt-4-0314", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613", "gpt-4-0613"]
         assert engine in SUPPORTED_OPENAI_MODELS, f"OpenAIModel only supports {SUPPORTED_OPENAI_MODELS}"
 
         self.engine = engine

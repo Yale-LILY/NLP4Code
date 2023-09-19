@@ -172,7 +172,7 @@ class SpiderExecutor(BaseExecutor):
             # for llama-based model
             return output.lstrip().split("\n\n")[0].split(";")[0].strip()
         else:
-            return output.lstrip().split(tokenizer_eos_token)[0].split("\n\n")[0].split(";")[0].strip()
+            return output.lstrip().split(tokenizer_eos_token)[0].split("\n\n")[0].split(";")[0].strip().replace("-- ", "")
 
     @overrides
     def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:
@@ -246,7 +246,7 @@ class MBPPExecutor(BaseExecutor):
 
     @overrides
     def process_output(self, output: str, tokenizer_eos_token: str) -> str:
-        return output.split("### Task End ###")[0] # NOTE: we can't strip because python code need to maintain the indentation
+        return output.lstrip().split("### Task End ###")[0] # NOTE: we can't strip because python code need to maintain the indentation
 
     @overrides
     def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:
@@ -323,6 +323,67 @@ class MathExecutor(BaseExecutor):
             return output.lstrip().split("\n\n")[0].strip()
         else:
             return output.lstrip().split(tokenizer_eos_token)[0].split("\n\n")[0].strip()
+
+    @overrides
+    def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:
+        if isinstance(program_dict_1['exec_result'], str) or isinstance(program_dict_2['exec_result'], str):
+            return False
+        else:
+            try:
+                str_match = program_dict_1['exec_result']["answer"] == program_dict_2['exec_result']["answer"]
+                if str_match:
+                    return True
+                else:
+                    numeric_match = abs(float(program_dict_1['exec_result']["answer"]) - float(program_dict_2['exec_result']["answer"])) < 1e-6
+                    return numeric_match
+            except Exception:
+                return False
+
+    @classmethod
+    def real_exec_program(cls, program: str, example: Dict[str, Any]) -> Tuple[int, Union[str, List, Dict]]:
+        result = execute(program, output_locals=True)
+        
+        if result["result"] == "passed":
+            if "answer" in result["locals"]:
+                try:
+                    executed_answer = float(result["locals"]["answer"]["str_value"])
+                except Exception:
+                    executed_answer = result["locals"]["answer"]["str_value"]
+                exec_match = executed_answer == example["answer"]
+
+                # the executed_answer needs to be a state dict
+                state_dict = dict()
+                for k, v in result["locals"].items():
+                    state_dict[k] = v["str_value"]
+                executed_answer = state_dict
+            else:
+                executed_answer = "ERROR: no answer variable"
+                exec_match = -1
+        else:
+            executed_answer = "ERROR: program failed to execute"
+            exec_match = -1
+
+        return exec_match, executed_answer
+
+class MathExecutorGPT(BaseExecutor):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @overrides
+    def cache_key_func(self, program: str, example: Dict[str, Any]) -> str:
+        return example["question"] + " | " + program
+
+    @overrides
+    def program_len(self, program: str) -> int:
+        return python_program_len(program)
+
+    @overrides
+    def gold_program_len(self, example: Dict[str, Any]) -> int:
+        return 0
+
+    @overrides
+    def process_output(self, output: str, tokenizer_eos_token: str) -> str:
+        return output.lstrip().split(tokenizer_eos_token)[0].strip()
 
     @overrides
     def exec_result_eq(self, program_dict_1: Dict[str, Any], program_dict_2: Dict[str, Any]) -> bool:
