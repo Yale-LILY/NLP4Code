@@ -68,7 +68,7 @@ def main():
 
     # save the prompt and test sets
     print(f"Saving {len(prompt_examples)} prompt examples and {len(test_examples)} test examples")
-    with open("svamp-idiomatic_code-annotated-4_exemplars.jsonl", "w+") as f:
+    with open("prompt_files/svamp-idiomatic_code-annotated-4_exemplars.jsonl", "w+") as f:
         for example in prompt_examples:
             f.write(json.dumps(example) + "\n")
     
