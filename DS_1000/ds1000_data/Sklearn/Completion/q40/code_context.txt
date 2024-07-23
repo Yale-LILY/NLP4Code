@@ -1,0 +1,25 @@
+import argparse
+import pickle
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--test_case", type=int, default="1")
+args = parser.parse_args()
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import RidgeClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+X, y = pickle.load(open(f"input/input{args.test_case}.pkl", "rb"))
+pipe = Pipeline([
+    ("scale", StandardScaler()),
+    ("model", RidgeClassifier(random_state=24))
+])
+grid = GridSearchCV(pipe, param_grid={"model__alpha": [2e-4, 3e-3, 4e-2, 5e-1]}, cv=7)
+### BEGIN SOLUTION
+[insert]
+### END SOLUTION
+with open('result/result_{}.pkl'.format(args.test_case), 'wb') as f:
+    pickle.dump(coef, f)

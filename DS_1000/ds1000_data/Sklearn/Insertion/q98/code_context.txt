@@ -1,0 +1,38 @@
+import argparse
+import pickle
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--test_case", type=int, default="1")
+args = parser.parse_args()
+import pandas as pd
+import numpy as np
+from sklearn import tree
+import pandas_datareader as web
+
+df = pickle.load(open(f"input/input{args.test_case}.pkl", "rb"))
+
+df['B/S'] = (df['Close'].diff() < 0).astype(int)
+
+closing = (df.loc['2013-02-15':'2016-05-21'])
+ma_50 = (df.loc['2013-02-15':'2016-05-21'])
+ma_100 = (df.loc['2013-02-15':'2016-05-21'])
+ma_200 = (df.loc['2013-02-15':'2016-05-21'])
+buy_sell = (df.loc['2013-02-15':'2016-05-21'])  # Fixed
+
+close = pd.DataFrame(closing)
+ma50 = pd.DataFrame(ma_50)
+ma100 = pd.DataFrame(ma_100)
+ma200 = pd.DataFrame(ma_200)
+buy_sell = pd.DataFrame(buy_sell)
+
+clf = tree.DecisionTreeRegressor(random_state=42)
+x = np.concatenate([close, ma50, ma100, ma200], axis=1)
+y = buy_sell
+
+clf.fit(x, y)
+### BEGIN SOLUTION
+[insert]
+### END SOLUTION
+with open('result/result_{}.pkl'.format(args.test_case), 'wb') as f:
+    pickle.dump(predict, f)

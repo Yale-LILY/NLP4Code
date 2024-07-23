@@ -1,0 +1,23 @@
+import argparse
+import pickle
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--test_case", type=int, default="1")
+args = parser.parse_args()
+import numpy as np
+import pandas as pd
+import torch
+from gensim.models import Word2Vec
+from gensim.test.utils import common_texts
+
+input_Tensor = pickle.load(open(f"input/input{args.test_case}.pkl", "rb"))
+word2vec = Word2Vec(sentences=common_texts, vector_size=100, window=5, min_count=1, workers=4)
+def get_embedded_input(input_Tensor):
+### BEGIN SOLUTION
+[insert]
+### END SOLUTION
+    return embedded_input
+embedded_input = get_embedded_input(input_Tensor)
+with open('result/result_{}.pkl'.format(args.test_case), 'wb') as f:
+    pickle.dump(embedded_input, f)

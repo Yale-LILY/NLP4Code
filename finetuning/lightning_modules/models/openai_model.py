@@ -91,6 +91,10 @@ def openai_call(prompts: List[str], engine: str, use_chat_format: bool = False, 
                 non_none_args["model"] = engine
                 completion = openai.ChatCompletion.create(**non_none_args)
             else:
+                if "/" in engine: # for vllm local server
+                    non_none_args.pop("engine")
+                    non_none_args["model"] = engine
+
                 completion = openai.Completion.create(**non_none_args)
             break
         except openai.error.RateLimitError as e:
@@ -139,9 +143,14 @@ class OpenAIModel(GenerationMixin):
                  use_chat_format: bool = False,
                  **kwargs
                  ) -> None:
-        SUPPORTED_OPENAI_MODELS = ["code-davinci-002", "code-cushman-002", 
-                                   "code-cushman-001", "code-davinci-001", 
-                                   "gpt-3.5-turbo", "text-davinci-003", "text-davinci-002","gpt-4"]
+        SUPPORTED_OPENAI_MODELS = [
+            "code-davinci-002",          
+            "code-cushman-002", 
+            "code-cushman-001", "code-davinci-001", 
+            "gpt-3.5-turbo", "text-davinci-003", "text-davinci-002","gpt-4", "gpt-4-0314", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613", "gpt-4-0613",
+            "gpt-4o", "gpt-4o-mini"
+        ]
+
         assert engine in SUPPORTED_OPENAI_MODELS, f"OpenAIModel only supports {SUPPORTED_OPENAI_MODELS}"
 
         self.engine = engine

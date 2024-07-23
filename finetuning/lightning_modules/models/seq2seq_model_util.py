@@ -49,8 +49,31 @@ def get_model(model_name: str,
 
     if not tokenizer_only:
         print(f"using pretrained model: {model_name}, gradient_ckpt: {gradient_ckpt}")
+        
+    if model_name.startswith("openai/"):
+        engine = "/".join(model_name.split("/")[1:])
 
-    if model_name == "microsoft/CodeGPT-small-py":
+        tokenizer: GPT2TokenizerFast = GPT2TokenizerFast.from_pretrained("gpt2")
+        tokenizer.pad_token = tokenizer.eos_token
+
+        # to accomandate the length of openai models and the prompt
+        if engine in ["code-davinci-002"] or engine.startswith("gpt-4"):
+            model_length = 8001
+        elif engine in ["code-cushman-001", "code-cushman-002"]:
+            model_length = 1024
+        elif engine in ["text-davinci-002", "text-davinci-003"] or engine.startswith("gpt-3.5-turbo"):
+            model_length = 4096
+        else:
+            model_length = 1024
+
+        tokenizer.model_max_length = model_length
+        tokenizer.max_len_single_sentence = model_length
+        tokenizer.max_len_sentences_pair = model_length
+        tokenizer.truncation_side = "left"
+        
+        if not tokenizer_only: 
+            model = OpenAIModel(engine=engine, tokenizer=tokenizer, **additional_init_args)
+    elif model_name == "microsoft/CodeGPT-small-py":
         tokenizer = GPT2Tokenizer.from_pretrained(model_name, additional_special_tokens=additional_special_tokens)
         if not tokenizer_only:
             model = GPT2LMHeadModel.from_pretrained(model_name, pad_token_id=tokenizer.eos_token_id)
