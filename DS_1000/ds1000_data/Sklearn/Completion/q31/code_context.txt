@@ -1,0 +1,23 @@
+import argparse
+import pickle
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--test_case", type=int, default="1")
+args = parser.parse_args()
+import pandas as pd
+import numpy as np
+from sklearn.feature_selection import SelectKBest
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+
+data, target = pickle.load(open(f"input/input{args.test_case}.pkl", "rb"))
+pipe = Pipeline(steps=[
+    ('select', SelectKBest(k=2)),
+    ('clf', LogisticRegression())]
+)
+### BEGIN SOLUTION
+[insert]
+### END SOLUTION
+with open('result/result_{}.pkl'.format(args.test_case), 'wb') as f:
+    pickle.dump(select_out, f)

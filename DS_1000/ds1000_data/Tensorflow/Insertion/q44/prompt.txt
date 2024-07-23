@@ -1,0 +1,18 @@
+Problem:
+I'm using tensorflow 2.10.0.
+I need to find which version of TensorFlow I have installed. I'm using Ubuntu 16.04 Long Term Support.
+
+A:
+<code>
+import tensorflow as tf
+
+### output the version of tensorflow into variable 'result'
+</code>
+BEGIN SOLUTION
+<code>
+[insert]
+</code>
+END SOLUTION
+<code>
+print(result)
+</code>

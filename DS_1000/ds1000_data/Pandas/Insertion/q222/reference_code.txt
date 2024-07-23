@@ -1,0 +1,2 @@
+    df['SOURCE_NAME'] = df['SOURCE_NAME'].str.rsplit('_', 1).str.get(0)
+    result = df

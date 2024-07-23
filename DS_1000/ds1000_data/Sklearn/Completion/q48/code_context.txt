@@ -1,0 +1,21 @@
+import argparse
+import pickle
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--test_case", type=int, default="1")
+args = parser.parse_args()
+import pandas as pd
+import numpy as np
+from sklearn.cluster import KMeans
+
+p, X = pickle.load(open(f"input/input{args.test_case}.pkl", "rb"))
+km = KMeans(n_clusters=8, random_state=42)
+def get_samples(p, X, km):
+    # calculate the closest 50 samples
+### BEGIN SOLUTION
+[insert]
+### END SOLUTION
+closest_50_samples = get_samples(p, X, km)
+with open('result/result_{}.pkl'.format(args.test_case), 'wb') as f:
+    pickle.dump(closest_50_samples, f)
